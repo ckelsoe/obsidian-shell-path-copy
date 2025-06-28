@@ -1,0 +1,27 @@
+# Node modules
+node_modules/
+
+# Build output
+src/main.js
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Obsidian
+.obsidian/
+
+# Environment variables
+.env
+.env.local
