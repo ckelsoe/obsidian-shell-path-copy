@@ -4,11 +4,12 @@ An Obsidian plugin for copying file and folder paths with shell-friendly formatt
 
 ## Why This Plugin?
 
-Modern development workflows often involve multiple operating systems. You might use Obsidian on a Mac or iPad, but connect to a remote Linux server via a terminal (like **Termius**, **Windows Terminal**, or **Tabby**), or work with a Windows Subsystem for Linux (WSL) environment.
+Today's workflows often involve using Obsidian alongside terminal-based AI assistants like Claude Code or Gemini CLI. You might be using Obsidian on Windows, macOS, Linux, or even on mobile devices like iPads and Android tablets (which can run both Obsidian and terminal apps). Regardless of your setup—whether that's Obsidian on Windows with a WSL terminal, Obsidian on your iPad connected to a remote Linux server, or any other combination—you face the same challenge: copying file paths from Obsidian that work correctly in your target terminal environment.
 
-In these scenarios, you need to copy file paths from your vault for use in a shell or with AI Assistants such as Claude Code or Gemini. Obsidian's native "Copy file path" command is located in the command palette and only provides a single path format, which may not match your target system.
+In these scenarios, you need to copy file paths from your vault for use in shell commands or AI assistant prompts. Obsidian's native "Copy file path" command is buried in the command palette and only provides a single path format, which may not match your target system's requirements.
 
 **Shell Path Copy** improves this workflow by:
+
 1.  Adding path copying options directly to the **right-click context menu** in the file explorer.
 2.  Providing **both Linux/Mac and Windows path formats**, ensuring you can get the correct format for your target environment, regardless of the device you are using.
 
@@ -93,7 +94,7 @@ With Shell Path Copy:
 No manual editing, no mistakes, no context switching. It just works.
 
 ### Example Use Cases
-- Sharing file locations with AI Assistants like Claude Code or Gemini
+- Sharing file locations with AI Assistants like "Claude Code or Gemini CLI
 - Documenting file structures in notes
 - Creating file references in technical documentation
 - Quick file path sharing in team communications
@@ -138,16 +139,26 @@ npm run build
 ```
 
 ### Code Quality
-This plugin uses ESLint for code quality. Run linting with:
+This plugin uses TypeScript for type checking. Run type checking with:
 ```bash
-npm run lint
+npm run build
 ```
 
 ## Contributing
 
-I welcome feature requests and bug reports! Please open an issue on the [GitHub repository](https://github.com/ckelsoe/obsidian-shell-path-copy/issues) to discuss any changes or ideas.
+Contributions are welcome! Here's how you can help:
 
-If you are interested in contributing code, please open an issue to discuss the feature first. This helps ensure that your work aligns with the project's goals and standards.
+### Reporting Issues
+Please open an issue on the [GitHub repository](https://github.com/ckelsoe/obsidian-shell-path-copy/issues) for bug reports or feature requests.
+
+### Pull Requests
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+Please open an issue first to discuss significant changes.
 
 ## License
 
@@ -156,7 +167,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Acknowledgments
 
 -   Inspired by the need for better file path handling when working with AI coding assistants
--   Built with the [Obsidian API](https://github.com/obsidianmd/obsidian-api)
+-   Built for [Obsidian](https://obsidian.md) using the [Obsidian API](https://github.com/obsidianmd/obsidian-api)
 -   A special thank you to the Obsidian developers for creating such a powerful and extensible product. This plugin would not be possible without their incredible work.
 -   Thanks to the Obsidian community for their support and feedback
 
@@ -165,4 +176,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 If you find this plugin helpful, consider:
 - ⭐ Starring the repository on GitHub
 - 🐛 Reporting bugs or suggesting features via [GitHub Issues](https://github.com/ckelsoe/obsidian-shell-path-copy/issues)
-- 💬 Sharing feedback in the Obsidian Discord server
