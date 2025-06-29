@@ -33,3 +33,6 @@ GeminiReview.md
 # Temporary files
 *.zip
 *.tmp
+
+# Internal documentation
+internal-docs/
