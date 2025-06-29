@@ -8,12 +8,6 @@
 # npm
 node_modules
 
-# Don't include the compiled main.js file in the repo.
-# They should be uploaded to GitHub releases instead.
-# main.js  # Commented out for BRAT compatibility
-# But allow it in the release folder
-!release/main.js
-
 # Exclude sourcemaps
 *.map
 
@@ -35,3 +29,7 @@ main_backup.ts
 # Review files
 GeminiReview.md
 *Review.md
+
+# Temporary files
+*.zip
+*.tmp
