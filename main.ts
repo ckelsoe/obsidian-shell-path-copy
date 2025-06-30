@@ -1,4 +1,5 @@
-import { App, Menu, Notice, Plugin, PluginSettingTab, Setting, TAbstractFile, Platform } from 'obsidian';
+import { App, Menu, Notice, Plugin, PluginSettingTab, Setting, TAbstractFile, Platform, FileSystemAdapter } from 'obsidian';
+
 
 interface PathCopySettings {
 	pathWrapping: 'none' | 'double-quotes' | 'single-quotes' | 'backticks';
@@ -195,8 +196,11 @@ export default class ShellPathCopyPlugin extends Plugin {
 			if (!navigator.clipboard) {
 				throw new Error('Clipboard API not available.');
 			}
+			
 			// Get the absolute system path
-			const absolutePath = (this.app.vault.adapter as any).getFullRealPath(file.path);
+			// The getFullRealPath method is typed in types.d.ts
+			const adapter = this.app.vault.adapter as FileSystemAdapter;
+			const absolutePath = adapter.getFullRealPath(file.path);
 			
 			// Apply wrapping
 			const wrappedPath = this.wrapPath(absolutePath);
@@ -314,7 +318,8 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 		createExternalLink('Report Issues & Feature Requests', 'https://github.com/ckelsoe/obsidian-shell-path-copy/issues');
 		
 		// Get version from manifest
-		const manifestVersion = (this.plugin.manifest as any).version || '1.0.0';
+		// The version property is typed in types.d.ts
+		const manifestVersion = this.plugin.manifest.version || '1.0.0';
 		linksDiv.createEl('span', { text: ` | Version ${manifestVersion}` });
 		
 		// Add some spacing

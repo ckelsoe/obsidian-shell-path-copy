@@ -3,7 +3,7 @@
 	"name": "Shell Path Copy",
 	"version": "1.0.4",
 	"minAppVersion": "0.15.0",
-	"description": "Copy file and folder paths with shell-friendly formatting for Linux and Windows.",
+	"description": "Quickly copy vault file and folder paths for AI coding tools (Claude Code, Gemini CLI) - works on desktop and mobile with Windows/Unix formats",
 	"author": "Charles Kelsoe (ckelsoe)",
 	"authorUrl": "https://github.com/ckelsoe",
 	"isDesktopOnly": false
