@@ -6,13 +6,15 @@ interface PathCopySettings {
 	showNotifications: boolean;
 	menuDisplay: 'both' | 'windows' | 'linux-mac';
 	showAbsolutePath: boolean;
+	wrapAbsolutePathsInQuotes: boolean;
 }
 
 const DEFAULT_SETTINGS: PathCopySettings = {
 	pathWrapping: 'backticks',
 	showNotifications: true,
 	menuDisplay: 'both',
-	showAbsolutePath: true
+	showAbsolutePath: true,
+	wrapAbsolutePathsInQuotes: true
 }
 
 export default class ShellPathCopyPlugin extends Plugin {
@@ -202,8 +204,10 @@ export default class ShellPathCopyPlugin extends Plugin {
 			const adapter = this.app.vault.adapter as FileSystemAdapter;
 			const absolutePath = adapter.getFullRealPath(file.path);
 			
-			// Apply wrapping
-			const wrappedPath = this.wrapPath(absolutePath);
+			// Apply wrapping - use double quotes if setting is enabled, otherwise use general setting
+			const wrappedPath = this.settings.wrapAbsolutePathsInQuotes 
+				? `"${absolutePath}"` 
+				: this.wrapPath(absolutePath);
 
 			// Copy to clipboard
 			await navigator.clipboard.writeText(wrappedPath);
@@ -382,6 +386,19 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 						new Notice('Please reload Obsidian for command palette changes to take effect');
 					}));
+
+			// Wrap absolute paths in quotes setting (only show if absolute paths are enabled)
+			if (this.plugin.settings.showAbsolutePath) {
+				new Setting(containerEl)
+					.setName('Wrap absolute paths in quotes')
+					.setDesc('Always wrap absolute paths in double quotes (recommended for paths with spaces)')
+					.addToggle(toggle => toggle
+						.setValue(this.plugin.settings.wrapAbsolutePathsInQuotes)
+						.onChange(async (value) => {
+							this.plugin.settings.wrapAbsolutePathsInQuotes = value;
+							await this.plugin.saveSettings();
+						}));
+			}
 		}
 
 		// Notifications setting
