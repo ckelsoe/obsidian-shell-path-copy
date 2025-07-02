@@ -1,7 +1,7 @@
 {
 	"id": "shell-path-copy",
 	"name": "Shell Path Copy",
-	"version": "1.1.0-beta.4",
+	"version": "1.10.0",
 	"minAppVersion": "0.15.0",
 	"description": "Quickly copy vault file and folder paths for AI coding tools (Claude Code, Gemini CLI) - works on desktop and mobile with Windows/Unix formats",
 	"author": "Charles Kelsoe (ckelsoe)",
