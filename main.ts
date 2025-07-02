@@ -1,4 +1,4 @@
-import { App, Menu, Notice, Plugin, PluginSettingTab, Setting, TAbstractFile, Platform, FileSystemAdapter } from 'obsidian';
+import { App, Menu, Notice, Plugin, PluginSettingTab, Setting, TAbstractFile, Platform } from 'obsidian';
 
 
 interface PathCopySettings {
@@ -199,10 +199,30 @@ export default class ShellPathCopyPlugin extends Plugin {
 				throw new Error('Clipboard API not available.');
 			}
 			
-			// Get the absolute system path
-			// The getFullRealPath method is typed in types.d.ts
-			const adapter = this.app.vault.adapter as FileSystemAdapter;
-			const absolutePath = adapter.getFullRealPath(file.path);
+			// Only attempt to get absolute path on desktop
+			// This is a failsafe - should never be reached on mobile since
+			// the command and menu items are not registered on mobile platforms
+			if (Platform.isMobile) {
+				new Notice('Absolute paths are not available on mobile devices.');
+				return;
+			}
+			
+			// Get the absolute system path using runtime check
+			const adapter = this.app.vault.adapter;
+			
+			// Check if this is a FileSystemAdapter by checking constructor name
+			// This is the mobile-safe way to do instanceof check without importing
+			if (!adapter || adapter.constructor.name !== 'FileSystemAdapter') {
+				throw new Error('File system adapter not available.');
+			}
+			
+			// Check if the method exists
+			if (!('getFullRealPath' in adapter)) {
+				throw new Error('getFullRealPath method not available.');
+			}
+			
+			// TypeScript doesn't know about getFullRealPath, so we need to cast
+			const absolutePath = (adapter as any).getFullRealPath(file.path);
 			
 			// Apply wrapping - use double quotes if setting is enabled, otherwise use general setting
 			const wrappedPath = this.settings.wrapAbsolutePathsInQuotes 
