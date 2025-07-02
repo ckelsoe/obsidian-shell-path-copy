@@ -6,5 +6,6 @@
 	"description": "Quickly copy vault file and folder paths for AI coding tools (Claude Code, Gemini CLI) - works on desktop and mobile with Windows/Unix formats",
 	"author": "Charles Kelsoe (ckelsoe)",
 	"authorUrl": "https://github.com/ckelsoe",
+	"fundingUrl": "https://buymeacoffee.com/ckelsoe",
 	"isDesktopOnly": false
 }
