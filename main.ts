@@ -210,15 +210,9 @@ export default class ShellPathCopyPlugin extends Plugin {
 			// Get the absolute system path using runtime check
 			const adapter = this.app.vault.adapter;
 			
-			// Check if this is a FileSystemAdapter by checking constructor name
-			// This is the mobile-safe way to do instanceof check without importing
-			if (!adapter || adapter.constructor.name !== 'FileSystemAdapter') {
-				throw new Error('File system adapter not available.');
-			}
-			
-			// Check if the method exists
-			if (!('getFullRealPath' in adapter)) {
-				throw new Error('getFullRealPath method not available.');
+			// Check if the adapter has the method we need (duck typing)
+			if (!adapter || typeof (adapter as any).getFullRealPath !== 'function') {
+				throw new Error('getFullRealPath method not available on this platform.');
 			}
 			
 			// TypeScript doesn't know about getFullRealPath, so we need to cast
