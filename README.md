@@ -4,7 +4,7 @@ An Obsidian plugin for copying file and folder paths with shell-friendly formatt
 
 ## Why This Plugin?
 
-Today's workflows often involve using Obsidian alongside terminal-based AI assistants like Claude Code or Gemini CLI. You might be using Obsidian on Windows, macOS, Linux, or even on mobile devices like iPads and Android tablets (which can run both Obsidian and terminal apps). Regardless of your setup—whether that's Obsidian on Windows with a WSL terminal, Obsidian on your iPad connected to a remote Linux server, or any other combination—you face the same challenge: copying file paths from Obsidian that work correctly in your target terminal environment.
+Today's workflows often involve using Obsidian alongside terminal-based AI assistants, such as Claude Code or Gemini CLI. You might be using Obsidian on Windows, macOS, Linux, or even on mobile devices like iPads and Android tablets (which can run both Obsidian and terminal apps). Regardless of your setup—whether that's Obsidian on Windows with a WSL terminal, Obsidian on your iPad connected to a remote Linux server, or any other combination—you face the same challenge: copying file paths from Obsidian that work correctly in your target terminal environment.
 
 In these scenarios, you need to copy file paths from your vault for use in shell commands or AI assistant prompts. Obsidian's native "Copy file path" command is buried in the command palette and only provides a single path format, which may not match your target system's requirements.
 
@@ -15,7 +15,7 @@ In these scenarios, you need to copy file paths from your vault for use in shell
 
 ## Features
 
-Shell Path Copy provides a robust set of features designed to streamline your workflow, all configurable via its dedicated settings tab.
+Shell Path Copy offers a comprehensive set of features designed to streamline your workflow, all of which are configurable via its dedicated settings tab.
 
 -   **Right-click menu integration**: Adds "Copy Path" options to files and folders in the file explorer
 -   **Command Palette Integration**: Direct commands for each path format, respecting your display preferences
@@ -103,7 +103,7 @@ No manual editing, no mistakes, no context switching. It just works.
 
 Access plugin settings via Settings → Plugin Options → Shell Path Copy:
 
-- **Path Wrapping**: Choose how paths are wrapped when copied to clipboard (none, double quotes, single quotes, or backticks)
+- **Path Wrapping**: Choose how paths are wrapped when copied to the clipboard (none, double quotes, single quotes, or backticks)
 - **Menu Display**: Control which path formats appear in both the context menu and command palette:
   - Show both Windows and Linux/Mac options (default)
   - Show Windows options only
@@ -112,6 +112,8 @@ Access plugin settings via Settings → Plugin Options → Shell Path Copy:
 - **Show Notifications**: Toggle success notifications on/off
 
 ## Development
+
+This section is for developers who want to modify or extend the plugin for their use. If you want to install and use Shell Path Copy, you can skip this section entirely. The installation instructions above provide everything needed for regular usage.
 
 ### Prerequisites
 - Node.js 16+ 
