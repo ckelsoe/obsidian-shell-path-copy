@@ -8,6 +8,9 @@
 # npm
 node_modules
 
+# Build output
+main.js
+
 # Exclude sourcemaps
 *.map
 
