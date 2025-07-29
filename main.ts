@@ -309,42 +309,6 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-		// Plugin info header
-		containerEl.createEl('p', { 
-			text: 'Copy file and folder paths with shell-friendly formatting for Linux and Windows.',
-			cls: 'setting-item-description'
-		});
-		
-		// Links
-		const linksDiv = containerEl.createEl('div', { cls: 'setting-item-description' });
-		
-		// Helper function to create robust external links
-		const createExternalLink = (text: string, url: string) => {
-			const link = linksDiv.createEl('a', { text: text, href: url });
-			link.onclick = (event) => {
-				event.preventDefault();
-				window.open(url);
-			};
-			return link;
-		};
-
-		createExternalLink('GitHub Repository', 'https://github.com/ckelsoe/obsidian-shell-path-copy');
-		
-		linksDiv.createEl('span', { text: ' | ' });
-		
-		createExternalLink('Report Issues & Feature Requests', 'https://github.com/ckelsoe/obsidian-shell-path-copy/issues');
-		
-		// Get version from manifest
-		// The version property is typed in types.d.ts
-		const manifestVersion = this.plugin.manifest.version || '1.0.0';
-		linksDiv.createEl('span', { text: ` | Version ${manifestVersion}` });
-		
-		// Add some spacing
-		containerEl.createEl('br');
-		containerEl.createEl('br');
-		
-		containerEl.createEl('h3', { text: 'Settings' });
-
 		// Path format examples
 		containerEl.createEl('div', { 
 			text: 'Path format examples:',
@@ -424,5 +388,32 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 					this.plugin.settings.showNotifications = value;
 					await this.plugin.saveSettings();
 				}));
+
+		// Add support links at the bottom
+		containerEl.createEl('br');
+		containerEl.createEl('br');
+		
+		const footerDiv = containerEl.createEl('div', { 
+			cls: 'setting-item-description',
+			attr: { style: 'text-align: center; opacity: 0.8;' }
+		});
+		
+		// Get version from manifest
+		const manifestVersion = this.plugin.manifest.version || '1.0.0';
+		footerDiv.createEl('span', { text: `Version ${manifestVersion} | ` });
+		
+		// Helper function to create robust external links
+		const createExternalLink = (text: string, url: string) => {
+			const link = footerDiv.createEl('a', { text: text, href: url });
+			link.onclick = (event) => {
+				event.preventDefault();
+				window.open(url);
+			};
+			return link;
+		};
+		
+		createExternalLink('GitHub', 'https://github.com/ckelsoe/obsidian-shell-path-copy');
+		footerDiv.createEl('span', { text: ' | ' });
+		createExternalLink('Report Issues', 'https://github.com/ckelsoe/obsidian-shell-path-copy/issues');
 	}
 }

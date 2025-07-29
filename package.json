@@ -1,6 +1,6 @@
 {
 	"name": "shell-path-copy",
-	"version": "1.11.0",
+	"version": "1.12.0",
 	"description": "Copy file and folder paths with shell-friendly formatting for Linux and Windows",
 	"main": "main.js",
 	"scripts": {
