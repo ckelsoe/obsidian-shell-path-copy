@@ -310,7 +310,6 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		// Plugin info header
-		containerEl.createEl('h2', { text: 'Shell Path Copy' });
 		containerEl.createEl('p', { 
 			text: 'Copy file and folder paths with shell-friendly formatting for Linux and Windows.',
 			cls: 'setting-item-description'
@@ -348,7 +347,7 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 
 		// Path format examples
 		containerEl.createEl('div', { 
-			text: 'Path Format Examples:',
+			text: 'Path format examples:',
 			cls: 'setting-item-heading'
 		});
 		const examplesDiv = containerEl.createEl('div', { cls: 'setting-item-description' });
