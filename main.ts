@@ -7,6 +7,7 @@ interface PathCopySettings {
 	menuDisplay: 'both' | 'windows' | 'linux-mac';
 	showAbsolutePath: boolean;
 	wrapAbsolutePathsInQuotes: boolean;
+	showFileUrl: boolean;
 }
 
 const DEFAULT_SETTINGS: PathCopySettings = {
@@ -14,7 +15,8 @@ const DEFAULT_SETTINGS: PathCopySettings = {
 	showNotifications: true,
 	menuDisplay: 'both',
 	showAbsolutePath: true,
-	wrapAbsolutePathsInQuotes: true
+	wrapAbsolutePathsInQuotes: true,
+	showFileUrl: true
 }
 
 export default class ShellPathCopyPlugin extends Plugin {
@@ -94,6 +96,20 @@ export default class ShellPathCopyPlugin extends Plugin {
 				}
 			});
 		}
+
+		// Add file URL command ONLY on desktop and if enabled
+		if (!Platform.isMobile && this.settings.showFileUrl) {
+			this.addCommand({
+				id: 'copy-file-url',
+				name: 'Copy as file:// URL',
+				callback: () => {
+					const file = this.getActiveOrFocusedFile();
+					if (file) {
+						this.copyFileUrl(file);
+					}
+				}
+			});
+		}
 	}
 
 	private createPathMenuItem(menu: Menu, file: TAbstractFile, format: 'unix' | 'windows') {
@@ -137,6 +153,19 @@ export default class ShellPathCopyPlugin extends Plugin {
 					.setSection('shell-path-copy')
 					.onClick(async () => {
 						await this.copyAbsolutePath(file);
+					});
+			});
+		}
+
+		// Add file URL option ONLY on desktop and if enabled
+		if (!Platform.isMobile && this.settings.showFileUrl) {
+			menu.addItem((item) => {
+				item
+					.setTitle('Copy as file:// URL')
+					.setIcon('globe')
+					.setSection('shell-path-copy')
+					.onClick(async () => {
+						await this.copyFileUrl(file);
 					});
 			});
 		}
@@ -240,6 +269,69 @@ export default class ShellPathCopyPlugin extends Plugin {
 		}
 	}
 
+	async copyFileUrl(file: TAbstractFile) {
+		try {
+			if (!navigator.clipboard) {
+				throw new Error('Clipboard API not available.');
+			}
+			
+			// Only attempt to get absolute path on desktop
+			if (Platform.isMobile) {
+				new Notice('File URLs are not available on mobile devices.');
+				return;
+			}
+			
+			// Get the absolute system path
+			const adapter = this.app.vault.adapter;
+			
+			// Check if the adapter has the method we need
+			if (!adapter || typeof (adapter as any).getFullRealPath !== 'function') {
+				throw new Error('getFullRealPath method not available on this platform.');
+			}
+			
+			// Get the absolute path
+			const absolutePath = (adapter as any).getFullRealPath(file.path);
+			
+			// Convert to file:// URL format
+			let fileUrl: string;
+			
+			// Check if Windows path (contains drive letter like C:)
+			if (/^[a-zA-Z]:/.test(absolutePath)) {
+				// Windows path: Convert backslashes to forward slashes and prepend file:///
+				fileUrl = `file:///${absolutePath.replace(/\\/g, '/')}`;
+			} else {
+				// Unix/Mac path: Just prepend file://
+				fileUrl = `file://${absolutePath}`;
+			}
+			
+			// Encode special characters in the URL (but not the slashes)
+			// Split by slash, encode each part, then rejoin
+			const parts = fileUrl.split('/');
+			const encodedParts = parts.map((part, index) => {
+				// Don't encode the file:// protocol part or empty parts
+				if (index < 3 || part === '') return part;
+				// Encode each path segment
+				return encodeURIComponent(part);
+			});
+			fileUrl = encodedParts.join('/');
+
+			// Copy to clipboard (file URLs are typically not wrapped in quotes)
+			await navigator.clipboard.writeText(fileUrl);
+
+			// Show notification if enabled
+			if (this.settings.showNotifications) {
+				new Notice('File URL copied!');
+			}
+		} catch (error) {
+			if (error instanceof Error && error.message.includes('Clipboard API')) {
+				new Notice('Error: Clipboard API is not available in this environment.');
+			} else {
+				console.error('Shell Path Copy: Failed to copy file URL:', error);
+				new Notice('Failed to copy file URL. See console for details.');
+			}
+		}
+	}
+
 	private wrapPath(path: string): string {
 		switch (this.settings.pathWrapping) {
 			case 'double-quotes':
@@ -318,6 +410,7 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 		examplesDiv.createEl('div', { text: '• Linux/Mac: /folder/subfolder/file.md' });
 		examplesDiv.createEl('div', { text: '• Windows: \\folder\\subfolder\\file.md' });
 		examplesDiv.createEl('div', { text: '• Absolute: C:\\Users\\name\\vault\\folder\\file.md (Windows) or /home/user/vault/folder/file.md (Linux/Mac)' });
+		examplesDiv.createEl('div', { text: '• File URL: file:///C:/Users/name/vault/folder/file.md (Windows) or file:///home/user/vault/folder/file.md (Linux/Mac)' });
 		
 		containerEl.createEl('br');
 
@@ -376,6 +469,18 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 							await this.plugin.saveSettings();
 						}));
 			}
+
+			// Show file URL setting (desktop only)
+			new Setting(containerEl)
+				.setName('Show file:// URL option')
+				.setDesc('Display the file:// URL copy option in menus (Desktop only)')
+				.addToggle(toggle => toggle
+					.setValue(this.plugin.settings.showFileUrl)
+					.onChange(async (value) => {
+						this.plugin.settings.showFileUrl = value;
+						await this.plugin.saveSettings();
+						new Notice('Please reload Obsidian for command palette changes to take effect');
+					}));
 		}
 
 		// Notifications setting
