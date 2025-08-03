@@ -28,6 +28,11 @@ Shell Path Copy offers a comprehensive set of features designed to streamline yo
    * **Absolute Path** \- Path is relative to the root of the filesystem (Desktop Only):
       * Windows: `C:\Users\YourName\Documents\Obsidian\MyVault\doc\file.md`
       * Linux and macOS: `/home/user/Documents/Obsidian/MyVault/doc/file.md`
+   * **File URL format** (Desktop Only):
+      * Windows: `file:///C:/Users/YourName/Documents/Obsidian/MyVault/doc/file.md`
+      * Linux and macOS: `file:///home/user/Documents/Obsidian/MyVault/doc/file.md`
+      * Automatically handles platform-specific formatting
+      * URL-encodes special characters for compatibility
 * **Configurable display options**: Choose which path formats appear in menus:
    * Show both Windows and Linux/Mac options (default)
    * Show Windows options only
@@ -75,6 +80,7 @@ Shell Path Copy provides flexible ways to copy paths:
    * **Copy Linux/Mac Path**: For Unix/Linux/macOS systems (e.g., `/folder/file.md`)
    * **Copy Windows Path**: For Windows systems (e.g., `\folder\file.md`)
    * **Copy Absolute Path**: For the full system path (Desktop Only)
+   * **Copy as file:// URL**: For file URL format (Desktop Only)
 4. The path is copied to your clipboard, wrapped in backticks by default.
 5. Paste it anywhere you need!
 
@@ -86,6 +92,7 @@ Shell Path Copy provides flexible ways to copy paths:
    * "Shell Path Copy: Copy as Linux/Mac path" (shown when set to "both" or "Linux/Mac only")
    * "Shell Path Copy: Copy as Windows path" (shown when set to "both" or "Windows only")
    * "Shell Path Copy: Copy as absolute path" (Desktop only)
+   * "Shell Path Copy: Copy as file:// URL" (Desktop only)
 4. The path of the currently active file (or focused file in the explorer) will be copied.
 
 # Example: The Remote Workflow
@@ -100,6 +107,25 @@ With Shell Path Copy:
 4. Paste it directly into your Termius session: `cat /My-Project-Plan.md`
 
 No manual editing, no mistakes, no context switching. It just works.
+
+# File URL Format (Desktop Only)
+
+For desktop users who need to create clickable file:// URLs:
+
+1. Right-click any file or folder in the file explorer
+2. Select "Copy as file:// URL"
+3. The full file:// URL is copied to your clipboard
+
+This is particularly useful for:
+* Creating clickable links in browsers
+* Working with applications that accept file:// URLs
+* Documentation that needs absolute file references
+* Opening files in external applications via URLs
+
+Example outputs:
+* **Windows**: `file:///C:/Users/John/Documents/vault/note.md`
+* **Linux**: `file:///home/john/Documents/vault/note.md`
+* **macOS**: `file:///Users/john/Documents/vault/note.md`
 
 # Example Use Cases
 
@@ -118,6 +144,7 @@ Access plugin settings via Settings → Plugin Options → Shell Path Copy:
    * Show Windows options only
    * Show Linux/Mac options only
 * **Show Absolute Path Option** (Desktop only): Toggle whether the absolute path copy option appears in menus
+* **Show file:// URL option** (Desktop only): Toggle whether the file:// URL copy option appears in menus
 * **Show Notifications**: Toggle success notifications on/off
 
 # Development
