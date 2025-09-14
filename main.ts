@@ -82,37 +82,22 @@ export default class ShellPathCopyPlugin extends Plugin {
 			});
 		}
 
-		// Add absolute path commands ONLY on desktop and if enabled
+		// Add absolute path command ONLY on desktop and if enabled
 		if (!Platform.isMobile && this.settings.showAbsolutePath) {
-			const showBoth = this.settings.menuDisplay === 'both';
-			const showWindows = this.settings.menuDisplay === 'windows';
-			const showLinuxMac = this.settings.menuDisplay === 'linux-mac';
+			// Determine OS-specific naming for clarity
+			const isWindows = process.platform === 'win32';
+			const osName = isWindows ? 'Windows' : 'Linux/Mac';
 
-			if (showBoth || showWindows) {
-				this.addCommand({
-					id: 'copy-absolute-windows-path',
-					name: 'Copy as absolute Windows path',
-					callback: () => {
-						const file = this.getActiveOrFocusedFile();
-						if (file) {
-							this.copyAbsolutePath(file, 'windows');
-						}
+			this.addCommand({
+				id: 'copy-absolute-path',
+				name: `Copy as absolute ${osName} path`,
+				callback: () => {
+					const file = this.getActiveOrFocusedFile();
+					if (file) {
+						this.copyAbsolutePath(file);
 					}
-				});
-			}
-
-			if (showBoth || showLinuxMac) {
-				this.addCommand({
-					id: 'copy-absolute-unix-path',
-					name: 'Copy as absolute Linux/Mac path',
-					callback: () => {
-						const file = this.getActiveOrFocusedFile();
-						if (file) {
-							this.copyAbsolutePath(file, 'unix');
-						}
-					}
-				});
-			}
+				}
+			});
 		}
 
 		// Add file URL command ONLY on desktop and if enabled
@@ -162,35 +147,22 @@ export default class ShellPathCopyPlugin extends Plugin {
 			this.createPathMenuItem(menu, file, 'windows');
 		}
 
-		// Add absolute path options ONLY on desktop and if enabled
+		// Add absolute path option ONLY on desktop and if enabled
 		if (!Platform.isMobile && this.settings.showAbsolutePath) {
-			const showBoth = this.settings.menuDisplay === 'both';
-			const showWindows = this.settings.menuDisplay === 'windows';
-			const showLinuxMac = this.settings.menuDisplay === 'linux-mac';
+			// Determine OS-specific naming and icon for clarity
+			const isWindows = process.platform === 'win32';
+			const osName = isWindows ? 'Windows' : 'Linux/Mac';
+			const icon = isWindows ? 'folder-closed' : 'terminal';
 
-			if (showBoth || showWindows) {
-				menu.addItem((item) => {
-					item
-						.setTitle('Copy Absolute Windows Path')
-						.setIcon('folder-closed')
-						.setSection('shell-path-copy')
-						.onClick(async () => {
-							await this.copyAbsolutePath(file, 'windows');
-						});
-				});
-			}
-
-			if (showBoth || showLinuxMac) {
-				menu.addItem((item) => {
-					item
-						.setTitle('Copy Absolute Linux/Mac Path')
-						.setIcon('terminal')
-						.setSection('shell-path-copy')
-						.onClick(async () => {
-							await this.copyAbsolutePath(file, 'unix');
-						});
-				});
-			}
+			menu.addItem((item) => {
+				item
+					.setTitle(`Copy Absolute ${osName} Path`)
+					.setIcon(icon)
+					.setSection('shell-path-copy')
+					.onClick(async () => {
+						await this.copyAbsolutePath(file);
+					});
+			});
 		}
 
 		// Add file URL option ONLY on desktop and if enabled
@@ -258,7 +230,7 @@ export default class ShellPathCopyPlugin extends Plugin {
 		}
 	}
 
-	async copyAbsolutePath(file: TAbstractFile, format: 'unix' | 'windows') {
+	async copyAbsolutePath(file: TAbstractFile) {
 		try {
 			if (!navigator.clipboard) {
 				throw new Error('Clipboard API not available.');
@@ -282,26 +254,15 @@ export default class ShellPathCopyPlugin extends Plugin {
 
 			const absolutePath = adapter.getFullRealPath(file.path);
 
-			// Convert path format based on requested format
-			let formattedPath: string;
-			if (format === 'windows') {
-				// Convert to Windows format: replace forward slashes with backslashes
-				formattedPath = absolutePath.replace(/\//g, '\\');
-			} else {
-				// Convert to Unix format: replace backslashes with forward slashes
-				formattedPath = absolutePath.replace(/\\/g, '/');
-			}
-
-			// Apply user's preferred path wrapping
-			const wrappedPath = this.wrapPath(formattedPath);
+			// Apply user's preferred path wrapping (this was the main fix requested)
+			const wrappedPath = this.wrapPath(absolutePath);
 
 			// Copy to clipboard
 			await navigator.clipboard.writeText(wrappedPath);
 
 			// Show notification if enabled
 			if (this.settings.showNotifications) {
-				const formatName = format === 'unix' ? 'Linux/Mac' : 'Windows';
-				new Notice(`Absolute ${formatName} path copied!`);
+				new Notice('Absolute path copied!');
 			}
 		} catch (error) {
 			if (error instanceof Error && error.message.includes('Clipboard API')) {
