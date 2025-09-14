@@ -1,4 +1,5 @@
-import { App, Menu, Notice, Plugin, PluginSettingTab, Setting, TAbstractFile, Platform } from 'obsidian';
+import { App, Menu, Notice, Plugin, PluginSettingTab, Setting, TAbstractFile, Platform, FileSystemAdapter } from 'obsidian';
+import { ExtendedFileSystemAdapter } from './types';
 
 
 interface PathCopySettings {
@@ -6,7 +7,6 @@ interface PathCopySettings {
 	showNotifications: boolean;
 	menuDisplay: 'both' | 'windows' | 'linux-mac';
 	showAbsolutePath: boolean;
-	wrapAbsolutePathsInQuotes: boolean;
 	showFileUrl: boolean;
 }
 
@@ -15,12 +15,11 @@ const DEFAULT_SETTINGS: PathCopySettings = {
 	showNotifications: true,
 	menuDisplay: 'both',
 	showAbsolutePath: true,
-	wrapAbsolutePathsInQuotes: true,
 	showFileUrl: true
 }
 
 export default class ShellPathCopyPlugin extends Plugin {
-	settings: PathCopySettings;
+	settings!: PathCopySettings;
 
 	async onload() {
 		await this.loadSettings();
@@ -83,18 +82,37 @@ export default class ShellPathCopyPlugin extends Plugin {
 			});
 		}
 
-		// Add absolute path command ONLY on desktop and if enabled
+		// Add absolute path commands ONLY on desktop and if enabled
 		if (!Platform.isMobile && this.settings.showAbsolutePath) {
-			this.addCommand({
-				id: 'copy-absolute-path',
-				name: 'Copy as absolute path',
-				callback: () => {
-					const file = this.getActiveOrFocusedFile();
-					if (file) {
-						this.copyAbsolutePath(file);
+			const showBoth = this.settings.menuDisplay === 'both';
+			const showWindows = this.settings.menuDisplay === 'windows';
+			const showLinuxMac = this.settings.menuDisplay === 'linux-mac';
+
+			if (showBoth || showWindows) {
+				this.addCommand({
+					id: 'copy-absolute-windows-path',
+					name: 'Copy as absolute Windows path',
+					callback: () => {
+						const file = this.getActiveOrFocusedFile();
+						if (file) {
+							this.copyAbsolutePath(file, 'windows');
+						}
 					}
-				}
-			});
+				});
+			}
+
+			if (showBoth || showLinuxMac) {
+				this.addCommand({
+					id: 'copy-absolute-unix-path',
+					name: 'Copy as absolute Linux/Mac path',
+					callback: () => {
+						const file = this.getActiveOrFocusedFile();
+						if (file) {
+							this.copyAbsolutePath(file, 'unix');
+						}
+					}
+				});
+			}
 		}
 
 		// Add file URL command ONLY on desktop and if enabled
@@ -144,17 +162,35 @@ export default class ShellPathCopyPlugin extends Plugin {
 			this.createPathMenuItem(menu, file, 'windows');
 		}
 
-		// Add absolute path option ONLY on desktop and if enabled
+		// Add absolute path options ONLY on desktop and if enabled
 		if (!Platform.isMobile && this.settings.showAbsolutePath) {
-			menu.addItem((item) => {
-				item
-					.setTitle('Copy Absolute Path')
-					.setIcon('link')
-					.setSection('shell-path-copy')
-					.onClick(async () => {
-						await this.copyAbsolutePath(file);
-					});
-			});
+			const showBoth = this.settings.menuDisplay === 'both';
+			const showWindows = this.settings.menuDisplay === 'windows';
+			const showLinuxMac = this.settings.menuDisplay === 'linux-mac';
+
+			if (showBoth || showWindows) {
+				menu.addItem((item) => {
+					item
+						.setTitle('Copy Absolute Windows Path')
+						.setIcon('folder-closed')
+						.setSection('shell-path-copy')
+						.onClick(async () => {
+							await this.copyAbsolutePath(file, 'windows');
+						});
+				});
+			}
+
+			if (showBoth || showLinuxMac) {
+				menu.addItem((item) => {
+					item
+						.setTitle('Copy Absolute Linux/Mac Path')
+						.setIcon('terminal')
+						.setSection('shell-path-copy')
+						.onClick(async () => {
+							await this.copyAbsolutePath(file, 'unix');
+						});
+				});
+			}
 		}
 
 		// Add file URL option ONLY on desktop and if enabled
@@ -222,12 +258,12 @@ export default class ShellPathCopyPlugin extends Plugin {
 		}
 	}
 
-	async copyAbsolutePath(file: TAbstractFile) {
+	async copyAbsolutePath(file: TAbstractFile, format: 'unix' | 'windows') {
 		try {
 			if (!navigator.clipboard) {
 				throw new Error('Clipboard API not available.');
 			}
-			
+
 			// Only attempt to get absolute path on desktop
 			// This is a failsafe - should never be reached on mobile since
 			// the command and menu items are not registered on mobile platforms
@@ -235,29 +271,37 @@ export default class ShellPathCopyPlugin extends Plugin {
 				new Notice('Absolute paths are not available on mobile devices.');
 				return;
 			}
-			
+
 			// Get the absolute system path using runtime check
 			const adapter = this.app.vault.adapter;
-			
+
 			// Check if the adapter has the method we need (duck typing)
-			if (!adapter || typeof (adapter as any).getFullRealPath !== 'function') {
+			if (!adapter || !this.hasGetFullRealPath(adapter)) {
 				throw new Error('getFullRealPath method not available on this platform.');
 			}
-			
-			// TypeScript doesn't know about getFullRealPath, so we need to cast
-			const absolutePath = (adapter as any).getFullRealPath(file.path);
-			
-			// Apply wrapping - use double quotes if setting is enabled, otherwise use general setting
-			const wrappedPath = this.settings.wrapAbsolutePathsInQuotes 
-				? `"${absolutePath}"` 
-				: this.wrapPath(absolutePath);
+
+			const absolutePath = adapter.getFullRealPath(file.path);
+
+			// Convert path format based on requested format
+			let formattedPath: string;
+			if (format === 'windows') {
+				// Convert to Windows format: replace forward slashes with backslashes
+				formattedPath = absolutePath.replace(/\//g, '\\');
+			} else {
+				// Convert to Unix format: replace backslashes with forward slashes
+				formattedPath = absolutePath.replace(/\\/g, '/');
+			}
+
+			// Apply user's preferred path wrapping
+			const wrappedPath = this.wrapPath(formattedPath);
 
 			// Copy to clipboard
 			await navigator.clipboard.writeText(wrappedPath);
 
 			// Show notification if enabled
 			if (this.settings.showNotifications) {
-				new Notice('Absolute path copied!');
+				const formatName = format === 'unix' ? 'Linux/Mac' : 'Windows';
+				new Notice(`Absolute ${formatName} path copied!`);
 			}
 		} catch (error) {
 			if (error instanceof Error && error.message.includes('Clipboard API')) {
@@ -283,14 +327,14 @@ export default class ShellPathCopyPlugin extends Plugin {
 			
 			// Get the absolute system path
 			const adapter = this.app.vault.adapter;
-			
+
 			// Check if the adapter has the method we need
-			if (!adapter || typeof (adapter as any).getFullRealPath !== 'function') {
+			if (!adapter || !this.hasGetFullRealPath(adapter)) {
 				throw new Error('getFullRealPath method not available on this platform.');
 			}
-			
+
 			// Get the absolute path
-			const absolutePath = (adapter as any).getFullRealPath(file.path);
+			const absolutePath = adapter.getFullRealPath(file.path);
 			
 			// Convert to file:// URL format
 			let fileUrl: string;
@@ -330,6 +374,13 @@ export default class ShellPathCopyPlugin extends Plugin {
 				new Notice('Failed to copy file URL. See console for details.');
 			}
 		}
+	}
+
+	private hasGetFullRealPath(adapter: unknown): adapter is ExtendedFileSystemAdapter {
+		return typeof adapter === 'object' &&
+			   adapter !== null &&
+			   'getFullRealPath' in adapter &&
+			   typeof (adapter as Record<string, unknown>).getFullRealPath === 'function';
 	}
 
 	private wrapPath(path: string): string {
@@ -407,9 +458,10 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 			cls: 'setting-item-heading'
 		});
 		const examplesDiv = containerEl.createEl('div', { cls: 'setting-item-description' });
-		examplesDiv.createEl('div', { text: '• Linux/Mac: /folder/subfolder/file.md' });
-		examplesDiv.createEl('div', { text: '• Windows: \\folder\\subfolder\\file.md' });
-		examplesDiv.createEl('div', { text: '• Absolute: C:\\Users\\name\\vault\\folder\\file.md (Windows) or /home/user/vault/folder/file.md (Linux/Mac)' });
+		examplesDiv.createEl('div', { text: '• Relative Linux/Mac: /folder/subfolder/file.md' });
+		examplesDiv.createEl('div', { text: '• Relative Windows: \\folder\\subfolder\\file.md' });
+		examplesDiv.createEl('div', { text: '• Absolute Windows: C:\\Users\\name\\vault\\folder\\file.md' });
+		examplesDiv.createEl('div', { text: '• Absolute Linux/Mac: /home/user/vault/folder/file.md' });
 		examplesDiv.createEl('div', { text: '• File URL: file:///C:/Users/name/vault/folder/file.md (Windows) or file:///home/user/vault/folder/file.md (Linux/Mac)' });
 		
 		containerEl.createEl('br');
@@ -447,8 +499,8 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 		// Show absolute path setting (only on desktop)
 		if (!Platform.isMobile) {
 			new Setting(containerEl)
-				.setName('Show absolute path option')
-				.setDesc('Display the absolute path copy option in menus (Desktop only)')
+				.setName('Show absolute path options')
+				.setDesc('Display absolute path copy options in menus (Desktop only). Absolute paths will use the path wrapping setting above.')
 				.addToggle(toggle => toggle
 					.setValue(this.plugin.settings.showAbsolutePath)
 					.onChange(async (value) => {
@@ -456,19 +508,6 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 						new Notice('Please reload Obsidian for command palette changes to take effect');
 					}));
-
-			// Wrap absolute paths in quotes setting (only show if absolute paths are enabled)
-			if (this.plugin.settings.showAbsolutePath) {
-				new Setting(containerEl)
-					.setName('Wrap absolute paths in quotes')
-					.setDesc('Always wrap absolute paths in double quotes (recommended for paths with spaces)')
-					.addToggle(toggle => toggle
-						.setValue(this.plugin.settings.wrapAbsolutePathsInQuotes)
-						.onChange(async (value) => {
-							this.plugin.settings.wrapAbsolutePathsInQuotes = value;
-							await this.plugin.saveSettings();
-						}));
-			}
 
 			// Show file URL setting (desktop only)
 			new Setting(containerEl)
