@@ -33,6 +33,9 @@ Shell Path Copy offers a comprehensive set of features designed to streamline yo
       * Linux and macOS: `file:///home/user/Documents/Obsidian/MyVault/doc/file.md`
       * Automatically handles platform-specific formatting
       * URL-encodes special characters for compatibility
+   * **Markdown Link format**:
+      * Wiki-style: `[[filename]]` (default, perfect for Obsidian)
+      * Standard markdown: `[filename.md](/path/filename.md)` (universal compatibility)
 * **Configurable display options**: Choose which path formats appear in menus:
    * Show both Windows and Linux/Mac options (default)
    * Show Windows options only
@@ -46,13 +49,17 @@ Shell Path Copy offers a comprehensive set of features designed to streamline yo
 
 # Installation
 
-## From Obsidian Community Plugins
+## From Obsidian Community Plugins (Recommended)
 
-This plugin is pending submission to the official Obsidian plugin repository.
+1. Open Obsidian Settings
+2. Navigate to **Community plugins**
+3. Click **Browse** to open the Community Plugins browser
+4. Search for **"Shell Path Copy"**
+5. Click **Install**, then **Enable**
 
-## Using BRAT (Beta Reviewers Auto-update Tool)
+## Using BRAT (For Beta Testing)
 
-This is an interim installation method until the plugin is available in the official Obsidian community plugins.
+Use BRAT if you want to test beta or pre-release versions:
 
 1. Install the BRAT plugin from Community Plugins
 2. Open BRAT settings and click "Add Beta Plugin"
@@ -81,6 +88,7 @@ Shell Path Copy provides flexible ways to copy paths:
    * **Copy Windows Path**: For Windows systems (e.g., `\folder\file.md`)
    * **Copy Absolute Path**: For the full system path (Desktop Only)
    * **Copy as file:// URL**: For file URL format (Desktop Only)
+   * **Copy as Markdown Link**: For documentation and note-taking (e.g., `[[filename]]` or `[filename.md](path)`)
 4. The path is copied to your clipboard, wrapped in backticks by default.
 5. Paste it anywhere you need!
 
@@ -88,11 +96,12 @@ Shell Path Copy provides flexible ways to copy paths:
 
 1. Open the Command Palette (Ctrl/Cmd+P).
 2. Type "Shell Path Copy" or "Copy Path" to filter commands.
-3. Available commands depend on your Menu Display setting:
+3. Available commands depend on your settings:
    * "Shell Path Copy: Copy as Linux/Mac path" (shown when set to "both" or "Linux/Mac only")
    * "Shell Path Copy: Copy as Windows path" (shown when set to "both" or "Windows only")
    * "Shell Path Copy: Copy as absolute path" (Desktop only)
    * "Shell Path Copy: Copy as file:// URL" (Desktop only)
+   * "Shell Path Copy: Copy as markdown link" (when enabled in settings)
 4. The path of the currently active file (or focused file in the explorer) will be copied.
 
 # Example: The Remote Workflow
@@ -127,9 +136,26 @@ Example outputs:
 * **Linux**: `file:///home/john/Documents/vault/note.md`
 * **macOS**: `file:///Users/john/Documents/vault/note.md`
 
+# Markdown Link Format
+
+For users who want to create internal links or documentation:
+
+1. Right-click any file in the file explorer
+2. Select "Copy as Markdown Link"
+3. Choose your preferred format in settings:
+   * **Wiki-style** (default): `[[My Document]]` - Perfect for Obsidian internal linking
+   * **Standard markdown**: `[My Document.md](/folder/My Document.md)` - Universal markdown compatibility
+
+This is particularly useful for:
+* Creating internal note references in Obsidian
+* Documentation that uses markdown formatting
+* Cross-referencing files in project notes
+* Building linked knowledge bases
+
 # Example Use Cases
 
-* Sharing file locations with AI Assistants like "Claude Code or Gemini CLI
+* Sharing file locations with AI Assistants like Claude Code or Gemini CLI
+* Creating internal note references and linked knowledge bases
 * Documenting file structures in notes
 * Creating file references in technical documentation
 * Quick file path sharing in team communications
@@ -145,6 +171,8 @@ Access plugin settings via Settings → Plugin Options → Shell Path Copy:
    * Show Linux/Mac options only
 * **Show Absolute Path Option** (Desktop only): Toggle whether the absolute path copy option appears in menus
 * **Show file:// URL option** (Desktop only): Toggle whether the file:// URL copy option appears in menus
+* **Show Markdown Link Option**: Toggle whether the markdown link copy option appears in menus
+* **Markdown Link Format**: Choose between wiki-style (`[[filename]]`) and standard markdown (`[filename](path)`) formats
 * **Show Notifications**: Toggle success notifications on/off
 
 # Development
