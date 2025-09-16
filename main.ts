@@ -8,6 +8,8 @@ interface PathCopySettings {
 	menuDisplay: 'both' | 'windows' | 'linux-mac';
 	showAbsolutePath: boolean;
 	showFileUrl: boolean;
+	showMarkdownLink: boolean;
+	markdownLinkFormat: 'wiki-style' | 'standard-markdown';
 }
 
 const DEFAULT_SETTINGS: PathCopySettings = {
@@ -15,7 +17,9 @@ const DEFAULT_SETTINGS: PathCopySettings = {
 	showNotifications: true,
 	menuDisplay: 'both',
 	showAbsolutePath: true,
-	showFileUrl: true
+	showFileUrl: true,
+	showMarkdownLink: true,
+	markdownLinkFormat: 'wiki-style'
 }
 
 export default class ShellPathCopyPlugin extends Plugin {
@@ -113,6 +117,20 @@ export default class ShellPathCopyPlugin extends Plugin {
 				}
 			});
 		}
+
+		// Add markdown link command if enabled
+		if (this.settings.showMarkdownLink) {
+			this.addCommand({
+				id: 'copy-markdown-link',
+				name: 'Copy as markdown link',
+				callback: () => {
+					const file = this.getActiveOrFocusedFile();
+					if (file) {
+						this.copyMarkdownLink(file);
+					}
+				}
+			});
+		}
 	}
 
 	private createPathMenuItem(menu: Menu, file: TAbstractFile, format: 'unix' | 'windows') {
@@ -174,6 +192,19 @@ export default class ShellPathCopyPlugin extends Plugin {
 					.setSection('shell-path-copy')
 					.onClick(async () => {
 						await this.copyFileUrl(file);
+					});
+			});
+		}
+
+		// Add markdown link option if enabled
+		if (this.settings.showMarkdownLink) {
+			menu.addItem((item) => {
+				item
+					.setTitle('Copy as Markdown Link')
+					.setIcon('link')
+					.setSection('shell-path-copy')
+					.onClick(async () => {
+						await this.copyMarkdownLink(file);
 					});
 			});
 		}
@@ -337,6 +368,59 @@ export default class ShellPathCopyPlugin extends Plugin {
 		}
 	}
 
+	async copyMarkdownLink(file: TAbstractFile) {
+		try {
+			if (!navigator.clipboard) {
+				throw new Error('Clipboard API not available.');
+			}
+
+			// Get the filename without extension for display text
+			const fileName = file.name;
+			const fileNameWithoutExt = fileName.includes('.') ?
+				fileName.substring(0, fileName.lastIndexOf('.')) :
+				fileName;
+
+			let markdownLink: string;
+
+			if (this.settings.markdownLinkFormat === 'wiki-style') {
+				// Obsidian wiki-style: [[filename]]
+				markdownLink = `[[${fileNameWithoutExt}]]`;
+			} else {
+				// Standard markdown: [filename](path)
+				let path = file.path;
+
+				// Ensure paths start with forward slash for consistency
+				if (path && !path.startsWith('/')) {
+					path = '/' + path;
+				}
+
+				// Handle vault root (empty path)
+				if (!file.path) {
+					path = '/';
+				}
+
+				markdownLink = `[${fileName}](${path})`;
+			}
+
+			// Copy to clipboard
+			await navigator.clipboard.writeText(markdownLink);
+
+			// Show notification if enabled
+			if (this.settings.showNotifications) {
+				const formatName = this.settings.markdownLinkFormat === 'wiki-style' ?
+					'Wiki-style link' : 'Markdown link';
+				new Notice(`${formatName} copied!`);
+			}
+		} catch (error) {
+			if (error instanceof Error && error.message.includes('Clipboard API')) {
+				new Notice('Error: Clipboard API is not available in this environment.');
+			} else {
+				console.error('Shell Path Copy: Failed to copy markdown link:', error);
+				new Notice('Failed to copy markdown link. See console for details.');
+			}
+		}
+	}
+
 	private hasGetFullRealPath(adapter: unknown): adapter is ExtendedFileSystemAdapter {
 		return typeof adapter === 'object' &&
 			   adapter !== null &&
@@ -424,6 +508,7 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 		examplesDiv.createEl('div', { text: '• Absolute Windows: C:\\Users\\name\\vault\\folder\\file.md' });
 		examplesDiv.createEl('div', { text: '• Absolute Linux/Mac: /home/user/vault/folder/file.md' });
 		examplesDiv.createEl('div', { text: '• File URL: file:///C:/Users/name/vault/folder/file.md (Windows) or file:///home/user/vault/folder/file.md (Linux/Mac)' });
+		examplesDiv.createEl('div', { text: '• Markdown Link: [[filename]] (wiki-style) or [filename.md](/path/filename.md) (standard)' });
 		
 		containerEl.createEl('br');
 
@@ -480,6 +565,33 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 						this.plugin.settings.showFileUrl = value;
 						await this.plugin.saveSettings();
 						new Notice('Please reload Obsidian for command palette changes to take effect');
+					}));
+		}
+
+		// Show markdown link setting
+		new Setting(containerEl)
+			.setName('Show markdown link option')
+			.setDesc('Display the markdown link copy option in menus')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.showMarkdownLink)
+				.onChange(async (value) => {
+					this.plugin.settings.showMarkdownLink = value;
+					await this.plugin.saveSettings();
+					new Notice('Please reload Obsidian for command palette changes to take effect');
+				}));
+
+		// Markdown link format setting (only show if markdown links are enabled)
+		if (this.plugin.settings.showMarkdownLink) {
+			new Setting(containerEl)
+				.setName('Markdown link format')
+				.setDesc('Choose the format for markdown links')
+				.addDropdown(dropdown => dropdown
+					.addOption('wiki-style', 'Wiki-style - [[filename]]')
+					.addOption('standard-markdown', 'Standard markdown - [filename](path)')
+					.setValue(this.plugin.settings.markdownLinkFormat)
+					.onChange(async (value) => {
+						this.plugin.settings.markdownLinkFormat = value as PathCopySettings['markdownLinkFormat'];
+						await this.plugin.saveSettings();
 					}));
 		}
 

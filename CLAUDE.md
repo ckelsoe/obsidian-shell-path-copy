@@ -8,7 +8,34 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **NEVER revert to older code versions** unless explicitly instructed by the user
 - **NEVER change UI/UX elements** that have been approved in previous releases unless specifically asked
 - **ALWAYS preserve existing functionality** when adding new features
+- **NEVER EVER use 'as any' casting** - if TypeScript types are missing, create proper type declarations in types.d.ts instead
 - The settings page format in v1.13.0 was specifically approved by Obsidian reviewers - DO NOT modify it
+
+### Obsidian Official Guidelines - CRITICAL COMPLIANCE
+All code changes MUST follow these official Obsidian guidelines:
+
+**Plugin Development Documentation:**
+1. **Build a Plugin**: https://docs.obsidian.md/Plugins/Getting+started/Build+a+plugin
+2. **Anatomy of a Plugin**: https://docs.obsidian.md/Plugins/Getting+started/Anatomy+of+a+plugin
+3. **Development Workflow**: https://docs.obsidian.md/Plugins/Getting+started/Development+workflow
+4. **Mobile Development**: https://docs.obsidian.md/Plugins/Getting+started/Mobile+development
+5. **Use React in Plugin**: https://docs.obsidian.md/Plugins/Getting+started/Use+React+in+your+plugin
+6. **Use Svelte in Plugin**: https://docs.obsidian.md/Plugins/Getting+started/Use+Svelte+in+your+plugin
+
+**Plugin Optimization & Best Practices:**
+7. **Optimizing Load Time**: https://docs.obsidian.md/Plugins/Guides/Optimizing+plugin+load+time
+8. **Understanding Deferred Views**: https://docs.obsidian.md/Plugins/Guides/Understanding+deferred+views
+
+**Release & Submission:**
+9. **Plugin Guidelines**: https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines
+10. **Release Process**: https://docs.obsidian.md/Plugins/Releasing/Release+your+plugin+with+GitHub+Actions
+11. **Submission Requirements**: https://docs.obsidian.md/Plugins/Releasing/Submission+requirements+for+plugins
+
+**Style & Writing:**
+12. **Style Guide**: https://help.obsidian.md/style-guide
+13. **Writing Style**: https://docs.openedx.org/en/latest/documentors/references/doc_english_writing.html
+
+**MANDATORY**: Read and follow ALL Obsidian plugin documentation (https://docs.obsidian.md/Plugins) before making ANY changes to code, documentation, or plugin metadata.
 
 ## Development Commands
 
