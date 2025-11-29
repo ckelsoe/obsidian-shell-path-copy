@@ -300,4 +300,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 If you find this plugin helpful, consider:
 
 * ⭐ Starring the repository on GitHub
-* 🐛 Reporting bugs or suggesting features via [GitHub Issues](https://github.com/ckelsoe/obsidian-shell-path-copy/issues)
+* Reporting bugs or suggesting features via [GitHub Issues](https://github.com/ckelsoe/obsidian-shell-path-copy/issues)
