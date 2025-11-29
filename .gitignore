@@ -20,9 +20,17 @@ data.json
 # Exclude macOS Finder (System Explorer) View States
 .DS_Store
 
-# Claude-specific files
+# AI assistant files
 .claude
 CLAUDE.md
+WARP.md
+
+# Local Obsidian workspace
+.obsidian/
+
+# Screenshots and images (add specific ones to repo if needed)
+Selection_*.png
+*.screenshot.png
 
 # Backup files
 main_backup.ts
