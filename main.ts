@@ -8,6 +8,7 @@ interface PathCopySettings {
 	menuDisplay: 'both' | 'windows' | 'linux-mac';
 	showAbsolutePath: boolean;
 	showFileUrl: boolean;
+	showObsidianUrl: boolean;
 	showMarkdownLink: boolean;
 	markdownLinkFormat: 'wiki-style' | 'standard-markdown';
 }
@@ -18,6 +19,7 @@ const DEFAULT_SETTINGS: PathCopySettings = {
 	menuDisplay: 'both',
 	showAbsolutePath: true,
 	showFileUrl: true,
+	showObsidianUrl: true,
 	showMarkdownLink: true,
 	markdownLinkFormat: 'wiki-style'
 }
@@ -118,6 +120,20 @@ export default class ShellPathCopyPlugin extends Plugin {
 			});
 		}
 
+		// Add Obsidian URL command if enabled
+		if (this.settings.showObsidianUrl) {
+			this.addCommand({
+				id: 'copy-obsidian-url',
+				name: 'Copy as Obsidian URL',
+				callback: () => {
+					const file = this.getActiveOrFocusedFile();
+					if (file) {
+						this.copyObsidianUrl(file);
+					}
+				}
+			});
+		}
+
 		// Add markdown link command if enabled
 		if (this.settings.showMarkdownLink) {
 			this.addCommand({
@@ -192,6 +208,19 @@ export default class ShellPathCopyPlugin extends Plugin {
 					.setSection('shell-path-copy')
 					.onClick(async () => {
 						await this.copyFileUrl(file);
+					});
+			});
+		}
+
+		// Add Obsidian URL option if enabled
+		if (this.settings.showObsidianUrl) {
+			menu.addItem((item) => {
+				item
+					.setTitle('Copy as Obsidian URL')
+					.setIcon('link-2')
+					.setSection('shell-path-copy')
+					.onClick(async () => {
+						await this.copyObsidianUrl(file);
 					});
 			});
 		}
@@ -421,6 +450,45 @@ export default class ShellPathCopyPlugin extends Plugin {
 		}
 	}
 
+	async copyObsidianUrl(file: TAbstractFile) {
+		try {
+			if (!navigator.clipboard) {
+				throw new Error('Clipboard API not available.');
+			}
+
+			// Get vault name
+			const vaultName = this.app.vault.getName();
+			
+			// Get file path (remove .md extension as Obsidian doesn't require it)
+			let filePath = file.path;
+			if (filePath.endsWith('.md')) {
+				filePath = filePath.slice(0, -3);
+			}
+			
+			// URL encode both vault name and file path
+			const encodedVault = encodeURIComponent(vaultName);
+			const encodedFile = encodeURIComponent(filePath);
+			
+			// Construct Obsidian URL
+			const obsidianUrl = `obsidian://open?vault=${encodedVault}&file=${encodedFile}`;
+			
+			// Copy to clipboard
+			await navigator.clipboard.writeText(obsidianUrl);
+			
+			// Show notification if enabled
+			if (this.settings.showNotifications) {
+				new Notice('Obsidian URL copied!');
+			}
+		} catch (error) {
+			if (error instanceof Error && error.message.includes('Clipboard API')) {
+				new Notice('Error: Clipboard API is not available in this environment.');
+			} else {
+				console.error('Shell Path Copy: Failed to copy Obsidian URL:', error);
+				new Notice('Failed to copy Obsidian URL. See console for details.');
+			}
+		}
+	}
+
 	private hasGetFullRealPath(adapter: unknown): adapter is ExtendedFileSystemAdapter {
 		return typeof adapter === 'object' &&
 			   adapter !== null &&
@@ -508,6 +576,7 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 		examplesDiv.createEl('div', { text: '• Absolute Windows: C:\\Users\\name\\vault\\folder\\file.md' });
 		examplesDiv.createEl('div', { text: '• Absolute Linux/Mac: /home/user/vault/folder/file.md' });
 		examplesDiv.createEl('div', { text: '• File URL: file:///C:/Users/name/vault/folder/file.md (Windows) or file:///home/user/vault/folder/file.md (Linux/Mac)' });
+		examplesDiv.createEl('div', { text: '• Obsidian URL: obsidian://open?vault=MyVault&file=folder/file' });
 		examplesDiv.createEl('div', { text: '• Markdown Link: [[filename]] (wiki-style) or [filename.md](/path/filename.md) (standard)' });
 		
 		containerEl.createEl('br');
@@ -567,6 +636,18 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 						new Notice('Please reload Obsidian for command palette changes to take effect');
 					}));
 		}
+
+		// Show Obsidian URL setting
+		new Setting(containerEl)
+			.setName('Show Obsidian URL option')
+			.setDesc('Display the Obsidian URL copy option in menus')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.showObsidianUrl)
+				.onChange(async (value) => {
+					this.plugin.settings.showObsidianUrl = value;
+					await this.plugin.saveSettings();
+					new Notice('Please reload Obsidian for command palette changes to take effect');
+				}));
 
 		// Show markdown link setting
 		new Setting(containerEl)

@@ -33,6 +33,10 @@ Shell Path Copy offers a comprehensive set of features designed to streamline yo
       * Linux and macOS: `file:///home/user/Documents/Obsidian/MyVault/doc/file.md`
       * Automatically handles platform-specific formatting
       * URL-encodes special characters for compatibility
+   * **Obsidian URL format**:
+      * `obsidian://open?vault=MyVault&file=doc/file`
+      * Works on all platforms (desktop and mobile)
+      * Perfect for cross-linking from other applications
    * **Markdown Link format**:
       * Wiki-style: `[[filename]]` (default, perfect for Obsidian)
       * Standard markdown: `[filename.md](/path/filename.md)` (universal compatibility)
@@ -88,6 +92,7 @@ Shell Path Copy provides flexible ways to copy paths:
    * **Copy Windows Path**: For Windows systems (e.g., `\folder\file.md`)
    * **Copy Absolute Path**: For the full system path (Desktop Only)
    * **Copy as file:// URL**: For file URL format (Desktop Only)
+   * **Copy as Obsidian URL**: For obsidian:// protocol links
    * **Copy as Markdown Link**: For documentation and note-taking (e.g., `[[filename]]` or `[filename.md](path)`)
 4. The path is copied to your clipboard, wrapped in backticks by default.
 5. Paste it anywhere you need!
@@ -101,6 +106,7 @@ Shell Path Copy provides flexible ways to copy paths:
    * "Shell Path Copy: Copy as Windows path" (shown when set to "both" or "Windows only")
    * "Shell Path Copy: Copy as absolute path" (Desktop only)
    * "Shell Path Copy: Copy as file:// URL" (Desktop only)
+   * "Shell Path Copy: Copy as Obsidian URL" (when enabled in settings)
    * "Shell Path Copy: Copy as markdown link" (when enabled in settings)
 4. The path of the currently active file (or focused file in the explorer) will be copied.
 
@@ -136,6 +142,23 @@ Example outputs:
 * **Linux**: `file:///home/john/Documents/vault/note.md`
 * **macOS**: `file:///Users/john/Documents/vault/note.md`
 
+# Obsidian URL Format
+
+For users who want to create clickable links that open files directly in Obsidian:
+
+1. Right-click any file in the file explorer
+2. Select "Copy as Obsidian URL"
+3. The full obsidian:// URL is copied to your clipboard
+
+This is particularly useful for:
+* Creating links from task managers (Todoist, OmniFocus, etc.)
+* Linking from external documentation or wikis
+* Building automation workflows
+* Cross-app integration
+
+Example output:
+* `obsidian://open?vault=MyVault&file=Projects/Project%20Plan`
+
 # Markdown Link Format
 
 For users who want to create internal links or documentation:
@@ -151,6 +174,39 @@ This is particularly useful for:
 * Documentation that uses markdown formatting
 * Cross-referencing files in project notes
 * Building linked knowledge bases
+
+# Compatibility with Notebook Navigator
+
+[Notebook Navigator](https://github.com/johansan/notebook-navigator) is a popular plugin that replaces Obsidian's default file explorer with an enhanced interface. If you use Notebook Navigator, you'll find that it includes some built-in path copying functionality.
+
+## Feature Comparison
+
+| Feature | Shell Path Copy | Notebook Navigator |
+|---------|----------------|-------------------|
+| Copy vault-relative path | ✅ Linux/Mac & Windows formats | ✅ Single format |
+| Copy absolute path | ✅ With configurable wrapping | ✅ Without wrapping |
+| Copy file:// URL | ✅ | ❌ |
+| Copy Obsidian URL | ✅ | ✅ |
+| Copy markdown link | ✅ Wiki-style & standard | ❌ |
+| Configurable path wrapping | ✅ (backticks, quotes, none) | ❌ |
+| Platform-specific formats | ✅ (Windows vs Linux/Mac) | ❌ |
+
+## Using Shell Path Copy with Notebook Navigator
+
+Shell Path Copy's context menu items only appear in Obsidian's native file explorer. However, you can still access all functionality through the **Command Palette** (`Ctrl/Cmd+P`):
+
+- "Shell Path Copy: Copy as Linux/Mac path"
+- "Shell Path Copy: Copy as Windows path"
+- "Shell Path Copy: Copy as absolute path"
+- "Shell Path Copy: Copy as file:// URL"
+- "Shell Path Copy: Copy as Obsidian URL"
+- "Shell Path Copy: Copy as markdown link"
+
+These commands work on the currently active file or the focused file in either file explorer.
+
+## Future Integration
+
+We have no current plans to integrate directly with Notebook Navigator's context menus. If you would like to see deeper integration between these plugins, please [open an issue](https://github.com/ckelsoe/obsidian-shell-path-copy/issues) describing your use case. We'll consider investigating integration options if there is sufficient community interest.
 
 # Example Use Cases
 
@@ -171,6 +227,7 @@ Access plugin settings via Settings → Plugin Options → Shell Path Copy:
    * Show Linux/Mac options only
 * **Show Absolute Path Option** (Desktop only): Toggle whether the absolute path copy option appears in menus
 * **Show file:// URL option** (Desktop only): Toggle whether the file:// URL copy option appears in menus
+* **Show Obsidian URL Option**: Toggle whether the Obsidian URL copy option appears in menus
 * **Show Markdown Link Option**: Toggle whether the markdown link copy option appears in menus
 * **Markdown Link Format**: Choose between wiki-style (`[[filename]]`) and standard markdown (`[filename](path)`) formats
 * **Show Notifications**: Toggle success notifications on/off
