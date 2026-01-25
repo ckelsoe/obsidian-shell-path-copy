@@ -1,4 +1,4 @@
-import { App, Menu, Notice, Plugin, PluginSettingTab, Setting, TAbstractFile, Platform, FileSystemAdapter } from 'obsidian';
+import { App, Menu, Notice, Plugin, PluginSettingTab, Setting, TAbstractFile, Platform } from 'obsidian';
 import { ExtendedFileSystemAdapter } from './types';
 
 
