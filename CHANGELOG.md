@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.0] - 2026-01-25
+
+### Fixed
+- **Relative paths now use proper `./` prefix** ([#6](https://github.com/ckelsoe/obsidian-shell-path-copy/issues/6))
+  - Linux/Mac paths correctly start with `./` (e.g., `./folder/file.md`)
+  - Windows paths correctly start with `.\` (e.g., `.\folder\file.md`)
+  - Ensures shell commands work correctly when executed from the vault root
+
+### Added
+- CI workflow with automated checks (TypeScript, ESLint, build verification)
+- Obsidian manifest validation in CI
+
+### Changed
+- Migrated ESLint to v9 flat config format
+- Updated GitHub Actions to v4
+
 ## [1.15.0] - 2025-11-29
 
 ### Added
@@ -90,7 +106,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Success notifications
 - Works on desktop and mobile platforms
 
-[unreleased]: https://github.com/ckelsoe/obsidian-shell-path-copy/compare/1.15.0...HEAD
+[unreleased]: https://github.com/ckelsoe/obsidian-shell-path-copy/compare/1.16.0...HEAD
+[1.16.0]: https://github.com/ckelsoe/obsidian-shell-path-copy/compare/1.15.0...1.16.0
 [1.15.0]: https://github.com/ckelsoe/obsidian-shell-path-copy/compare/1.14.0...1.15.0
 [1.14.0]: https://github.com/ckelsoe/obsidian-shell-path-copy/compare/1.13.0...1.14.0
 [1.13.0]: https://github.com/ckelsoe/obsidian-shell-path-copy/compare/1.12.0...1.13.0
