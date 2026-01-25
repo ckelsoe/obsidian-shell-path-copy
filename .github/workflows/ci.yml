@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit --skipLibCheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Validate Obsidian manifest
+        uses: obsidianmd/obsidian-plugin-validator@main
+
+      - name: Check bundle size
+        run: |
+          SIZE=$(stat -c%s main.js 2>/dev/null || stat -f%z main.js)
+          echo "Bundle size: $SIZE bytes ($(echo "scale=2; $SIZE/1024" | bc) KB)"
+          if [ "$SIZE" -gt 500000 ]; then
+            echo "::warning::Bundle size exceeds 500KB"
+          fi
