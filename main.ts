@@ -252,20 +252,20 @@ export default class ShellPathCopyPlugin extends Plugin {
 			if (format === 'windows') {
 				// Replace forward slashes with backslashes
 				path = path.replace(/\//g, '\\');
-				// Add leading backslash
-				if (path && !path.startsWith('\\')) {
-					path = '\\' + path;
+				// Add relative path prefix (.\ for current directory)
+				if (path && !path.startsWith('.\\')) {
+					path = '.\\' + path;
 				}
 			} else {
-				// Ensure paths start with forward slash
-				if (path && !path.startsWith('/')) {
-					path = '/' + path;
+				// Add relative path prefix (./ for current directory)
+				if (path && !path.startsWith('./')) {
+					path = './' + path;
 				}
 			}
 
 			// Handle vault root (empty path)
 			if (!file.path) {
-				path = format === 'windows' ? '\\' : '/';
+				path = format === 'windows' ? '.\\' : './';
 			}
 
 			// Apply wrapping
@@ -418,14 +418,14 @@ export default class ShellPathCopyPlugin extends Plugin {
 				// Standard markdown: [filename](path)
 				let path = file.path;
 
-				// Ensure paths start with forward slash for consistency
-				if (path && !path.startsWith('/')) {
-					path = '/' + path;
+				// Add relative path prefix for standard markdown links
+				if (path && !path.startsWith('./')) {
+					path = './' + path;
 				}
 
 				// Handle vault root (empty path)
 				if (!file.path) {
-					path = '/';
+					path = './';
 				}
 
 				markdownLink = `[${fileName}](${path})`;
@@ -571,13 +571,13 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 			cls: 'setting-item-heading'
 		});
 		const examplesDiv = containerEl.createEl('div', { cls: 'setting-item-description' });
-		examplesDiv.createEl('div', { text: '• Relative Linux/Mac: /folder/subfolder/file.md' });
-		examplesDiv.createEl('div', { text: '• Relative Windows: \\folder\\subfolder\\file.md' });
+		examplesDiv.createEl('div', { text: '• Relative Linux/Mac: ./folder/subfolder/file.md' });
+		examplesDiv.createEl('div', { text: '• Relative Windows: .\\folder\\subfolder\\file.md' });
 		examplesDiv.createEl('div', { text: '• Absolute Windows: C:\\Users\\name\\vault\\folder\\file.md' });
 		examplesDiv.createEl('div', { text: '• Absolute Linux/Mac: /home/user/vault/folder/file.md' });
 		examplesDiv.createEl('div', { text: '• File URL: file:///C:/Users/name/vault/folder/file.md (Windows) or file:///home/user/vault/folder/file.md (Linux/Mac)' });
 		examplesDiv.createEl('div', { text: '• Obsidian URL: obsidian://open?vault=MyVault&file=folder/file' });
-		examplesDiv.createEl('div', { text: '• Markdown Link: [[filename]] (wiki-style) or [filename.md](/path/filename.md) (standard)' });
+		examplesDiv.createEl('div', { text: '• Markdown Link: [[filename]] (wiki-style) or [filename.md](./path/filename.md) (standard)' });
 		
 		containerEl.createEl('br');
 
