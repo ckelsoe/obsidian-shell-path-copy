@@ -33,7 +33,28 @@ jobs:
         run: npm run build
 
       - name: Validate Obsidian manifest
-        uses: obsidianmd/obsidian-plugin-validator@main
+        run: |
+          echo "Validating manifest.json..."
+          # Check required fields exist
+          for field in id name version minAppVersion description author; do
+            if ! jq -e ".$field" manifest.json > /dev/null 2>&1; then
+              echo "::error::Missing required field: $field"
+              exit 1
+            fi
+          done
+          # Check version format (semver)
+          VERSION=$(jq -r '.version' manifest.json)
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-.*)?$ ]]; then
+            echo "::error::Invalid version format: $VERSION"
+            exit 1
+          fi
+          # Check versions.json exists and contains current version
+          if [ -f versions.json ]; then
+            if ! jq -e ".[\"$VERSION\"]" versions.json > /dev/null 2>&1; then
+              echo "::warning::Version $VERSION not found in versions.json"
+            fi
+          fi
+          echo "Manifest validation passed"
 
       - name: Check bundle size
         run: |
