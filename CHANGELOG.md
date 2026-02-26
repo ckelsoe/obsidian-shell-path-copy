@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added 37 unit tests covering `wrapPath`, `formatRelativePath`, `buildFileUrl`, `buildObsidianUrl`, and `buildMarkdownLink`
 - CI now runs the test suite on every push and pull request
 - CI now scans for known deprecated Obsidian API usage
+- Release workflow now runs tests before building — a failing test prevents a release from being created
 
 ## [1.16.0] - 2026-01-25
 
