@@ -23,10 +23,13 @@ jobs:
           node-version: "18"
           cache: "npm"
 
-      - name: Build plugin
+      - name: Test
         run: |
           npm install
-          npm run build
+          npm test
+
+      - name: Build plugin
+        run: npm run build
 
       - name: Create release
         env:
