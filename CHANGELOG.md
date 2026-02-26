@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.1] - 2026-02-26
+
+### Fixed
+- **Absolute path copy now works on Windows** ([#7](https://github.com/ckelsoe/obsidian-shell-path-copy/issues/7))
+  - Replaced internal Obsidian API (`getFullRealPath`) that was unavailable on Windows with the public `FileSystemAdapter.getBasePath()` + `path.join()`, which works correctly on all platforms
+- **Windows file:// URLs no longer encode the drive letter colon**
+  - `C:` was incorrectly encoded as `C%3A`, producing invalid URLs; the drive letter is now preserved verbatim
+
+### Removed
+- Dropped unreliable file-explorer DOM querying used by command palette commands to detect which file was focused in the sidebar
+  - The approach relied on internal Obsidian CSS class names that could silently break on Obsidian updates, and was ineffective in practice since opening the command palette shifts keyboard focus away from the explorer
+  - Command palette commands now require an open file; if none is open, a clear notice is shown: *"Open a file or right-click it in the file explorer"*
+
+### Technical
+- Extracted all path-formatting logic into pure functions (`path-utils.ts`) with no Obsidian dependency, making them independently testable
+- Added 37 unit tests covering `wrapPath`, `formatRelativePath`, `buildFileUrl`, `buildObsidianUrl`, and `buildMarkdownLink`
+- CI now runs the test suite on every push and pull request
+- CI now scans for known deprecated Obsidian API usage
+
 ## [1.16.0] - 2026-01-25
 
 ### Fixed
