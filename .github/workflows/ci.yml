@@ -29,6 +29,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Test
+        run: npm test
+
       - name: Build
         run: npm run build
 
@@ -55,6 +58,41 @@ jobs:
             fi
           fi
           echo "Manifest validation passed"
+
+      - name: Check for deprecated Obsidian API usage
+        run: |
+          echo "Scanning for known deprecated Obsidian APIs..."
+          FOUND=0
+
+          # workspace.activeLeaf — deprecated, use getActiveViewOfType()
+          if grep -n "\.activeLeaf\b" main.ts; then
+            echo "::error::Deprecated API: 'activeLeaf'. Use getActiveViewOfType() or getLeaf() instead."
+            FOUND=1
+          fi
+
+          # MarkdownRenderer.renderMarkdown — deprecated, use MarkdownRenderer.render()
+          if grep -n "renderMarkdown(" main.ts; then
+            echo "::error::Deprecated API: 'renderMarkdown'. Use MarkdownRenderer.render() instead."
+            FOUND=1
+          fi
+
+          # getLeaf() with a boolean argument — deprecated, use getLeaf('tab') etc.
+          if grep -n "getLeaf(true)\|getLeaf(false)" main.ts; then
+            echo "::error::Deprecated API: 'getLeaf(bool)'. Use getLeaf('tab') or getLeaf('split') instead."
+            FOUND=1
+          fi
+
+          # Notice.noticeEl — deprecated, use Notice.messageEl
+          if grep -n "\.noticeEl\b" main.ts; then
+            echo "::error::Deprecated API: 'noticeEl'. Use 'messageEl' instead."
+            FOUND=1
+          fi
+
+          if [ "$FOUND" -eq 0 ]; then
+            echo "No deprecated Obsidian API usage found."
+          else
+            exit 1
+          fi
 
       - name: Check bundle size
         run: |

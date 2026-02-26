@@ -1,16 +1,17 @@
-import { App, Menu, Notice, Plugin, PluginSettingTab, Setting, TAbstractFile, Platform } from 'obsidian';
-import { ExtendedFileSystemAdapter } from './types';
+import { App, Menu, Notice, Plugin, PluginSettingTab, Setting, TAbstractFile, Platform, FileSystemAdapter } from 'obsidian';
+import * as path from 'path';
+import { wrapPath, formatRelativePath, buildFileUrl, buildObsidianUrl, buildMarkdownLink, PathWrapping, MarkdownLinkFormat } from './path-utils';
 
 
 interface PathCopySettings {
-	pathWrapping: 'none' | 'double-quotes' | 'single-quotes' | 'backticks';
+	pathWrapping: PathWrapping;
 	showNotifications: boolean;
 	menuDisplay: 'both' | 'windows' | 'linux-mac';
 	showAbsolutePath: boolean;
 	showFileUrl: boolean;
 	showObsidianUrl: boolean;
 	showMarkdownLink: boolean;
-	markdownLinkFormat: 'wiki-style' | 'standard-markdown';
+	markdownLinkFormat: MarkdownLinkFormat;
 }
 
 const DEFAULT_SETTINGS: PathCopySettings = {
@@ -245,31 +246,8 @@ export default class ShellPathCopyPlugin extends Plugin {
 				throw new Error('Clipboard API not available.');
 			}
 
-			// Get the vault-relative path
-			let path = file.path;
-
-			// Convert path format
-			if (format === 'windows') {
-				// Replace forward slashes with backslashes
-				path = path.replace(/\//g, '\\');
-				// Add relative path prefix (.\ for current directory)
-				if (path && !path.startsWith('.\\')) {
-					path = '.\\' + path;
-				}
-			} else {
-				// Add relative path prefix (./ for current directory)
-				if (path && !path.startsWith('./')) {
-					path = './' + path;
-				}
-			}
-
-			// Handle vault root (empty path)
-			if (!file.path) {
-				path = format === 'windows' ? '.\\' : './';
-			}
-
-			// Apply wrapping
-			const wrappedPath = this.wrapPath(path);
+			const relativePath = formatRelativePath(file.path, format);
+			const wrappedPath = wrapPath(relativePath, this.settings.pathWrapping);
 
 			// Copy to clipboard
 			await navigator.clipboard.writeText(wrappedPath);
@@ -304,18 +282,16 @@ export default class ShellPathCopyPlugin extends Plugin {
 				return;
 			}
 
-			// Get the absolute system path using runtime check
+			// Get the absolute system path using the public FileSystemAdapter API
 			const adapter = this.app.vault.adapter;
 
-			// Check if the adapter has the method we need (duck typing)
-			if (!adapter || !this.hasGetFullRealPath(adapter)) {
-				throw new Error('getFullRealPath method not available on this platform.');
+			if (!(adapter instanceof FileSystemAdapter)) {
+				throw new Error('File system adapter not available.');
 			}
 
-			const absolutePath = adapter.getFullRealPath(file.path);
+			const absolutePath = path.join(adapter.getBasePath(), file.path);
 
-			// Apply user's preferred path wrapping (this was the main fix requested)
-			const wrappedPath = this.wrapPath(absolutePath);
+			const wrappedPath = wrapPath(absolutePath, this.settings.pathWrapping);
 
 			// Copy to clipboard
 			await navigator.clipboard.writeText(wrappedPath);
@@ -346,39 +322,15 @@ export default class ShellPathCopyPlugin extends Plugin {
 				return;
 			}
 			
-			// Get the absolute system path
+			// Get the absolute system path using the public FileSystemAdapter API
 			const adapter = this.app.vault.adapter;
 
-			// Check if the adapter has the method we need
-			if (!adapter || !this.hasGetFullRealPath(adapter)) {
-				throw new Error('getFullRealPath method not available on this platform.');
+			if (!(adapter instanceof FileSystemAdapter)) {
+				throw new Error('File system adapter not available.');
 			}
 
-			// Get the absolute path
-			const absolutePath = adapter.getFullRealPath(file.path);
-			
-			// Convert to file:// URL format
-			let fileUrl: string;
-			
-			// Check if Windows path (contains drive letter like C:)
-			if (/^[a-zA-Z]:/.test(absolutePath)) {
-				// Windows path: Convert backslashes to forward slashes and prepend file:///
-				fileUrl = `file:///${absolutePath.replace(/\\/g, '/')}`;
-			} else {
-				// Unix/Mac path: Just prepend file://
-				fileUrl = `file://${absolutePath}`;
-			}
-			
-			// Encode special characters in the URL (but not the slashes)
-			// Split by slash, encode each part, then rejoin
-			const parts = fileUrl.split('/');
-			const encodedParts = parts.map((part, index) => {
-				// Don't encode the file:// protocol part or empty parts
-				if (index < 3 || part === '') return part;
-				// Encode each path segment
-				return encodeURIComponent(part);
-			});
-			fileUrl = encodedParts.join('/');
+			const absolutePath = path.join(adapter.getBasePath(), file.path);
+			const fileUrl = buildFileUrl(absolutePath);
 
 			// Copy to clipboard (file URLs are typically not wrapped in quotes)
 			await navigator.clipboard.writeText(fileUrl);
@@ -403,33 +355,7 @@ export default class ShellPathCopyPlugin extends Plugin {
 				throw new Error('Clipboard API not available.');
 			}
 
-			// Get the filename without extension for display text
-			const fileName = file.name;
-			const fileNameWithoutExt = fileName.includes('.') ?
-				fileName.substring(0, fileName.lastIndexOf('.')) :
-				fileName;
-
-			let markdownLink: string;
-
-			if (this.settings.markdownLinkFormat === 'wiki-style') {
-				// Obsidian wiki-style: [[filename]]
-				markdownLink = `[[${fileNameWithoutExt}]]`;
-			} else {
-				// Standard markdown: [filename](path)
-				let path = file.path;
-
-				// Add relative path prefix for standard markdown links
-				if (path && !path.startsWith('./')) {
-					path = './' + path;
-				}
-
-				// Handle vault root (empty path)
-				if (!file.path) {
-					path = './';
-				}
-
-				markdownLink = `[${fileName}](${path})`;
-			}
+			const markdownLink = buildMarkdownLink(file.name, file.path, this.settings.markdownLinkFormat);
 
 			// Copy to clipboard
 			await navigator.clipboard.writeText(markdownLink);
@@ -456,22 +382,8 @@ export default class ShellPathCopyPlugin extends Plugin {
 				throw new Error('Clipboard API not available.');
 			}
 
-			// Get vault name
-			const vaultName = this.app.vault.getName();
-			
-			// Get file path (remove .md extension as Obsidian doesn't require it)
-			let filePath = file.path;
-			if (filePath.endsWith('.md')) {
-				filePath = filePath.slice(0, -3);
-			}
-			
-			// URL encode both vault name and file path
-			const encodedVault = encodeURIComponent(vaultName);
-			const encodedFile = encodeURIComponent(filePath);
-			
-			// Construct Obsidian URL
-			const obsidianUrl = `obsidian://open?vault=${encodedVault}&file=${encodedFile}`;
-			
+			const obsidianUrl = buildObsidianUrl(this.app.vault.getName(), file.path);
+
 			// Copy to clipboard
 			await navigator.clipboard.writeText(obsidianUrl);
 			
@@ -489,64 +401,13 @@ export default class ShellPathCopyPlugin extends Plugin {
 		}
 	}
 
-	private hasGetFullRealPath(adapter: unknown): adapter is ExtendedFileSystemAdapter {
-		return typeof adapter === 'object' &&
-			   adapter !== null &&
-			   'getFullRealPath' in adapter &&
-			   typeof (adapter as Record<string, unknown>).getFullRealPath === 'function';
-	}
-
-	private wrapPath(path: string): string {
-		switch (this.settings.pathWrapping) {
-			case 'double-quotes':
-				return `"${path}"`;
-			case 'single-quotes':
-				return `'${path}'`;
-			case 'backticks':
-				return `\`${path}\``;
-			case 'none':
-			default:
-				return path;
-		}
-	}
-
-	private getActiveFile(): TAbstractFile | null {
-		// Get the active file from the workspace
-		const activeFile = this.app.workspace.getActiveFile();
-		return activeFile;
-	}
-
-	private getFocusedFileInExplorer(): TAbstractFile | null {
-		// Try to find the focused file in the file explorer
-		// This searches for the focused element in the file explorer pane
-		const fileExplorer = this.app.workspace.getLeavesOfType('file-explorer')[0];
-		if (!fileExplorer) return null;
-
-		// Look for the focused element with the is-focused class
-		const focusedEl = fileExplorer.view.containerEl.querySelector('.nav-file.is-focused, .nav-folder.is-focused');
-		if (!focusedEl) return null;
-
-		// Extract the path from the data-path attribute
-		const path = focusedEl.getAttribute('data-path');
-		if (!path) return null;
-
-		// Get the file/folder from the path
-		return this.app.vault.getAbstractFileByPath(path);
-	}
-
 	private getActiveOrFocusedFile(): TAbstractFile | null {
-		// First try to get the active file
-		let file = this.getActiveFile();
-		
-		// If no active file, try to get the focused file in explorer
+		const file = this.app.workspace.getActiveFile();
+
 		if (!file) {
-			file = this.getFocusedFileInExplorer();
+			new Notice('No file selected. Open a file or right-click it in the file explorer.');
 		}
-		
-		if (!file) {
-			new Notice('No file selected');
-		}
-		
+
 		return file;
 	}
 
