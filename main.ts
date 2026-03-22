@@ -513,7 +513,7 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		// Path format examples
-		containerEl.createEl('div', { 
+		containerEl.createEl('div', {
 			text: 'Path format examples:',
 			cls: 'setting-item-heading'
 		});
@@ -526,10 +526,12 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 		examplesDiv.createEl('div', { text: '• Obsidian URL: obsidian://open?vault=MyVault&file=folder/file' });
 		examplesDiv.createEl('div', { text: '• Markdown Link: [[filename]] (wiki-style) or [filename.md](./path/filename.md) (standard)' });
 		examplesDiv.createEl('div', { text: '• Filename: file (without extension) or file.md (with extension)' });
-		
-		containerEl.createEl('br');
 
-		// Path wrapping setting
+		// ── General ──────────────────────────────────────────────────────
+		new Setting(containerEl)
+			.setName('General')
+			.setHeading();
+
 		new Setting(containerEl)
 			.setName('Path wrapping')
 			.setDesc('Choose how paths are wrapped when copied to clipboard (useful for paths with spaces)')
@@ -544,7 +546,6 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
-		// Menu display setting
 		new Setting(containerEl)
 			.setName('Menu display')
 			.setDesc('Control which path formats appear in the context menu')
@@ -559,11 +560,25 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 					new Notice('Please reload Obsidian for command palette changes to take effect');
 				}));
 
-		// Show absolute path setting (only on desktop)
+		new Setting(containerEl)
+			.setName('Show notifications')
+			.setDesc('Display a notification when a path is copied')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.showNotifications)
+				.onChange(async (value) => {
+					this.plugin.settings.showNotifications = value;
+					await this.plugin.saveSettings();
+				}));
+
+		// ── Path options ─────────────────────────────────────────────────
 		if (!Platform.isMobile) {
 			new Setting(containerEl)
-				.setName('Show absolute path options')
-				.setDesc('Display absolute path copy options in menus (Desktop only). Absolute paths will use the path wrapping setting above.')
+				.setName('Path options')
+				.setHeading();
+
+			new Setting(containerEl)
+				.setName('Show absolute path option')
+				.setDesc('Display absolute path copy option in menus (desktop only)')
 				.addToggle(toggle => toggle
 					.setValue(this.plugin.settings.showAbsolutePath)
 					.onChange(async (value) => {
@@ -572,10 +587,9 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 						new Notice('Please reload Obsidian for command palette changes to take effect');
 					}));
 
-			// Show file URL setting (desktop only)
 			new Setting(containerEl)
 				.setName('Show file:// URL option')
-				.setDesc('Display the file:// URL copy option in menus (Desktop only)')
+				.setDesc('Display the file:// URL copy option in menus (desktop only)')
 				.addToggle(toggle => toggle
 					.setValue(this.plugin.settings.showFileUrl)
 					.onChange(async (value) => {
@@ -585,7 +599,11 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 					}));
 		}
 
-		// Show Obsidian URL setting
+		// ── Link options ─────────────────────────────────────────────────
+		new Setting(containerEl)
+			.setName('Link options')
+			.setHeading();
+
 		new Setting(containerEl)
 			.setName('Show Obsidian URL option')
 			.setDesc('Display the Obsidian URL copy option in menus')
@@ -597,7 +615,6 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 					new Notice('Please reload Obsidian for command palette changes to take effect');
 				}));
 
-		// Show markdown link setting
 		new Setting(containerEl)
 			.setName('Show markdown link option')
 			.setDesc('Display the markdown link copy option in menus')
@@ -609,7 +626,6 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 					new Notice('Please reload Obsidian for command palette changes to take effect');
 				}));
 
-		// Markdown link format setting (only show if markdown links are enabled)
 		if (this.plugin.settings.showMarkdownLink) {
 			new Setting(containerEl)
 				.setName('Markdown link format')
@@ -624,7 +640,11 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 					}));
 		}
 
-		// Show filename option
+		// ── Filename options ─────────────────────────────────────────────
+		new Setting(containerEl)
+			.setName('Filename options')
+			.setHeading();
+
 		new Setting(containerEl)
 			.setName('Show filename option')
 			.setDesc('Display the copy filename (without extension) option in menus')
@@ -636,7 +656,6 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 					new Notice('Please reload Obsidian for command palette changes to take effect');
 				}));
 
-		// Show filename with extension option
 		new Setting(containerEl)
 			.setName('Show filename with extension option')
 			.setDesc('Display the copy filename (with extension) option in menus')
@@ -648,7 +667,6 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 					new Notice('Please reload Obsidian for command palette changes to take effect');
 				}));
 
-		// Apply path wrapping to filenames
 		if (this.plugin.settings.showFilename || this.plugin.settings.showFilenameWithExt) {
 			new Setting(containerEl)
 				.setName('Apply path wrapping to filenames')
@@ -660,17 +678,6 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 					}));
 		}
-
-		// Notifications setting
-		new Setting(containerEl)
-			.setName('Show notifications')
-			.setDesc('Display a notification when a path is copied')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.showNotifications)
-				.onChange(async (value) => {
-					this.plugin.settings.showNotifications = value;
-					await this.plugin.saveSettings();
-				}));
 
 		// Add support links at the bottom
 		containerEl.createEl('br');
