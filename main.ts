@@ -1,6 +1,6 @@
 import { App, Menu, Notice, Plugin, PluginSettingTab, Setting, TAbstractFile, Platform, FileSystemAdapter } from 'obsidian';
 import * as path from 'path';
-import { wrapPath, formatRelativePath, buildFileUrl, buildObsidianUrl, buildMarkdownLink, PathWrapping, MarkdownLinkFormat } from './path-utils';
+import { wrapPath, formatRelativePath, buildFileUrl, buildObsidianUrl, buildMarkdownLink, extractFilename, PathWrapping, MarkdownLinkFormat } from './path-utils';
 
 
 interface PathCopySettings {
@@ -12,6 +12,9 @@ interface PathCopySettings {
 	showObsidianUrl: boolean;
 	showMarkdownLink: boolean;
 	markdownLinkFormat: MarkdownLinkFormat;
+	showFilename: boolean;
+	showFilenameWithExt: boolean;
+	filenameUseWrapping: boolean;
 }
 
 const DEFAULT_SETTINGS: PathCopySettings = {
@@ -22,7 +25,10 @@ const DEFAULT_SETTINGS: PathCopySettings = {
 	showFileUrl: true,
 	showObsidianUrl: true,
 	showMarkdownLink: true,
-	markdownLinkFormat: 'wiki-style'
+	markdownLinkFormat: 'wiki-style',
+	showFilename: true,
+	showFilenameWithExt: true,
+	filenameUseWrapping: false
 }
 
 export default class ShellPathCopyPlugin extends Plugin {
@@ -148,6 +154,34 @@ export default class ShellPathCopyPlugin extends Plugin {
 				}
 			});
 		}
+
+		// Add filename command if enabled
+		if (this.settings.showFilename) {
+			this.addCommand({
+				id: 'copy-filename',
+				name: 'Copy filename',
+				callback: () => {
+					const file = this.getActiveOrFocusedFile();
+					if (file) {
+						this.copyFilename(file, false);
+					}
+				}
+			});
+		}
+
+		// Add filename with extension command if enabled
+		if (this.settings.showFilenameWithExt) {
+			this.addCommand({
+				id: 'copy-filename-with-ext',
+				name: 'Copy filename with extension',
+				callback: () => {
+					const file = this.getActiveOrFocusedFile();
+					if (file) {
+						this.copyFilename(file, true);
+					}
+				}
+			});
+		}
 	}
 
 	private createPathMenuItem(menu: Menu, file: TAbstractFile, format: 'unix' | 'windows') {
@@ -235,6 +269,32 @@ export default class ShellPathCopyPlugin extends Plugin {
 					.setSection('shell-path-copy')
 					.onClick(async () => {
 						await this.copyMarkdownLink(file);
+					});
+			});
+		}
+
+		// Add filename option if enabled
+		if (this.settings.showFilename) {
+			menu.addItem((item) => {
+				item
+					.setTitle('Copy Filename')
+					.setIcon('file-text')
+					.setSection('shell-path-copy')
+					.onClick(async () => {
+						await this.copyFilename(file, false);
+					});
+			});
+		}
+
+		// Add filename with extension option if enabled
+		if (this.settings.showFilenameWithExt) {
+			menu.addItem((item) => {
+				item
+					.setTitle('Copy Filename with Extension')
+					.setIcon('file')
+					.setSection('shell-path-copy')
+					.onClick(async () => {
+						await this.copyFilename(file, true);
 					});
 			});
 		}
@@ -401,6 +461,32 @@ export default class ShellPathCopyPlugin extends Plugin {
 		}
 	}
 
+	async copyFilename(file: TAbstractFile, includeExtension: boolean) {
+		try {
+			if (!navigator.clipboard) {
+				throw new Error('Clipboard API not available.');
+			}
+
+			const filename = extractFilename(file.name, includeExtension);
+			const result = this.settings.filenameUseWrapping
+				? wrapPath(filename, this.settings.pathWrapping)
+				: filename;
+
+			await navigator.clipboard.writeText(result);
+
+			if (this.settings.showNotifications) {
+				new Notice('Filename copied!');
+			}
+		} catch (error) {
+			if (error instanceof Error && error.message.includes('Clipboard API')) {
+				new Notice('Error: Clipboard API is not available in this environment.');
+			} else {
+				console.error('Shell Path Copy: Failed to copy filename:', error);
+				new Notice('Failed to copy filename. See console for details.');
+			}
+		}
+	}
+
 	private getActiveOrFocusedFile(): TAbstractFile | null {
 		const file = this.app.workspace.getActiveFile();
 
@@ -439,6 +525,7 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 		examplesDiv.createEl('div', { text: '• File URL: file:///C:/Users/name/vault/folder/file.md (Windows) or file:///home/user/vault/folder/file.md (Linux/Mac)' });
 		examplesDiv.createEl('div', { text: '• Obsidian URL: obsidian://open?vault=MyVault&file=folder/file' });
 		examplesDiv.createEl('div', { text: '• Markdown Link: [[filename]] (wiki-style) or [filename.md](./path/filename.md) (standard)' });
+		examplesDiv.createEl('div', { text: '• Filename: file (without extension) or file.md (with extension)' });
 		
 		containerEl.createEl('br');
 
@@ -533,6 +620,43 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 					.setValue(this.plugin.settings.markdownLinkFormat)
 					.onChange(async (value) => {
 						this.plugin.settings.markdownLinkFormat = value as PathCopySettings['markdownLinkFormat'];
+						await this.plugin.saveSettings();
+					}));
+		}
+
+		// Show filename option
+		new Setting(containerEl)
+			.setName('Show filename option')
+			.setDesc('Display the copy filename (without extension) option in menus')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.showFilename)
+				.onChange(async (value) => {
+					this.plugin.settings.showFilename = value;
+					await this.plugin.saveSettings();
+					new Notice('Please reload Obsidian for command palette changes to take effect');
+				}));
+
+		// Show filename with extension option
+		new Setting(containerEl)
+			.setName('Show filename with extension option')
+			.setDesc('Display the copy filename (with extension) option in menus')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.showFilenameWithExt)
+				.onChange(async (value) => {
+					this.plugin.settings.showFilenameWithExt = value;
+					await this.plugin.saveSettings();
+					new Notice('Please reload Obsidian for command palette changes to take effect');
+				}));
+
+		// Apply path wrapping to filenames
+		if (this.plugin.settings.showFilename || this.plugin.settings.showFilenameWithExt) {
+			new Setting(containerEl)
+				.setName('Apply path wrapping to filenames')
+				.setDesc('Use the path wrapping setting above when copying filenames')
+				.addToggle(toggle => toggle
+					.setValue(this.plugin.settings.filenameUseWrapping)
+					.onChange(async (value) => {
+						this.plugin.settings.filenameUseWrapping = value;
 						await this.plugin.saveSettings();
 					}));
 		}

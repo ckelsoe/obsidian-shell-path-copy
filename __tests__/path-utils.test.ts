@@ -4,6 +4,7 @@ import {
 	buildFileUrl,
 	buildObsidianUrl,
 	buildMarkdownLink,
+	extractFilename,
 } from '../path-utils';
 
 // ─── wrapPath ────────────────────────────────────────────────────────────────
@@ -162,6 +163,34 @@ describe('buildObsidianUrl', () => {
 		expect(buildObsidianUrl('Vault', 'file.md')).toBe(
 			'obsidian://open?vault=Vault&file=file'
 		);
+	});
+});
+
+// ─── extractFilename ──────────────────────────────────────────────────────────
+
+describe('extractFilename', () => {
+	it('returns filename without extension when includeExtension is false', () => {
+		expect(extractFilename('file.md', false)).toBe('file');
+	});
+
+	it('returns filename with extension when includeExtension is true', () => {
+		expect(extractFilename('file.md', true)).toBe('file.md');
+	});
+
+	it('strips only the last extension', () => {
+		expect(extractFilename('archive.tar.gz', false)).toBe('archive.tar');
+	});
+
+	it('returns the full name when there is no extension', () => {
+		expect(extractFilename('README', false)).toBe('README');
+	});
+
+	it('handles files with spaces', () => {
+		expect(extractFilename('my notes.md', false)).toBe('my notes');
+	});
+
+	it('handles dotfiles', () => {
+		expect(extractFilename('.gitignore', false)).toBe('.gitignore');
 	});
 });
 
