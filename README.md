@@ -40,6 +40,10 @@ Shell Path Copy offers a comprehensive set of features designed to streamline yo
    * **Markdown Link format**:
       * Wiki-style: `[[filename]]` (default, perfect for Obsidian)
       * Standard markdown: `[filename.md](/path/filename.md)` (universal compatibility)
+   * **Filename only**:
+      * Without extension: `my notes`
+      * With extension: `my notes.md`
+      * Optional path wrapping (off by default for easy pasting in emails and chat)
 * **Configurable display options**: Choose which path formats appear in menus:
    * Show both Windows and Linux/Mac options (default)
    * Show Windows options only
@@ -94,6 +98,8 @@ Shell Path Copy provides flexible ways to copy paths:
    * **Copy as file:// URL**: For file URL format (Desktop Only)
    * **Copy as Obsidian URL**: For obsidian:// protocol links
    * **Copy as Markdown Link**: For documentation and note-taking (e.g., `[[filename]]` or `[filename.md](path)`)
+   * **Copy Filename**: Just the filename without extension
+   * **Copy Filename with Extension**: The filename with its extension
 4. The path is copied to your clipboard, wrapped in backticks by default.
 5. Paste it anywhere you need!
 
@@ -108,6 +114,8 @@ Shell Path Copy provides flexible ways to copy paths:
    * "Shell Path Copy: Copy as file:// URL" (Desktop only)
    * "Shell Path Copy: Copy as Obsidian URL" (when enabled in settings)
    * "Shell Path Copy: Copy as markdown link" (when enabled in settings)
+   * "Shell Path Copy: Copy filename" (when enabled in settings)
+   * "Shell Path Copy: Copy filename with extension" (when enabled in settings)
 4. The path of the currently active file (or focused file in the explorer) will be copied.
 
 # Example: The Remote Workflow
@@ -188,6 +196,7 @@ This is particularly useful for:
 | Copy file:// URL | ✅ | ❌ |
 | Copy Obsidian URL | ✅ | ✅ |
 | Copy markdown link | ✅ Wiki-style & standard | ❌ |
+| Copy filename only | ✅ With/without extension | ❌ |
 | Configurable path wrapping | ✅ (backticks, quotes, none) | ❌ |
 | Platform-specific formats | ✅ (Windows vs Linux/Mac) | ❌ |
 
@@ -201,6 +210,8 @@ Shell Path Copy's context menu items only appear in Obsidian's native file explo
 - "Shell Path Copy: Copy as file:// URL"
 - "Shell Path Copy: Copy as Obsidian URL"
 - "Shell Path Copy: Copy as markdown link"
+- "Shell Path Copy: Copy filename"
+- "Shell Path Copy: Copy filename with extension"
 
 These commands work on the currently active file or the focused file in either file explorer.
 
@@ -230,6 +241,9 @@ Access plugin settings via Settings → Plugin Options → Shell Path Copy:
 * **Show Obsidian URL Option**: Toggle whether the Obsidian URL copy option appears in menus
 * **Show Markdown Link Option**: Toggle whether the markdown link copy option appears in menus
 * **Markdown Link Format**: Choose between wiki-style (`[[filename]]`) and standard markdown (`[filename](path)`) formats
+* **Show Filename Option**: Toggle whether the copy filename (without extension) option appears in menus
+* **Show Filename with Extension Option**: Toggle whether the copy filename (with extension) option appears in menus
+* **Apply Path Wrapping to Filenames**: When enabled, filenames use the same wrapping as paths (off by default)
 * **Show Notifications**: Toggle success notifications on/off
 
 # Development

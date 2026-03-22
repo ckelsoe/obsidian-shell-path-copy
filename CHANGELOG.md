@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.17.0] - 2026-03-22
+
+### Added
+- **Copy Filename** option: copies the filename without extension ([#10](https://github.com/ckelsoe/obsidian-shell-path-copy/issues/10))
+- **Copy Filename with Extension** option: copies the filename with extension ([#10](https://github.com/ckelsoe/obsidian-shell-path-copy/issues/10))
+- Both options available in context menu and command palette, each independently toggleable in settings
+- **Apply path wrapping to filenames** setting: controls whether the global path wrapping applies to copied filenames (off by default, so filenames paste cleanly into emails and chat)
+- Settings page now uses section headings (General, Path options, Link options, Filename options) for better organization
+
+### Fixed
+- Dotfiles like `.gitignore` no longer lose their name when used in wiki-style markdown links
+
+### Technical
+- Extracted `extractFilename` utility from `buildMarkdownLink` for shared use
+- Added 6 unit tests for `extractFilename` (43 total tests)
+
 ## [1.16.1] - 2026-02-26
 
 ### Fixed
@@ -126,7 +142,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Success notifications
 - Works on desktop and mobile platforms
 
-[unreleased]: https://github.com/ckelsoe/obsidian-shell-path-copy/compare/1.16.0...HEAD
+[unreleased]: https://github.com/ckelsoe/obsidian-shell-path-copy/compare/1.17.0...HEAD
+[1.17.0]: https://github.com/ckelsoe/obsidian-shell-path-copy/compare/1.16.1...1.17.0
+[1.16.1]: https://github.com/ckelsoe/obsidian-shell-path-copy/compare/1.16.0...1.16.1
 [1.16.0]: https://github.com/ckelsoe/obsidian-shell-path-copy/compare/1.15.0...1.16.0
 [1.15.0]: https://github.com/ckelsoe/obsidian-shell-path-copy/compare/1.14.0...1.15.0
 [1.14.0]: https://github.com/ckelsoe/obsidian-shell-path-copy/compare/1.13.0...1.14.0
