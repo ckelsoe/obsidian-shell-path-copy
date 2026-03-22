@@ -46,10 +46,18 @@ export function buildObsidianUrl(vaultName: string, filePath: string): string {
 	return `obsidian://open?vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(normalizedPath)}`;
 }
 
+export function extractFilename(fileName: string, includeExtension: boolean): string {
+	if (!includeExtension) {
+		const lastDot = fileName.lastIndexOf('.');
+		if (lastDot > 0) {
+			return fileName.substring(0, lastDot);
+		}
+	}
+	return fileName;
+}
+
 export function buildMarkdownLink(fileName: string, filePath: string, format: MarkdownLinkFormat): string {
-	const fileNameWithoutExt = fileName.includes('.')
-		? fileName.substring(0, fileName.lastIndexOf('.'))
-		: fileName;
+	const fileNameWithoutExt = extractFilename(fileName, false);
 
 	if (format === 'wiki-style') {
 		return `[[${fileNameWithoutExt}]]`;
