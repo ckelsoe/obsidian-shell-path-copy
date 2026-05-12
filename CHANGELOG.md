@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.18.1] - 2026-05-12
+
+### Fixed
+- Added a rationale (after `--`) to the `eslint-disable` directive at `main.ts:14`, clearing the Obsidian scorecard warning "Unexpected undescribed directive comment"
+
+### Changed
+- CI workflow now uses Node 20 (required by `eslint-plugin-obsidianmd`'s use of `import.meta.dirname`)
+- Added OSV-Scanner, GitHub Dependency Review, and a weekly cron scan to `ci.yml`
+- Added VirusTotal scan of release artifacts to `release.yml` (requires `VT_API_KEY` repo secret)
+- README now shows CI and Release workflow status badges
+
+### Note
+The compiled `main.js` bundle is byte-identical to `1.18.0` (esbuild strips comments). Users on `1.18.0` see no functional or binary change in `1.18.1`. This release exists to update the source tag with the directive-comment fix and to make the release tag's `release.yml` use Node 20.
+
 ## [1.18.0] - 2026-05-12
 
 ### Fixed
