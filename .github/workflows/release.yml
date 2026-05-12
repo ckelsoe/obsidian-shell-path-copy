@@ -43,6 +43,15 @@ jobs:
             manifest.json
             styles.css
 
+      - name: VirusTotal scan of release artifacts
+        uses: crazy-max/ghaction-virustotal@v4
+        with:
+          vt_api_key: ${{ secrets.VT_API_KEY }}
+          files: |
+            main.js
+            manifest.json
+            styles.css
+
       - name: Extract release notes from CHANGELOG
         id: notes
         run: |
