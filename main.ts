@@ -1,6 +1,19 @@
 import { App, Menu, Notice, Plugin, PluginSettingTab, Setting, TAbstractFile, Platform, FileSystemAdapter } from 'obsidian';
-import * as path from 'path';
 import { wrapPath, formatRelativePath, buildFileUrl, buildObsidianUrl, buildMarkdownLink, extractFilename, PathWrapping, MarkdownLinkFormat } from './path-utils';
+
+// Node 'path' is only available on desktop. Load lazily behind a Platform.isDesktop
+// guard so mobile builds do not pull in unavailable Node built-ins. The narrow
+// return type avoids importing the @types/node `Path` namespace at the top level.
+interface NodePathLike {
+	join(...paths: string[]): string;
+}
+function getNodePath(): NodePathLike {
+	if (!Platform.isDesktop) {
+		throw new Error('Node path module is not available on this platform.');
+	}
+	// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-return, import/no-nodejs-modules
+	return require('path');
+}
 
 
 interface PathCopySettings {
@@ -56,7 +69,8 @@ export default class ShellPathCopyPlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		const data = (await this.loadData()) as Partial<PathCopySettings> | null;
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
 	}
 
 	async saveSettings() {
@@ -72,11 +86,11 @@ export default class ShellPathCopyPlugin extends Plugin {
 		if (showBoth || showLinuxMac) {
 			this.addCommand({
 				id: 'copy-unix-path',
-				name: 'Copy as Linux/Mac path',
+				name: 'Copy as Linux/macOS path',
 				callback: () => {
 					const file = this.getActiveOrFocusedFile();
 					if (file) {
-						this.copyPath(file, 'unix');
+						void this.copyPath(file, 'unix');
 					}
 				}
 			});
@@ -89,7 +103,7 @@ export default class ShellPathCopyPlugin extends Plugin {
 				callback: () => {
 					const file = this.getActiveOrFocusedFile();
 					if (file) {
-						this.copyPath(file, 'windows');
+						void this.copyPath(file, 'windows');
 					}
 				}
 			});
@@ -98,8 +112,7 @@ export default class ShellPathCopyPlugin extends Plugin {
 		// Add absolute path command ONLY on desktop and if enabled
 		if (!Platform.isMobile && this.settings.showAbsolutePath) {
 			// Determine OS-specific naming for clarity
-			const isWindows = process.platform === 'win32';
-			const osName = isWindows ? 'Windows' : 'Linux/Mac';
+			const osName = Platform.isWin ? 'Windows' : 'Linux/macOS';
 
 			this.addCommand({
 				id: 'copy-absolute-path',
@@ -107,7 +120,7 @@ export default class ShellPathCopyPlugin extends Plugin {
 				callback: () => {
 					const file = this.getActiveOrFocusedFile();
 					if (file) {
-						this.copyAbsolutePath(file);
+						void this.copyAbsolutePath(file);
 					}
 				}
 			});
@@ -121,7 +134,7 @@ export default class ShellPathCopyPlugin extends Plugin {
 				callback: () => {
 					const file = this.getActiveOrFocusedFile();
 					if (file) {
-						this.copyFileUrl(file);
+						void this.copyFileUrl(file);
 					}
 				}
 			});
@@ -135,7 +148,7 @@ export default class ShellPathCopyPlugin extends Plugin {
 				callback: () => {
 					const file = this.getActiveOrFocusedFile();
 					if (file) {
-						this.copyObsidianUrl(file);
+						void this.copyObsidianUrl(file);
 					}
 				}
 			});
@@ -145,11 +158,11 @@ export default class ShellPathCopyPlugin extends Plugin {
 		if (this.settings.showMarkdownLink) {
 			this.addCommand({
 				id: 'copy-markdown-link',
-				name: 'Copy as markdown link',
+				name: 'Copy as Markdown link',
 				callback: () => {
 					const file = this.getActiveOrFocusedFile();
 					if (file) {
-						this.copyMarkdownLink(file);
+						void this.copyMarkdownLink(file);
 					}
 				}
 			});
@@ -163,7 +176,7 @@ export default class ShellPathCopyPlugin extends Plugin {
 				callback: () => {
 					const file = this.getActiveOrFocusedFile();
 					if (file) {
-						this.copyFilename(file, false);
+						void this.copyFilename(file, false);
 					}
 				}
 			});
@@ -177,7 +190,7 @@ export default class ShellPathCopyPlugin extends Plugin {
 				callback: () => {
 					const file = this.getActiveOrFocusedFile();
 					if (file) {
-						this.copyFilename(file, true);
+						void this.copyFilename(file, true);
 					}
 				}
 			});
@@ -186,7 +199,7 @@ export default class ShellPathCopyPlugin extends Plugin {
 
 	private createPathMenuItem(menu: Menu, file: TAbstractFile, format: 'unix' | 'windows') {
 		const isUnix = format === 'unix';
-		const title = isUnix ? 'Copy Relative Linux/Mac Path' : 'Copy Relative Windows Path';
+		const title = isUnix ? 'Copy relative Linux/macOS path' : 'Copy relative Windows path';
 		const icon = isUnix ? 'terminal' : 'folder-closed';
 
 		menu.addItem((item) => {
@@ -219,13 +232,12 @@ export default class ShellPathCopyPlugin extends Plugin {
 		// Add absolute path option ONLY on desktop and if enabled
 		if (!Platform.isMobile && this.settings.showAbsolutePath) {
 			// Determine OS-specific naming and icon for clarity
-			const isWindows = process.platform === 'win32';
-			const osName = isWindows ? 'Windows' : 'Linux/Mac';
-			const icon = isWindows ? 'folder-closed' : 'terminal';
+			const osName = Platform.isWin ? 'Windows' : 'Linux/macOS';
+			const icon = Platform.isWin ? 'folder-closed' : 'terminal';
 
 			menu.addItem((item) => {
 				item
-					.setTitle(`Copy Absolute ${osName} Path`)
+					.setTitle(`Copy absolute ${osName} path`)
 					.setIcon(icon)
 					.setSection('shell-path-copy')
 					.onClick(async () => {
@@ -264,7 +276,7 @@ export default class ShellPathCopyPlugin extends Plugin {
 		if (this.settings.showMarkdownLink) {
 			menu.addItem((item) => {
 				item
-					.setTitle('Copy as Markdown Link')
+					.setTitle('Copy as Markdown link')
 					.setIcon('link')
 					.setSection('shell-path-copy')
 					.onClick(async () => {
@@ -277,7 +289,7 @@ export default class ShellPathCopyPlugin extends Plugin {
 		if (this.settings.showFilename) {
 			menu.addItem((item) => {
 				item
-					.setTitle('Copy Filename')
+					.setTitle('Copy filename')
 					.setIcon('file-text')
 					.setSection('shell-path-copy')
 					.onClick(async () => {
@@ -290,7 +302,7 @@ export default class ShellPathCopyPlugin extends Plugin {
 		if (this.settings.showFilenameWithExt) {
 			menu.addItem((item) => {
 				item
-					.setTitle('Copy Filename with Extension')
+					.setTitle('Copy filename with extension')
 					.setIcon('file')
 					.setSection('shell-path-copy')
 					.onClick(async () => {
@@ -314,7 +326,7 @@ export default class ShellPathCopyPlugin extends Plugin {
 
 			// Show notification if enabled
 			if (this.settings.showNotifications) {
-				const formatName = format === 'unix' ? 'Linux/Mac' : 'Windows';
+				const formatName = format === 'unix' ? 'Linux/macOS' : 'Windows';
 				new Notice(`${formatName} path copied!`);
 			}
 		} catch (error) {
@@ -349,7 +361,7 @@ export default class ShellPathCopyPlugin extends Plugin {
 				throw new Error('File system adapter not available.');
 			}
 
-			const absolutePath = path.join(adapter.getBasePath(), file.path);
+			const absolutePath = getNodePath().join(adapter.getBasePath(), file.path);
 
 			const wrappedPath = wrapPath(absolutePath, this.settings.pathWrapping);
 
@@ -378,7 +390,7 @@ export default class ShellPathCopyPlugin extends Plugin {
 			
 			// Only attempt to get absolute path on desktop
 			if (Platform.isMobile) {
-				new Notice('File URLs are not available on mobile devices.');
+				new Notice('The file URL feature is not available on mobile devices.');
 				return;
 			}
 			
@@ -389,7 +401,7 @@ export default class ShellPathCopyPlugin extends Plugin {
 				throw new Error('File system adapter not available.');
 			}
 
-			const absolutePath = path.join(adapter.getBasePath(), file.path);
+			const absolutePath = getNodePath().join(adapter.getBasePath(), file.path);
 			const fileUrl = buildFileUrl(absolutePath);
 
 			// Copy to clipboard (file URLs are typically not wrapped in quotes)
@@ -430,8 +442,8 @@ export default class ShellPathCopyPlugin extends Plugin {
 			if (error instanceof Error && error.message.includes('Clipboard API')) {
 				new Notice('Error: Clipboard API is not available in this environment.');
 			} else {
-				console.error('Shell Path Copy: Failed to copy markdown link:', error);
-				new Notice('Failed to copy markdown link. See console for details.');
+				console.error('Shell Path Copy: Failed to copy Markdown link:', error);
+				new Notice('Failed to copy Markdown link. See console for details.');
 			}
 		}
 	}
@@ -513,24 +525,18 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		// Path format examples
-		containerEl.createEl('div', {
-			text: 'Path format examples:',
-			cls: 'setting-item-heading'
-		});
-		const examplesDiv = containerEl.createEl('div', { cls: 'setting-item-description' });
-		examplesDiv.createEl('div', { text: '• Relative Linux/Mac: ./folder/subfolder/file.md' });
-		examplesDiv.createEl('div', { text: '• Relative Windows: .\\folder\\subfolder\\file.md' });
-		examplesDiv.createEl('div', { text: '• Absolute Windows: C:\\Users\\name\\vault\\folder\\file.md' });
-		examplesDiv.createEl('div', { text: '• Absolute Linux/Mac: /home/user/vault/folder/file.md' });
-		examplesDiv.createEl('div', { text: '• File URL: file:///C:/Users/name/vault/folder/file.md (Windows) or file:///home/user/vault/folder/file.md (Linux/Mac)' });
-		examplesDiv.createEl('div', { text: '• Obsidian URL: obsidian://open?vault=MyVault&file=folder/file' });
-		examplesDiv.createEl('div', { text: '• Markdown Link: [[filename]] (wiki-style) or [filename.md](./path/filename.md) (standard)' });
-		examplesDiv.createEl('div', { text: '• Filename: file (without extension) or file.md (with extension)' });
-
-		// ── General ──────────────────────────────────────────────────────
 		new Setting(containerEl)
-			.setName('General')
+			.setName('Path format examples')
 			.setHeading();
+		const examplesDiv = containerEl.createDiv({ cls: 'setting-item-description' });
+		examplesDiv.createDiv({ text: '• Relative Linux/macOS: ./folder/subfolder/file.md' });
+		examplesDiv.createDiv({ text: '• Relative Windows: .\\folder\\subfolder\\file.md' });
+		examplesDiv.createDiv({ text: '• Absolute Windows: C:\\Users\\name\\vault\\folder\\file.md' });
+		examplesDiv.createDiv({ text: '• Absolute Linux/macOS: /home/user/vault/folder/file.md' });
+		examplesDiv.createDiv({ text: '• File URL: file:///C:/Users/name/vault/folder/file.md (Windows) or file:///home/user/vault/folder/file.md (Linux/macOS)' });
+		examplesDiv.createDiv({ text: '• Obsidian URL: obsidian://open?vault=MyVault&file=folder/file' });
+		examplesDiv.createDiv({ text: '• Markdown link: [[filename]] (wiki-style) or [filename.md](./path/filename.md) (standard)' });
+		examplesDiv.createDiv({ text: '• Filename: file (without extension) or file.md (with extension)' });
 
 		new Setting(containerEl)
 			.setName('Path wrapping')
@@ -550,9 +556,9 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 			.setName('Menu display')
 			.setDesc('Control which path formats appear in the context menu')
 			.addDropdown(dropdown => dropdown
-				.addOption('both', 'Show both Windows and Linux/Mac options')
+				.addOption('both', 'Show both Windows and Linux/macOS options')
 				.addOption('windows', 'Show Windows options only')
-				.addOption('linux-mac', 'Show Linux/Mac options only')
+				.addOption('linux-mac', 'Show Linux/macOS options only')
 				.setValue(this.plugin.settings.menuDisplay)
 				.onChange(async (value) => {
 					this.plugin.settings.menuDisplay = value as PathCopySettings['menuDisplay'];
@@ -570,10 +576,10 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
-		// ── Path options ─────────────────────────────────────────────────
+		// ── Paths ────────────────────────────────────────────────────────
 		if (!Platform.isMobile) {
 			new Setting(containerEl)
-				.setName('Path options')
+				.setName('Paths')
 				.setHeading();
 
 			new Setting(containerEl)
@@ -599,9 +605,9 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 					}));
 		}
 
-		// ── Link options ─────────────────────────────────────────────────
+		// ── Links ────────────────────────────────────────────────────────
 		new Setting(containerEl)
-			.setName('Link options')
+			.setName('Links')
 			.setHeading();
 
 		new Setting(containerEl)
@@ -616,8 +622,8 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl)
-			.setName('Show markdown link option')
-			.setDesc('Display the markdown link copy option in menus')
+			.setName('Show Markdown link option')
+			.setDesc('Display the Markdown link copy option in menus')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.showMarkdownLink)
 				.onChange(async (value) => {
@@ -629,10 +635,10 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 		if (this.plugin.settings.showMarkdownLink) {
 			new Setting(containerEl)
 				.setName('Markdown link format')
-				.setDesc('Choose the format for markdown links')
+				.setDesc('Choose the format for Markdown links')
 				.addDropdown(dropdown => dropdown
 					.addOption('wiki-style', 'Wiki-style - [[filename]]')
-					.addOption('standard-markdown', 'Standard markdown - [filename](path)')
+					.addOption('standard-markdown', 'Standard Markdown - [filename](path)')
 					.setValue(this.plugin.settings.markdownLinkFormat)
 					.onChange(async (value) => {
 						this.plugin.settings.markdownLinkFormat = value as PathCopySettings['markdownLinkFormat'];
@@ -640,9 +646,9 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 					}));
 		}
 
-		// ── Filename options ─────────────────────────────────────────────
+		// ── Filenames ────────────────────────────────────────────────────
 		new Setting(containerEl)
-			.setName('Filename options')
+			.setName('Filenames')
 			.setHeading();
 
 		new Setting(containerEl)
@@ -682,28 +688,24 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 		// Add support links at the bottom
 		containerEl.createEl('br');
 		containerEl.createEl('br');
-		
-		const footerDiv = containerEl.createEl('div', { 
-			cls: 'setting-item-description',
-			attr: { style: 'text-align: center; opacity: 0.8;' }
+
+		const footerDiv = containerEl.createDiv({
+			cls: 'setting-item-description shell-path-copy-footer'
 		});
-		
-		// Get version from manifest
+
 		const manifestVersion = this.plugin.manifest.version || '1.0.0';
-		footerDiv.createEl('span', { text: `Version ${manifestVersion} | ` });
-		
-		// Helper function to create robust external links
+		footerDiv.createSpan({ text: `Version ${manifestVersion} | ` });
+
 		const createExternalLink = (text: string, url: string) => {
-			const link = footerDiv.createEl('a', { text: text, href: url });
-			link.onclick = (event) => {
-				event.preventDefault();
-				window.open(url);
-			};
-			return link;
+			return footerDiv.createEl('a', {
+				text: text,
+				href: url,
+				attr: { target: '_blank', rel: 'noopener' }
+			});
 		};
-		
+
 		createExternalLink('GitHub', 'https://github.com/ckelsoe/obsidian-shell-path-copy');
-		footerDiv.createEl('span', { text: ' | ' });
+		footerDiv.createSpan({ text: ' | ' });
 		createExternalLink('Report Issues', 'https://github.com/ckelsoe/obsidian-shell-path-copy/issues');
 	}
 }

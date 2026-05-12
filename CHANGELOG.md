@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.18.0] - 2026-05-12
+
+### Fixed
+- Marketplace scorecard compliance:
+  - Awaited or `void`-marked all clipboard promises in command callbacks (8 sites in `main.ts`)
+  - Node `path` module now loaded behind a `Platform.isDesktop` guard via `require()`, replacing a top-level `import` that would fail on mobile
+  - Removed banned `General` heading from settings tab
+  - Replaced generic `createEl('div'|'span')` calls with `createDiv()` / `createSpan()` in settings UI
+  - Moved inline `style` attribute on settings footer into `styles.css` (`.shell-path-copy-footer`)
+  - Manifest description now ends with a period
+  - Replaced deprecated `builtin-modules` package with Node's `module.builtinModules`
+  - Resolved vulnerable transitive devDependencies (`handlebars`, `picomatch`, `flatted`, `ajv`, `brace-expansion`) via npm `overrides`
+  - Converted `Path format examples` section to Obsidian's `setHeading()` API (was a div styled with `setting-item-heading`); dropped trailing colon per Obsidian style guide
+  - Footer external links now use standard `<a target="_blank" rel="noopener">` instead of an `onclick` handler that called `window.open()`
+  - Wired in `eslint-plugin-obsidianmd` recommended config to catch marketplace lint violations at build time
+  - Sentence-case UI strings throughout commands, menus, and settings (e.g. `Copy Filename` → `Copy filename`)
+  - Replaced `Linux/Mac` with canonical `Linux/macOS` in command names, menu titles, notifications, dropdown options, and examples
+  - Capitalized `markdown` → `Markdown` (proper noun) in setting names, descriptions, dropdown options, and error notices
+  - Renamed settings headings `Path options` / `Link options` / `Filename options` → `Paths` / `Links` / `Filenames` (the word "options" is blocked by `settings-tab/no-problematic-settings-headings`)
+  - Replaced `process.platform === 'win32'` with Obsidian's `Platform.isWin` API for OS detection
+  - Tightened `loadSettings()` to cast `loadData()` through `Partial<PathCopySettings>` instead of relying on implicit `any`
+  - Narrowed `getNodePath()` return type to a local `NodePathLike` interface so the @types/node `path` namespace is not imported at module scope
+
+### Added
+- `CONTRIBUTING.md` covering setup, quality gates, conventions, and PR workflow
+
+### Changed
+- README rewritten to use a single `#` H1 with `##`/`###` for sections, sync all command/menu/setting names to current UI strings, replace `Linux/Mac` with `Linux/macOS` throughout, and reframe the BRAT section as optional for pre-release testing (Marketplace install is now the recommended path)
+
 ## [1.17.0] - 2026-03-22
 
 ### Added
