@@ -264,69 +264,9 @@ The settings tab is organized into three sections.
 * **Show filename with extension option**: toggle whether the copy filename (with extension) option appears in menus.
 * **Apply path wrapping to filenames**: when enabled, filenames use the same wrapping as paths (off by default).
 
-## Development
-
-This section is for developers who want to modify or extend the plugin. If you only want to install and use Shell Path Copy, skip this section. The installation instructions above are everything you need.
-
-### Prerequisites
-
-* Node.js 16+
-* npm or yarn
-
-### Setup
-
-```bash
-# Clone the repository
-git clone https://github.com/ckelsoe/obsidian-shell-path-copy.git
-
-# Navigate to the directory
-cd obsidian-shell-path-copy
-
-# Install dependencies
-npm install
-
-# Start development build with auto-reload
-npm run dev
-```
-
-### Building
-
-```bash
-# Build for production (type-check + bundle)
-npm run build
-```
-
-### Code quality
-
-The project uses three quality gates that must pass before any change is merged:
-
-```bash
-npm run lint    # ESLint with eslint-plugin-obsidianmd recommended rules
-npm run build   # TypeScript strict type-check + esbuild production bundle
-npm test        # Jest unit tests
-```
-
-The lint configuration enables [`eslint-plugin-obsidianmd`](https://github.com/obsidianmd/eslint-plugin), which enforces the same rules used by the Obsidian marketplace scorecard (sentence case, heading restrictions, no static styles, manifest validation, and more).
-
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for full contributor guidelines.
-
 ## Contributing
 
-Contributions are welcome.
-
-### Reporting issues
-
-Please open an issue on the [GitHub repository](https://github.com/ckelsoe/obsidian-shell-path-copy/issues) for bug reports or feature requests.
-
-### Pull requests
-
-1. Fork the repository.
-2. Create your feature branch (`git checkout -b feature/amazing-feature`).
-3. Commit your changes (`git commit -m 'Add amazing feature'`).
-4. Push to the branch (`git push origin feature/amazing-feature`).
-5. Open a pull request.
-
-Please open an issue first to discuss significant changes. See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
+Bug reports and feature requests are welcome via [GitHub Issues](https://github.com/ckelsoe/obsidian-shell-path-copy/issues). For local build, test, and pull request guidelines, see [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 
 ## License
 
