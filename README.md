@@ -268,6 +268,10 @@ The settings tab is organized into three sections.
 
 Bug reports and feature requests are welcome via [GitHub Issues](https://github.com/ckelsoe/obsidian-shell-path-copy/issues). For local build, test, and pull request guidelines, see [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 
+## Privacy
+
+Shell Path Copy collects no data, stores nothing outside your own vault, and contains no network code. It reads a path you select and places it on your clipboard, nothing more. See [PRIVACY.md](./PRIVACY.md) for the full privacy policy and liability disclaimer, and [SECURITY.md](./SECURITY.md) for the security policy.
+
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.

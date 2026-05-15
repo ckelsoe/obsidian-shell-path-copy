@@ -1,0 +1,61 @@
+name: Bug report
+description: Report something that is not working as expected.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug.
+
+        **Before you post:** anything you write or attach here is **public**. Do not include passwords, personal file contents, or other sensitive information. Redact file paths and screenshots as needed. You post this information at your own discretion. See the [privacy policy](https://github.com/ckelsoe/obsidian-shell-path-copy/blob/main/PRIVACY.md).
+
+        Security vulnerabilities must **not** be filed here. See [SECURITY.md](https://github.com/ckelsoe/obsidian-shell-path-copy/blob/main/SECURITY.md).
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the bug and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the exact steps that trigger the bug.
+      placeholder: |
+        1. Right-click a file in the explorer
+        2. Choose ...
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: obsidian-version
+    attributes:
+      label: Obsidian version
+    validations:
+      required: true
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Plugin version
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - iOS / iPadOS
+        - Android
+    validations:
+      required: true
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Confirmation
+      options:
+        - label: I have removed any sensitive information from this report.
+          required: true
