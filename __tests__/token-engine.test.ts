@@ -13,6 +13,7 @@ function makeContext(overrides: Partial<TokenContext> = {}): TokenContext {
 		absolutePath: '/home/name/assorted/Notes/My file.md',
 		lineNumber: 42,
 		currentHeading: null,
+		blockId: null,
 		markdownLinkFormat: 'wiki-style',
 		now: new Date(2026, 4, 17, 14, 30),
 		...overrides,
@@ -293,6 +294,39 @@ describe('applyTemplate - heading tokens', () => {
 	});
 });
 
+// ─── block tokens ─────────────────────────────────────────────────────────────
+
+describe('applyTemplate - block tokens', () => {
+	const withBlock = makeContext({ blockId: 'a1b2c3' });
+	const noBlock = makeContext({ blockId: null });
+
+	it('<block-id> resolves to the block id', () => {
+		expect(applyTemplate('<block-id>', withBlock).text).toBe('a1b2c3');
+	});
+
+	it('<block-id> is blank when the cursor is on no block', () => {
+		expect(applyTemplate('<block-id>', noBlock).text).toBe('');
+	});
+
+	it('<obsidian-url-block> anchors to the block with #^id (encoded %23%5E)', () => {
+		expect(applyTemplate('<obsidian-url-block>', withBlock).text)
+			.toBe('obsidian://open?vault=assorted&file=Notes%2FMy%20file%23%5Ea1b2c3');
+	});
+
+	it('<obsidian-url-block> falls back to the file URL with no block', () => {
+		expect(applyTemplate('<obsidian-url-block>', noBlock).text)
+			.toBe('obsidian://open?vault=assorted&file=Notes%2FMy%20file');
+	});
+
+	it('<wikilink-block> anchors to the block with #^id', () => {
+		expect(applyTemplate('<wikilink-block>', withBlock).text).toBe('[[My file#^a1b2c3]]');
+	});
+
+	it('<wikilink-block> falls back to the file link with no block', () => {
+		expect(applyTemplate('<wikilink-block>', noBlock).text).toBe('[[My file]]');
+	});
+});
+
 // ─── validateTemplate ─────────────────────────────────────────────────────────
 
 describe('validateTemplate', () => {
@@ -326,7 +360,7 @@ describe('validateTemplate', () => {
 describe('listTokens', () => {
 	it('returns the full token set with tiers', () => {
 		const tokens = listTokens();
-		expect(tokens.length).toBe(20);
+		expect(tokens.length).toBe(23);
 		const absolutePath = tokens.find((t) => t.name === 'absolute-path');
 		expect(absolutePath?.tier).toBe('desktop');
 		const lineNumber = tokens.find((t) => t.name === 'line-number');

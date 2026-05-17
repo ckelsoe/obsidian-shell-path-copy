@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.19.0-beta.9] - 2026-05-17
+
+### Added
+- Block links. Three tokens: `<block-id>`, `<obsidian-url-block>`, and
+  `<wikilink-block>`, linking to the block (paragraph or list item) at the
+  cursor.
+- Two seeded formats, disabled by default: "Obsidian URL (to block)" and
+  "Wiki link (to block)".
+
+### Changed
+- Copying a block link format adds a `^id` block marker to the note when the
+  block has none, the same as Obsidian does for its own block links. This is
+  the only format that modifies a note; `PRIVACY.md` is updated to describe it.
+- Settings schema is now version 3. Vaults on version 1 or 2 gain the new
+  block formats on first load; existing formats are untouched.
+
 ## [1.19.0-beta.8] - 2026-05-17
 
 ### Fixed

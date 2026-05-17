@@ -73,7 +73,7 @@ These formats are seeded into every vault. Enable, edit, or delete any of them i
 | Filename | `<filename>` | `file` |
 | Filename with extension | `<filename-ext>` | `file.md` |
 
-Four more formats ship disabled, ready to enable or copy from:
+Six more formats ship disabled, ready to enable or copy from:
 
 | Format | Template | Example result |
 |---|---|---|
@@ -81,8 +81,10 @@ Four more formats ship disabled, ready to enable or copy from:
 | Example: line reference | `<filename-ext>#L<line-number>` | `file.md#L42` |
 | Obsidian URL (to heading) | `<obsidian-url-section>` | `obsidian://open?vault=MyVault&file=folder%2Ffile%23Notes` |
 | Wiki link (to heading) | `<wikilink-section>` | `[[file#Notes]]` |
+| Obsidian URL (to block) | `<obsidian-url-block>` | `obsidian://open?vault=MyVault&file=folder%2Ffile%23%5Ea1b2c3` |
+| Wiki link (to block) | `<wikilink-block>` | `[[file#^a1b2c3]]` |
 
-The two "to heading" formats link to the heading your cursor is in when a note is open, and to the file otherwise. They are the way to get an Obsidian link that jumps to a section. Absolute path and file:// URL are desktop-only; on mobile they produce nothing.
+The "to heading" and "to block" formats link to the heading or block your cursor is in when a note is open, and to the file otherwise. They are the way to get an Obsidian link that jumps to a section. Block links need a `^id` marker in the note; if the block has none, the plugin creates one (see [Block links](#block-links) below). Absolute path and file:// URL are desktop-only; on mobile they produce nothing.
 
 ## Custom formats
 
@@ -125,11 +127,22 @@ A token is a name in angle brackets. Unknown tokens are left as typed. Escape a 
 | `<heading>` | Heading the cursor sits under | Editor only |
 | `<obsidian-url-section>` | Obsidian URL to the cursor heading, or the file when there is none | All |
 | `<wikilink-section>` | Wiki link to the cursor heading, or the file when there is none | All |
+| `<block-id>` | Block id at the cursor, created if needed | Editor only |
+| `<obsidian-url-block>` | Obsidian URL to the cursor block, or the file when there is none | All |
+| `<wikilink-block>` | Wiki link to the cursor block, or the file when there is none | All |
 | `<nl>` | A literal newline | All |
 
-"Desktop only" tokens are blank on mobile. The "editor only" token fills in only when the file you copy is the file open in the editor. The settings preview flags both cases as you build a template.
+"Desktop only" tokens are blank on mobile. "Editor only" tokens fill in only when the file you copy is the file open in the editor. The settings preview flags both cases as you build a template.
 
 The full token reference, with worked examples and fallback behavior, is in [`token-usage.md`](./token-usage.md).
+
+## Block links
+
+The block tokens (`<block-id>`, `<obsidian-url-block>`, `<wikilink-block>`) link to a specific block, the paragraph or list item your cursor is in.
+
+A block link needs a `^id` marker in the note. Obsidian works this way for all block links. If the block at your cursor does not already have one, Shell Path Copy generates a short id and writes it into the note, exactly as Obsidian does when you create a block link yourself. This is the one case where the plugin modifies a note; every other format is read-only.
+
+If you copy a block format with no note open, or with the cursor on a heading line, the block link falls back to a plain file link and nothing is written.
 
 ## Settings
 
@@ -161,7 +174,7 @@ Bug reports and feature requests are welcome via [GitHub Issues](https://github.
 
 ## Privacy
 
-Shell Path Copy collects no data, stores nothing outside your own vault, and contains no network code. It reads a path you select and places it on your clipboard, nothing more. See [PRIVACY.md](./PRIVACY.md) for the full privacy policy and liability disclaimer, and [SECURITY.md](./SECURITY.md) for the security policy.
+Shell Path Copy collects no data, stores nothing outside your own vault, and contains no network code. It reads a path you select and places it on your clipboard. The one exception is the block link formats: when you use one, the plugin may add a `^id` marker to a note so the block can be linked to, exactly as Obsidian does for its own block links. See [PRIVACY.md](./PRIVACY.md) for the full privacy policy and liability disclaimer, and [SECURITY.md](./SECURITY.md) for the security policy.
 
 ## License
 

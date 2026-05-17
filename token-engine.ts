@@ -32,6 +32,8 @@ export interface TokenContext {
 	lineNumber: number | null;
 	/** Heading the cursor sits under, or null when there is none / no editor. */
 	currentHeading: string | null;
+	/** Block id at the cursor (created if needed), or null when not applicable. */
+	blockId: string | null;
 	/** Markdown link style chosen in plugin settings. */
 	markdownLinkFormat: MarkdownLinkFormat;
 	/** Injected so <date>/<time> are deterministic in tests. */
@@ -185,6 +187,22 @@ export const TOKENS: readonly TokenDef[] = [
 		},
 	},
 	{
+		name: 'obsidian-url-block',
+		tier: 'universal',
+		description: 'Obsidian URL to the cursor block, or the file when there is none',
+		resolve: (ctx) =>
+			buildObsidianUrl(ctx.vaultName, ctx.filePath, ctx.blockId ? `^${ctx.blockId}` : undefined),
+	},
+	{
+		name: 'wikilink-block',
+		tier: 'universal',
+		description: 'Wiki link to the cursor block, or the file when there is none',
+		resolve: (ctx) => {
+			const base = extractFilename(ctx.fileName, false);
+			return ctx.blockId ? `[[${base}#^${ctx.blockId}]]` : `[[${base}]]`;
+		},
+	},
+	{
 		name: 'date',
 		tier: 'universal',
 		description: 'Current date, YYYY-MM-DD',
@@ -207,6 +225,12 @@ export const TOKENS: readonly TokenDef[] = [
 		tier: 'editor',
 		description: 'Heading the cursor sits under (editor only)',
 		resolve: (ctx) => ctx.currentHeading ?? '',
+	},
+	{
+		name: 'block-id',
+		tier: 'editor',
+		description: 'Block id at the cursor, created if needed (editor only)',
+		resolve: (ctx) => ctx.blockId ?? '',
 	},
 	{
 		name: 'nl',

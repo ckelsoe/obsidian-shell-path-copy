@@ -171,6 +171,12 @@ describe('buildObsidianUrl', () => {
 		);
 	});
 
+	it('appends a block anchor as encoded #^id', () => {
+		expect(buildObsidianUrl('Vault', 'note.md', '^a1b2c3')).toBe(
+			'obsidian://open?vault=Vault&file=note%23%5Ea1b2c3'
+		);
+	});
+
 	it('ignores an empty heading', () => {
 		expect(buildObsidianUrl('Vault', 'note.md', '')).toBe(
 			'obsidian://open?vault=Vault&file=note'

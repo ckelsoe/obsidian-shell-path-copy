@@ -19,7 +19,8 @@ function getNodePath(): NodePathLike {
 // Settings schema version. Bumped when a one-time migration is needed.
 //   1: token engine; built-ins seeded as custom formats.
 //   2: heading-aware link seeds added.
-const SETTINGS_VERSION = 2;
+//   3: block-aware link seeds added.
+const SETTINGS_VERSION = 3;
 
 // A user-defined copy format. Each entry produces its own context-menu item and
 // command-palette command via the token engine. The 8 built-ins ship as seeded
@@ -87,8 +88,18 @@ const BUILTIN_SEEDS: SeedSpec[] = [
 	{ name: 'Example: line reference', template: '<filename-ext>#L<line-number>', icon: 'hash', wrapMode: 'plain', core: false, legacyKey: '', sinceVersion: 1 },
 	// Heading-aware links: jump to the cursor's heading, or the file if none.
 	{ name: 'Obsidian URL (to heading)', template: '<obsidian-url-section>', icon: 'link-2', wrapMode: 'plain', core: false, legacyKey: '', sinceVersion: 2 },
-	{ name: 'Wiki link (to heading)', template: '<wikilink-section>', icon: 'hash', wrapMode: 'plain', core: false, legacyKey: '', sinceVersion: 2 }
+	{ name: 'Wiki link (to heading)', template: '<wikilink-section>', icon: 'hash', wrapMode: 'plain', core: false, legacyKey: '', sinceVersion: 2 },
+	// Block-aware links: jump to the cursor's block, creating a block id if needed.
+	{ name: 'Obsidian URL (to block)', template: '<obsidian-url-block>', icon: 'link-2', wrapMode: 'plain', core: false, legacyKey: '', sinceVersion: 3 },
+	{ name: 'Wiki link (to block)', template: '<wikilink-block>', icon: 'hash', wrapMode: 'plain', core: false, legacyKey: '', sinceVersion: 3 }
 ];
+
+// Token names that need a block id resolved (which may write into the note).
+// A copy only touches the note when the template uses one of these.
+const BLOCK_TOKEN_NAMES = ['block-id', 'obsidian-url-block', 'wikilink-block'];
+function templateUsesBlockToken(template: string): boolean {
+	return BLOCK_TOKEN_NAMES.some((name) => template.includes(`<${name}>`));
+}
 
 // Generates a stable id for a custom format. Prefers crypto.randomUUID (available
 // in Obsidian's Electron and modern mobile runtimes); falls back to a timestamp +
@@ -307,8 +318,10 @@ export default class ShellPathCopyPlugin extends Plugin {
 	// Assembles the token context for a copy. All Obsidian API access for the
 	// token engine happens here so the engine itself stays pure and testable.
 	// `editor` is supplied by the in-document right-click; otherwise the active
-	// editor is used when it is showing the file being copied.
-	private buildTokenContext(file: TAbstractFile, editor?: Editor): TokenContext {
+	// editor is used when it is showing the file being copied. When
+	// `ensureBlockId` is set and the cursor is on a block, a block id is read or
+	// created (which writes into the note).
+	private buildTokenContext(file: TAbstractFile, editor?: Editor, ensureBlockId = false): TokenContext {
 		let absolutePath: string | null = null;
 		if (!Platform.isMobile) {
 			const adapter = this.app.vault.adapter;
@@ -327,9 +340,10 @@ export default class ShellPathCopyPlugin extends Plugin {
 			}
 		}
 
-		// The line number and heading come from that editor's cursor.
+		// The line number, heading, and block come from that editor's cursor.
 		let lineNumber: number | null = null;
 		let currentHeading: string | null = null;
+		let blockId: string | null = null;
 		if (sourceEditor && file instanceof TFile) {
 			const cursorLine = sourceEditor.getCursor().line;
 			lineNumber = cursorLine + 1;
@@ -344,6 +358,9 @@ export default class ShellPathCopyPlugin extends Plugin {
 					}
 				}
 			}
+			if (ensureBlockId) {
+				blockId = this.resolveBlockId(file, sourceEditor, cursorLine);
+			}
 		}
 
 		return {
@@ -355,9 +372,45 @@ export default class ShellPathCopyPlugin extends Plugin {
 			absolutePath,
 			lineNumber,
 			currentHeading,
+			blockId,
 			markdownLinkFormat: this.settings.markdownLinkFormat,
 			now: new Date()
 		};
+	}
+
+	// Returns the block id for the block at the cursor, creating and writing one
+	// into the note when the block has none. Returns null for headings, frontmatter,
+	// or when no block contains the cursor.
+	private resolveBlockId(file: TFile, editor: Editor, cursorLine: number): string | null {
+		const sections = this.app.metadataCache.getFileCache(file)?.sections;
+		if (!sections) {
+			return null;
+		}
+		const section = sections.find(
+			(s) => s.position.start.line <= cursorLine && cursorLine <= s.position.end.line
+		);
+		if (!section || section.type === 'heading' || section.type === 'yaml') {
+			return null;
+		}
+
+		// Read the id from the block's last line rather than trusting the cache,
+		// which may be stale right after a previous insertion.
+		const lastLine = section.position.end.line;
+		const text = editor.getLine(lastLine);
+		const existing = text.match(/[ \t]\^([a-zA-Z0-9-]+)\s*$/);
+		if (existing) {
+			return existing[1];
+		}
+
+		// Generate a fresh id not already used elsewhere in the note.
+		const used = this.app.metadataCache.getFileCache(file)?.blocks ?? {};
+		let id = '';
+		do {
+			id = Math.random().toString(36).slice(2, 8);
+		} while (used[id]);
+
+		editor.setLine(lastLine, `${text} ^${id}`);
+		return id;
 	}
 
 	async copyCustomFormat(formatId: string, file: TAbstractFile, editor?: Editor) {
@@ -377,7 +430,10 @@ export default class ShellPathCopyPlugin extends Plugin {
 				return;
 			}
 
-			const applied = applyTemplate(fmt.template, this.buildTokenContext(file, editor));
+			const applied = applyTemplate(
+				fmt.template,
+				this.buildTokenContext(file, editor, templateUsesBlockToken(fmt.template))
+			);
 			const result = wrapPath(applied.text, fmt.wrapping);
 
 			await navigator.clipboard.writeText(result);
@@ -763,6 +819,7 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 					: '/home/name/assorted/Notes/My file.md'),
 			lineNumber: 42,
 			currentHeading: 'My heading',
+			blockId: 'a1b2c3',
 			markdownLinkFormat: this.plugin.settings.markdownLinkFormat,
 			now: new Date()
 		};
