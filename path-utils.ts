@@ -41,9 +41,13 @@ export function buildFileUrl(absolutePath: string): string {
 	}
 }
 
-export function buildObsidianUrl(vaultName: string, filePath: string): string {
+export function buildObsidianUrl(vaultName: string, filePath: string, anchor?: string): string {
 	const normalizedPath = filePath.endsWith('.md') ? filePath.slice(0, -3) : filePath;
-	return `obsidian://open?vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(normalizedPath)}`;
+	// Obsidian's open URI has no separate heading or block parameter. The anchor
+	// is appended to the file value after "#": a heading name, or "^id" for a
+	// block. encodeURIComponent turns "#" into "%23" and "^" into "%5E".
+	const fileParam = anchor ? `${normalizedPath}#${anchor}` : normalizedPath;
+	return `obsidian://open?vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(fileParam)}`;
 }
 
 export function extractFilename(fileName: string, includeExtension: boolean): string {

@@ -44,6 +44,11 @@ jobs:
             styles.css
 
       - name: VirusTotal scan of release artifacts
+        # Best-effort: VirusTotal returns HTTP 409 ("resource already exists")
+        # when a byte-identical artifact was scanned before, and the action
+        # treats that as fatal. continue-on-error keeps a 409 (or any VirusTotal
+        # hiccup) from blocking the release; the scan still runs and reports.
+        continue-on-error: true
         uses: crazy-max/ghaction-virustotal@v4
         with:
           vt_api_key: ${{ secrets.VT_API_KEY }}
@@ -69,13 +74,19 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           tag="${GITHUB_REF#refs/tags/}"
+          # Mark pre-release tags (-beta/-rc/-alpha) so Obsidian's marketplace
+          # updater and stable BRAT installs do not pick them up as the latest.
+          prerelease=""
+          case "$tag" in
+            *-beta*|*-rc*|*-alpha*) prerelease="--prerelease" ;;
+          esac
           if [ -s release-notes.md ]; then
-            gh release create "$tag" \
+            gh release create "$tag" $prerelease \
               --title="$tag" \
               --notes-file release-notes.md \
               main.js manifest.json styles.css
           else
-            gh release create "$tag" \
+            gh release create "$tag" $prerelease \
               --title="$tag" \
               --generate-notes \
               main.js manifest.json styles.css

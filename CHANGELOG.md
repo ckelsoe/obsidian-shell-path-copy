@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Targeted for release as 2.0.0. A major version because the plugin is rewritten
+around a token engine, the fixed built-in formats are gone, the settings schema
+changed, and the minimum Obsidian version was raised.
+
+### Added
+- Custom formats: define your own copy formats as token templates. Each format
+  becomes its own right-click menu item and command-palette command, with its
+  own name, icon, wrapping, and visibility. Add as many as you want.
+- A token engine with tokens covering filename and extension, vault-relative and
+  absolute paths, `file://` and Obsidian URLs, Markdown and wiki links, heading
+  and block links, line number, date, and time. See `token-usage.md`.
+- Heading-aware and block-aware link formats that link to the heading or block
+  the cursor is in, or the file when there is none.
+- Copy formats now appear in the in-document right-click menu, not only the
+  file explorer.
+- Settings: a compact, drag-to-reorder format list (up and down buttons on
+  mobile) with an expand-to-edit panel, a clickable token palette, a live
+  preview, and a Desktop / Mobile support indicator.
+- `token-usage.md`, a full token reference.
+
+### Changed
+- Complete rewrite around the token engine. The eight former built-in formats
+  now ship as seeded, editable custom formats; there is no separate built-in
+  code path.
+- `minAppVersion` raised from `0.15.0` to `1.5.0` to match the Obsidian APIs the
+  plugin uses.
+- Settings redesigned. The fixed Path wrapping, Menu display, and
+  Paths/Links/Filenames sections are replaced by per-format options.
+- Manifest description rewritten for the token-template model.
+
+### Removed
+- The fixed built-in format toggles and the global path-wrapping and
+  menu-display settings.
+
+### Migration
+- Existing 1.18.x settings (which formats were enabled, path wrapping, and the
+  Markdown link format) are migrated automatically on first load. No action is
+  needed.
+
+### Note
+- Block link formats may add a `^id` block marker to a note so the block can be
+  linked to, the same as Obsidian does for its own block links. This is the only
+  case where the plugin modifies a note. See `PRIVACY.md`.
+
 ## [1.18.1] - 2026-05-12
 
 ### Fixed
@@ -185,7 +229,7 @@ The compiled `main.js` bundle is byte-identical to `1.18.0` (esbuild strips comm
 - Success notifications
 - Works on desktop and mobile platforms
 
-[unreleased]: https://github.com/ckelsoe/obsidian-shell-path-copy/compare/1.17.0...HEAD
+[unreleased]: https://github.com/ckelsoe/obsidian-shell-path-copy/compare/1.18.1...HEAD
 [1.17.0]: https://github.com/ckelsoe/obsidian-shell-path-copy/compare/1.16.1...1.17.0
 [1.16.1]: https://github.com/ckelsoe/obsidian-shell-path-copy/compare/1.16.0...1.16.1
 [1.16.0]: https://github.com/ckelsoe/obsidian-shell-path-copy/compare/1.15.0...1.16.0

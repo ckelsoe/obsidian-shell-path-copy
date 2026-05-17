@@ -6,3 +6,146 @@ Shell Path Copy Plugin Styles
 	text-align: center;
 	opacity: 0.8;
 }
+
+/* Custom formats settings section */
+
+.shell-path-copy-format-list {
+	margin: var(--size-4-2) 0;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	overflow: hidden;
+}
+
+.shell-path-copy-format-row {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2);
+	padding: var(--size-2-3) var(--size-4-2);
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.shell-path-copy-format-row:last-child {
+	border-bottom: none;
+}
+
+.shell-path-copy-format-row.is-dragging {
+	opacity: 0.5;
+}
+
+.shell-path-copy-format-row.is-dragover {
+	border-top: 2px solid var(--interactive-accent);
+}
+
+.shell-path-copy-drag-handle {
+	cursor: grab;
+	color: var(--text-faint);
+	display: flex;
+	align-items: center;
+}
+
+.shell-path-copy-move-button {
+	display: flex;
+	align-items: center;
+	padding: var(--size-2-1);
+}
+
+.shell-path-copy-format-icon {
+	display: flex;
+	align-items: center;
+	color: var(--text-muted);
+}
+
+.shell-path-copy-format-name {
+	flex-grow: 1;
+}
+
+.shell-path-copy-state-button {
+	min-width: 3.5em;
+}
+
+.shell-path-copy-state-button.is-off {
+	color: var(--text-muted);
+}
+
+.shell-path-copy-format-editor {
+	padding: var(--size-2-2) var(--size-4-3) var(--size-4-2);
+	border-bottom: 1px solid var(--background-modifier-border);
+	background-color: var(--background-secondary);
+}
+
+.shell-path-copy-format-editor:last-child {
+	border-bottom: none;
+}
+
+.shell-path-copy-template-input {
+	width: 100%;
+	min-height: 9em;
+	font-family: var(--font-monospace);
+	resize: vertical;
+}
+
+.shell-path-copy-token-palette {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--size-2-2);
+	padding: var(--size-2-2) 0;
+}
+
+.shell-path-copy-token-button {
+	font-family: var(--font-monospace);
+	font-size: var(--font-ui-smaller);
+	padding: var(--size-2-1) var(--size-2-2);
+	cursor: pointer;
+}
+
+.shell-path-copy-template-preview {
+	font-family: var(--font-monospace);
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+	white-space: pre-wrap;
+	word-break: break-all;
+	padding: var(--size-2-1) 0;
+}
+
+.shell-path-copy-format-info {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-2-1);
+	padding-bottom: var(--size-2-2);
+}
+
+.shell-path-copy-compat {
+	display: flex;
+	gap: var(--size-4-3);
+	padding: var(--size-2-1) 0;
+}
+
+.shell-path-copy-compat-item {
+	display: flex;
+	align-items: center;
+	gap: var(--size-2-1);
+}
+
+.shell-path-copy-compat-ok {
+	display: flex;
+	color: var(--text-success);
+}
+
+.shell-path-copy-compat-bad {
+	display: flex;
+	color: var(--text-error);
+}
+
+.shell-path-copy-info-note {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+}
+
+.shell-path-copy-badge-warn {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-on-accent);
+	background-color: var(--text-warning);
+	border-radius: var(--radius-s);
+	padding: var(--size-2-1) var(--size-2-2);
+	align-self: flex-start;
+}

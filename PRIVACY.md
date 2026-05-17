@@ -1,6 +1,6 @@
 # Privacy Policy
 
-_Last updated: 2026-05-15_
+_Last updated: 2026-05-17_
 
 This policy explains what the **Shell Path Copy** Obsidian plugin ("the plugin") does and does not do with your data. It applies to the plugin as distributed through the Obsidian Community Plugins marketplace, GitHub releases, and BRAT.
 
@@ -12,11 +12,14 @@ The plugin collects nothing, stores nothing outside your own vault, and sends no
 
 Shell Path Copy reads the path of a file or folder you select inside Obsidian, formats it, and places the result on your operating system's clipboard. That is the entire data flow.
 
+The block link formats are the one exception. When you copy a block link and the block at your cursor has no `^id` marker yet, the plugin writes a short generated id into that note, on your own device, so the block can be linked to. This is the same thing Obsidian does when you create a block link yourself. It happens only for the block link formats, only in the note you are copying from, and only by your explicit copy action. No other format modifies a note.
+
 ## Data collection
 
 - **No personal data is collected.** The plugin does not collect names, email addresses, file contents, usage statistics, or any other information.
 - **No telemetry or analytics.** There is no tracking, crash reporting, or phone-home behavior of any kind.
 - **No automatic background activity.** The plugin acts only when you explicitly invoke a copy command from the context menu or command palette.
+- **Note edits are limited and explicit.** The only change the plugin makes to a note is adding a block `^id` marker, and only when you copy a block link format for a block that lacks one.
 
 ## Data storage
 
