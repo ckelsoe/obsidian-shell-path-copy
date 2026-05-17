@@ -7,155 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [2.0.0-beta.10] - 2026-05-17
-
-This is the first beta of the 2.0 line. The 1.19.0-beta.1 through beta.9
-pre-releases (listed below) were the earlier betas of the same work, renumbered
-to 2.0.0 because the rewrite is large enough to warrant a major version: the
-fixed built-in formats are gone, the settings schema changed, and the minimum
-Obsidian version was raised.
-
-### Fixed
-- Block links now target list items correctly. A block link from inside a list
-  previously put the `^id` marker after the whole list. Block links support
-  paragraphs and list items; on a heading, table, code block, or other
-  multi-line construct they fall back to a file link rather than write a
-  misplaced marker.
-- Release workflow no longer fails on the VirusTotal step. VirusTotal returns
-  HTTP 409 for a byte-identical artifact it has already scanned; the step is now
-  best-effort (`continue-on-error`) so it never blocks a release.
-
-### Changed
-- `minAppVersion` raised from `0.15.0` to `1.5.0` to match the Obsidian APIs the
-  plugin actually uses. The old value was inaccurate.
-- Heading link tokens renamed for consistency with the block tokens:
-  `<obsidian-url-section>` is now `<obsidian-url-heading>`, `<wikilink-section>`
-  is now `<wikilink-heading>`.
-- On mobile, custom formats can be reordered with up and down buttons.
-  Drag-and-drop reordering is desktop-only (touch devices cannot drag).
-- Manifest description updated to reflect the token-template model.
-
-### Internal
-- Seed/migration and block-resolution logic extracted into pure, unit-tested
-  modules (`seed-utils`, `block-utils`). Duplicate format ids in a hand-edited
-  `data.json` are now reassigned.
-
-### Note
-Beta testers who enabled "Obsidian URL (to heading)" or "Wiki link (to heading)"
-before beta.10 have the old token name saved in that format; edit it to the new
-name or re-add the format. Stable 1.18.x users are unaffected.
-
-## [1.19.0-beta.9] - 2026-05-17
-
-### Added
-- Block links. Three tokens: `<block-id>`, `<obsidian-url-block>`, and
-  `<wikilink-block>`, linking to the block (paragraph or list item) at the
-  cursor.
-- Two seeded formats, disabled by default: "Obsidian URL (to block)" and
-  "Wiki link (to block)".
-
-### Changed
-- Copying a block link format adds a `^id` block marker to the note when the
-  block has none, the same as Obsidian does for its own block links. This is
-  the only format that modifies a note; `PRIVACY.md` is updated to describe it.
-- Settings schema is now version 3. Vaults on version 1 or 2 gain the new
-  block formats on first load; existing formats are untouched.
-
-## [1.19.0-beta.8] - 2026-05-17
-
-### Fixed
-- `<obsidian-url-section>` now jumps to the heading. Obsidian's open URI has no
-  separate heading parameter; the heading must be appended to the file value as
-  `#heading`. The previous `&heading=` query parameter was ignored, so the link
-  opened only the file.
-
-## [1.19.0-beta.7] - 2026-05-17
-
-### Added
-- Copy formats now appear in the in-document right-click menu, not only the
-  file explorer. Right-clicking inside a note resolves the heading-aware and
-  line-number tokens against the cursor position, so you can copy a link to
-  the heading you are in.
-
-### Fixed
-- Release workflow no longer fails on pre-release tags. The VirusTotal scan is
-  skipped for beta/rc/alpha builds, which otherwise resubmit byte-identical
-  files and get rejected with HTTP 409. Stable releases still scan.
-
-## [1.19.0-beta.5] - 2026-05-17
-
-### Added
-- Heading-aware linking. Three new tokens: `<heading>` (the heading the cursor
-  sits under), `<obsidian-url-section>`, and `<wikilink-section>`. The two
-  section tokens link to the cursor's heading when a note is open, and to the
-  file otherwise.
-- Two seeded formats, disabled by default: "Obsidian URL (to heading)" and
-  "Wiki link (to heading)".
-
-### Changed
-- Full README rewrite for the token-template model.
-
-### Note
-Settings schema is now version 2. Vaults already on version 1 gain the two new
-heading formats on first load; existing formats are untouched.
-
-## [1.19.0-beta.4] - 2026-05-17
-
-### Added
-- Two example formats from issue 13, seeded disabled: "name and Obsidian URL"
-  and "line reference".
-
-### Changed
-- Larger template editing box.
-- The mobile-portability warning is now a Desktop / Mobile support row with
-  check and cross icons, plus a note naming any token that is blank on mobile.
-
-## [1.19.0-beta.3] - 2026-05-17
-
-### Changed
-- The 8 built-in formats are now the seeded custom formats themselves. The
-  separate built-in code path is removed; every copy goes through the token
-  engine. Existing users' enabled formats and their wrapping and Markdown link
-  choices are migrated automatically on first load.
-- Settings redesigned: custom formats are a compact, drag-to-reorder list.
-  Click a format to expand its editor; the token palette appears once, inside
-  the open editor.
-
-### Added
-- Per-format icon picker.
-- Drag-and-drop reordering. List order is the menu order.
-
-### Removed
-- The fixed "Path wrapping", "Menu display", and Paths/Links/Filenames
-  settings sections, replaced by per-format options.
-
-### Note
-Custom formats created in 1.19.0-beta.1 or beta.2 are replaced by the
-migration. Beta data is disposable; this does not affect stable 1.18.x users.
-
-## [1.19.0-beta.2] - 2026-05-17
-
-### Added
-- The 8 built-in formats are now seeded into the custom formats list as
-  disabled, editable starting points (seeded once per vault). The live
-  built-in commands and menu items are unchanged.
-- Token palette: each custom format has a clickable button for every token
-  that inserts it into the template at the cursor.
-
-### Changed
-- The custom format template field is now a resizable textarea.
-
-## [1.19.0-beta.1] - 2026-05-17
+Targeted for release as 2.0.0. A major version because the plugin is rewritten
+around a token engine, the fixed built-in formats are gone, the settings schema
+changed, and the minimum Obsidian version was raised.
 
 ### Added
 - Custom formats: define your own copy formats as token templates. Each format
-  becomes its own context-menu item and command. Tokens cover filename, paths,
-  file/Obsidian URLs, line number, date, and more. See `token-usage.md` for the
-  full token reference.
-- Per-format wrapping (none, quotes, backticks) applied to the rendered result.
-- Live preview in settings with portability badges flagging tokens that are blank
-  on mobile or need the file open in the editor.
-- Setting to notify when a token could not be resolved.
+  becomes its own right-click menu item and command-palette command, with its
+  own name, icon, wrapping, and visibility. Add as many as you want.
+- A token engine with tokens covering filename and extension, vault-relative and
+  absolute paths, `file://` and Obsidian URLs, Markdown and wiki links, heading
+  and block links, line number, date, and time. See `token-usage.md`.
+- Heading-aware and block-aware link formats that link to the heading or block
+  the cursor is in, or the file when there is none.
+- Copy formats now appear in the in-document right-click menu, not only the
+  file explorer.
+- Settings: a compact, drag-to-reorder format list (up and down buttons on
+  mobile) with an expand-to-edit panel, a clickable token palette, a live
+  preview, and a Desktop / Mobile support indicator.
+- `token-usage.md`, a full token reference.
+
+### Changed
+- Complete rewrite around the token engine. The eight former built-in formats
+  now ship as seeded, editable custom formats; there is no separate built-in
+  code path.
+- `minAppVersion` raised from `0.15.0` to `1.5.0` to match the Obsidian APIs the
+  plugin uses.
+- Settings redesigned. The fixed Path wrapping, Menu display, and
+  Paths/Links/Filenames sections are replaced by per-format options.
+- Manifest description rewritten for the token-template model.
+
+### Removed
+- The fixed built-in format toggles and the global path-wrapping and
+  menu-display settings.
+
+### Migration
+- Existing 1.18.x settings (which formats were enabled, path wrapping, and the
+  Markdown link format) are migrated automatically on first load. No action is
+  needed.
+
+### Note
+- Block link formats may add a `^id` block marker to a note so the block can be
+  linked to, the same as Obsidian does for its own block links. This is the only
+  case where the plugin modifies a note. See `PRIVACY.md`.
 
 ## [1.18.1] - 2026-05-12
 
@@ -335,7 +229,7 @@ The compiled `main.js` bundle is byte-identical to `1.18.0` (esbuild strips comm
 - Success notifications
 - Works on desktop and mobile platforms
 
-[unreleased]: https://github.com/ckelsoe/obsidian-shell-path-copy/compare/1.17.0...HEAD
+[unreleased]: https://github.com/ckelsoe/obsidian-shell-path-copy/compare/1.18.1...HEAD
 [1.17.0]: https://github.com/ckelsoe/obsidian-shell-path-copy/compare/1.16.1...1.17.0
 [1.16.1]: https://github.com/ckelsoe/obsidian-shell-path-copy/compare/1.16.0...1.16.1
 [1.16.0]: https://github.com/ckelsoe/obsidian-shell-path-copy/compare/1.15.0...1.16.0
