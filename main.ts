@@ -1,4 +1,4 @@
-import { App, Menu, Notice, Plugin, PluginSettingTab, Setting, TAbstractFile, TFile, TextAreaComponent, Platform, FileSystemAdapter, setIcon } from 'obsidian';
+import { App, Editor, Menu, Notice, Plugin, PluginSettingTab, Setting, TAbstractFile, TFile, TextAreaComponent, Platform, FileSystemAdapter, setIcon } from 'obsidian';
 import { wrapPath, PathWrapping, MarkdownLinkFormat } from './path-utils';
 import { applyTemplate, validateTemplate, listTokens, TokenContext } from './token-engine';
 
@@ -184,10 +184,20 @@ export default class ShellPathCopyPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 
-		// Register the context menu event for files and folders
+		// File explorer right-click: act on the clicked file or folder.
 		this.registerEvent(
 			this.app.workspace.on('file-menu', (menu: Menu, file: TAbstractFile) => {
 				this.addPathCopyMenuItems(menu, file);
+			})
+		);
+
+		// In-document right-click: act on the open file, with the editor's
+		// cursor supplying the heading and line context.
+		this.registerEvent(
+			this.app.workspace.on('editor-menu', (menu, editor, info) => {
+				if (info.file) {
+					this.addPathCopyMenuItems(menu, info.file, editor);
+				}
 			})
 		);
 
@@ -268,7 +278,9 @@ export default class ShellPathCopyPlugin extends Plugin {
 		}
 	}
 
-	private addPathCopyMenuItems(menu: Menu, file: TAbstractFile) {
+	// Adds the enabled custom-format items to a context menu. `editor` is passed
+	// from the in-document right-click so the cursor's heading and line resolve.
+	private addPathCopyMenuItems(menu: Menu, file: TAbstractFile, editor?: Editor) {
 		const visible = this.settings.customFormats.filter((fmt) => fmt.enabled && fmt.showInMenu);
 		if (visible.length === 0) {
 			return;
@@ -286,7 +298,7 @@ export default class ShellPathCopyPlugin extends Plugin {
 					.setIcon(fmt.icon)
 					.setSection('shell-path-copy')
 					.onClick(async () => {
-						await this.copyCustomFormat(formatId, file);
+						await this.copyCustomFormat(formatId, file, editor);
 					});
 			});
 		}
@@ -294,7 +306,9 @@ export default class ShellPathCopyPlugin extends Plugin {
 
 	// Assembles the token context for a copy. All Obsidian API access for the
 	// token engine happens here so the engine itself stays pure and testable.
-	private buildTokenContext(file: TAbstractFile): TokenContext {
+	// `editor` is supplied by the in-document right-click; otherwise the active
+	// editor is used when it is showing the file being copied.
+	private buildTokenContext(file: TAbstractFile, editor?: Editor): TokenContext {
 		let absolutePath: string | null = null;
 		if (!Platform.isMobile) {
 			const adapter = this.app.vault.adapter;
@@ -303,17 +317,24 @@ export default class ShellPathCopyPlugin extends Plugin {
 			}
 		}
 
-		// The line number and heading belong to the editor's file, not
-		// necessarily the file being copied. Only resolve them when the editor
-		// is showing the same file.
+		// Resolve the editor showing this file: the one passed in (in-document
+		// right-click), or the active editor when it is showing the same file.
+		let sourceEditor: Editor | null = editor ?? null;
+		if (!sourceEditor) {
+			const activeEditor = this.app.workspace.activeEditor;
+			if (activeEditor?.editor && activeEditor.file && activeEditor.file.path === file.path) {
+				sourceEditor = activeEditor.editor;
+			}
+		}
+
+		// The line number and heading come from that editor's cursor.
 		let lineNumber: number | null = null;
 		let currentHeading: string | null = null;
-		const activeEditor = this.app.workspace.activeEditor;
-		if (activeEditor?.editor && activeEditor.file && activeEditor.file.path === file.path) {
-			const cursorLine = activeEditor.editor.getCursor().line;
+		if (sourceEditor && file instanceof TFile) {
+			const cursorLine = sourceEditor.getCursor().line;
 			lineNumber = cursorLine + 1;
 			// The cursor's heading is the last heading at or above the cursor.
-			const headings = this.app.metadataCache.getFileCache(activeEditor.file)?.headings;
+			const headings = this.app.metadataCache.getFileCache(file)?.headings;
 			if (headings) {
 				for (const entry of headings) {
 					if (entry.position.start.line <= cursorLine) {
@@ -339,7 +360,7 @@ export default class ShellPathCopyPlugin extends Plugin {
 		};
 	}
 
-	async copyCustomFormat(formatId: string, file: TAbstractFile) {
+	async copyCustomFormat(formatId: string, file: TAbstractFile, editor?: Editor) {
 		try {
 			if (!navigator.clipboard) {
 				throw new Error('Clipboard API not available.');
@@ -356,7 +377,7 @@ export default class ShellPathCopyPlugin extends Plugin {
 				return;
 			}
 
-			const applied = applyTemplate(fmt.template, this.buildTokenContext(file));
+			const applied = applyTemplate(fmt.template, this.buildTokenContext(file, editor));
 			const result = wrapPath(applied.text, fmt.wrapping);
 
 			await navigator.clipboard.writeText(result);

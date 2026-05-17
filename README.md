@@ -48,11 +48,13 @@ BRAT installs pre-release builds before they reach the Community Plugins marketp
 
 ## Quick start
 
-1. Right-click any file or folder in the file explorer.
-2. Pick a format from the Shell Path Copy section of the menu.
-3. The result is on your clipboard. Paste it.
+You can copy from three places:
 
-Or open the command palette (`Ctrl/Cmd+P`), type `Copy:`, and pick a format. The command acts on the active file.
+- **Right-click a file or folder** in the file explorer.
+- **Right-click inside an open note.** The formats act on that note, and the heading-aware formats link to the heading your cursor is in.
+- **Command palette** (`Ctrl/Cmd+P`): type `Copy:` and pick a format. It acts on the active file.
+
+Pick a format from the Shell Path Copy section of the menu; the result lands on your clipboard.
 
 Out of the box four formats are enabled: Relative Linux/macOS path, Relative Windows path, Obsidian URL, and Markdown link. Open the settings to enable the others or add your own.
 

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.19.0-beta.6] - 2026-05-17
+
+### Added
+- Copy formats now appear in the in-document right-click menu, not only the
+  file explorer. Right-clicking inside a note resolves the heading-aware and
+  line-number tokens against the cursor position, so you can copy a link to
+  the heading you are in.
+
 ## [1.19.0-beta.5] - 2026-05-17
 
 ### Added
