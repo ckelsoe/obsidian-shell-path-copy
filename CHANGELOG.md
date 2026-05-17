@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.19.0-beta.2] - 2026-05-17
+
+### Added
+- The 8 built-in formats are now seeded into the custom formats list as
+  disabled, editable starting points (seeded once per vault). The live
+  built-in commands and menu items are unchanged.
+- Token palette: each custom format has a clickable button for every token
+  that inserts it into the template at the cursor.
+
+### Changed
+- The custom format template field is now a resizable textarea.
+
 ## [1.19.0-beta.1] - 2026-05-17
 
 ### Added

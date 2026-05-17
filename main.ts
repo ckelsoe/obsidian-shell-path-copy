@@ -1,4 +1,4 @@
-import { App, Menu, Notice, Plugin, PluginSettingTab, Setting, TAbstractFile, TFile, Platform, FileSystemAdapter } from 'obsidian';
+import { App, Menu, Notice, Plugin, PluginSettingTab, Setting, TAbstractFile, TFile, TextAreaComponent, Platform, FileSystemAdapter } from 'obsidian';
 import { wrapPath, formatRelativePath, buildFileUrl, buildObsidianUrl, buildMarkdownLink, extractFilename, PathWrapping, MarkdownLinkFormat } from './path-utils';
 import { applyTemplate, validateTemplate, listTokens, TokenContext } from './token-engine';
 
@@ -43,6 +43,7 @@ interface PathCopySettings {
 	filenameUseWrapping: boolean;
 	customFormats: CustomFormat[];
 	warnOnUnresolvedTokens: boolean;
+	seededBuiltins: boolean; // true once the built-in seed formats have been added
 }
 
 const DEFAULT_SETTINGS: PathCopySettings = {
@@ -58,7 +59,35 @@ const DEFAULT_SETTINGS: PathCopySettings = {
 	showFilenameWithExt: true,
 	filenameUseWrapping: false,
 	customFormats: [],
-	warnOnUnresolvedTokens: true
+	warnOnUnresolvedTokens: true,
+	seededBuiltins: false
+}
+
+// The built-in formats expressed as token templates. Seeded once into a vault's
+// custom-format list as disabled, editable starting points. The 8 live built-in
+// commands and menu items are unaffected; these seeds only become visible if the
+// user enables them. Path formats default to backtick wrapping (shell-friendly,
+// the plugin default); URLs, links, and filenames are left unwrapped.
+function builtinSeedFormats(): CustomFormat[] {
+	const seeds: Array<Omit<CustomFormat, 'id' | 'enabled' | 'showInMenu' | 'showInCommands'>> = [
+		{ name: 'Linux/macOS path', template: '<relative-path-unix>', wrapping: 'backticks' },
+		{ name: 'Windows path', template: '<relative-path-windows>', wrapping: 'backticks' },
+		{ name: 'Absolute path', template: '<absolute-path>', wrapping: 'backticks' },
+		{ name: 'file:// URL', template: '<file-url>', wrapping: 'none' },
+		{ name: 'Obsidian URL', template: '<obsidian-url>', wrapping: 'none' },
+		{ name: 'Markdown link', template: '<markdown-link>', wrapping: 'none' },
+		{ name: 'Filename', template: '<filename>', wrapping: 'none' },
+		{ name: 'Filename with extension', template: '<filename-ext>', wrapping: 'none' }
+	];
+	return seeds.map((seed) => ({
+		id: generateFormatId(),
+		name: seed.name,
+		template: seed.template,
+		wrapping: seed.wrapping,
+		enabled: false,
+		showInMenu: true,
+		showInCommands: true
+	}));
 }
 
 // Generates a stable id for a custom format. Prefers crypto.randomUUID (available
@@ -125,6 +154,15 @@ export default class ShellPathCopyPlugin extends Plugin {
 		// Object.assign is shallow: guard the custom-formats array against a
 		// corrupt or hand-edited data.json and fill any missing per-item fields.
 		this.settings.customFormats = normalizeCustomFormats(this.settings.customFormats);
+
+		// Seed the built-in formats as disabled, editable starting points. The
+		// flag ensures this happens exactly once per vault, so formats the user
+		// later deletes are not re-created.
+		if (!this.settings.seededBuiltins) {
+			this.settings.customFormats.push(...builtinSeedFormats());
+			this.settings.seededBuiltins = true;
+			await this.saveSettings();
+		}
 	}
 
 	async saveSettings() {
@@ -1039,16 +1077,44 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 					this.display();
 				}));
 
+		let templateRef: TextAreaComponent;
 		new Setting(card)
 			.setName('Template')
-			.addText(text => text
-				.setValue(fmt.template)
-				.setPlaceholder('<filename> -> <obsidian-url>')
-				.onChange(async (value) => {
-					fmt.template = value;
-					this.renderPreview(previewEl, badgesEl, value);
-					await this.plugin.saveSettings();
-				}));
+			.setDesc('Use tokens like <filename>. Click a token below to insert it at the cursor.')
+			.addTextArea(text => {
+				templateRef = text;
+				text.setValue(fmt.template)
+					.setPlaceholder('<filename> -> <obsidian-url>')
+					.onChange(async (value) => {
+						fmt.template = value;
+						this.renderPreview(previewEl, badgesEl, value);
+						await this.plugin.saveSettings();
+					});
+				text.inputEl.addClass('shell-path-copy-template-input');
+			});
+
+		// Token palette: clicking a token inserts <token> at the cursor.
+		const palette = card.createDiv({ cls: 'shell-path-copy-token-palette' });
+		for (const token of listTokens()) {
+			const button = palette.createEl('button', {
+				cls: 'shell-path-copy-token-button',
+				text: `<${token.name}>`
+			});
+			button.addEventListener('click', () => {
+				const input = templateRef.inputEl;
+				const insert = `<${token.name}>`;
+				const start = input.selectionStart;
+				const end = input.selectionEnd;
+				const next = input.value.slice(0, start) + insert + input.value.slice(end);
+				templateRef.setValue(next);
+				fmt.template = next;
+				this.renderPreview(previewEl, badgesEl, next);
+				void this.plugin.saveSettings();
+				input.focus();
+				const caret = start + insert.length;
+				input.setSelectionRange(caret, caret);
+			});
+		}
 
 		previewEl = card.createDiv({ cls: 'shell-path-copy-template-preview' });
 		badgesEl = card.createDiv({ cls: 'shell-path-copy-badges' });
