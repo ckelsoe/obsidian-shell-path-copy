@@ -44,6 +44,9 @@ jobs:
             styles.css
 
       - name: VirusTotal scan of release artifacts
+        # Skipped for pre-release tags: rapid beta builds resubmit byte-identical
+        # files, which VirusTotal rejects with HTTP 409. Stable releases scan.
+        if: ${{ !contains(github.ref, '-beta') && !contains(github.ref, '-rc') && !contains(github.ref, '-alpha') }}
         uses: crazy-max/ghaction-virustotal@v4
         with:
           vt_api_key: ${{ secrets.VT_API_KEY }}
