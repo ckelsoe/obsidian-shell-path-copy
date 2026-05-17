@@ -2,21 +2,23 @@
 
 [![CI](https://img.shields.io/github/actions/workflow/status/ckelsoe/obsidian-shell-path-copy/ci.yml?branch=main&label=CI&logo=github)](https://github.com/ckelsoe/obsidian-shell-path-copy/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/actions/workflow/status/ckelsoe/obsidian-shell-path-copy/release.yml?label=Release&logo=github)](https://github.com/ckelsoe/obsidian-shell-path-copy/actions/workflows/release.yml) [![GitHub Downloads](https://img.shields.io/github/downloads/ckelsoe/obsidian-shell-path-copy/total?logo=github&label=Downloads)](https://github.com/ckelsoe/obsidian-shell-path-copy/releases) [![GitHub Stars](https://img.shields.io/github/stars/ckelsoe/obsidian-shell-path-copy?style=flat&logo=github&label=Stars)](https://github.com/ckelsoe/obsidian-shell-path-copy) [![Obsidian](https://img.shields.io/badge/Obsidian-v1.5.0%2B-7C3AED?logo=obsidian&logoColor=white)](https://obsidian.md) [![License](https://img.shields.io/github/license/ckelsoe/obsidian-shell-path-copy)](https://github.com/ckelsoe/obsidian-shell-path-copy/blob/main/LICENSE) [![Latest Release](https://img.shields.io/github/v/release/ckelsoe/obsidian-shell-path-copy?label=Latest)](https://github.com/ckelsoe/obsidian-shell-path-copy/releases/latest)
 
-Copy file and folder paths from your Obsidian vault in whatever format you need: shell paths, URLs, Markdown links, or your own custom formats built from tokens.
-
-## Why this plugin?
-
-Modern workflows mix Obsidian with terminals and AI assistants like Claude Code or Gemini CLI. You might run Obsidian on Windows with a WSL terminal, or on an iPad connected to a remote Linux server. In every case you face the same task: get a path out of your vault and into a shell command, a prompt, or a document, in the format that target expects.
-
-Obsidian's native "Copy file path" command is buried in the command palette and gives a single format. Shell Path Copy puts copy actions in the right-click menu and the command palette, and lets every format be exactly what you want.
+Copy a file or folder path out of your Obsidian vault. Right-click, pick a format, paste.
 
 ## What it does
 
-- **Token templates.** Every copy format is a small template such as `<filename> -> <obsidian-url>`. The plugin fills the tokens from the file you copy.
-- **Ready-made formats.** It ships with formats for relative paths, absolute paths, `file://` URLs, Obsidian URLs, Markdown links, and filenames, plus two example templates. Four are enabled out of the box; the rest are one toggle away.
-- **Fully customizable.** Rename, re-icon, reorder, edit, disable, delete any format, and add as many of your own as you like.
-- **Right-click menu and command palette.** Each enabled format can appear in either, both, or neither.
-- **Desktop and mobile.** Works on both. A few tokens are desktop-only; the settings panel tells you which.
+Right-click a file or folder, pick a format, and the result is on your clipboard. The command palette does the same for the note you have open.
+
+It comes with formats for relative and absolute paths, `file://` and Obsidian URLs, Markdown and wiki links, filenames, and links that point at a heading or a block. Four are turned on out of the box; the rest take one toggle in settings.
+
+If none of them fit, you can build your own. A format is a template such as `<filename> -> <obsidian-url>`, and the plugin fills in the tokens when you copy. This is optional. If the built-in formats cover you, you never have to touch a template.
+
+Works on desktop and mobile.
+
+## Why this plugin?
+
+Obsidian often sits next to a terminal or an AI assistant like Claude Code or Gemini CLI. You might run Obsidian on Windows with a WSL terminal, or on an iPad connected to a remote Linux server. Either way, you need a path out of your vault and into a shell command, a prompt, or a document, in the format that target expects.
+
+Obsidian's own "Copy file path" command is buried in the command palette and gives one format. Shell Path Copy puts copy actions in the right-click menu and the command palette, and lets each format be what you want.
 
 ## Installation
 

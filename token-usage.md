@@ -1,5 +1,8 @@
 # Token reference for custom formats
 
+You do not need this to use the plugin. The built-in formats copy paths and links
+without any tokens. This reference is for when you want to build your own format.
+
 Custom formats are template strings. The plugin substitutes any `<token>` with a value
 derived from the file you copy. Anything that is not a recognized token is left as typed.
 
