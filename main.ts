@@ -1,5 +1,6 @@
-import { App, Menu, Notice, Plugin, PluginSettingTab, Setting, TAbstractFile, Platform, FileSystemAdapter } from 'obsidian';
+import { App, Menu, Notice, Plugin, PluginSettingTab, Setting, TAbstractFile, TFile, Platform, FileSystemAdapter } from 'obsidian';
 import { wrapPath, formatRelativePath, buildFileUrl, buildObsidianUrl, buildMarkdownLink, extractFilename, PathWrapping, MarkdownLinkFormat } from './path-utils';
+import { applyTemplate, validateTemplate, listTokens, TokenContext } from './token-engine';
 
 // Node 'path' is only available on desktop. Load lazily behind a Platform.isDesktop
 // guard so mobile builds do not pull in unavailable Node built-ins. The narrow
@@ -16,6 +17,18 @@ function getNodePath(): NodePathLike {
 }
 
 
+// A user-defined custom copy format (issue 13). Each entry produces its own
+// context-menu item and command-palette command via the token engine.
+interface CustomFormat {
+	id: string;            // stable unique id, used for command ids
+	name: string;
+	template: string;
+	wrapping: PathWrapping; // applied around the rendered result
+	enabled: boolean;
+	showInMenu: boolean;
+	showInCommands: boolean;
+}
+
 interface PathCopySettings {
 	pathWrapping: PathWrapping;
 	showNotifications: boolean;
@@ -28,6 +41,8 @@ interface PathCopySettings {
 	showFilename: boolean;
 	showFilenameWithExt: boolean;
 	filenameUseWrapping: boolean;
+	customFormats: CustomFormat[];
+	warnOnUnresolvedTokens: boolean;
 }
 
 const DEFAULT_SETTINGS: PathCopySettings = {
@@ -41,7 +56,43 @@ const DEFAULT_SETTINGS: PathCopySettings = {
 	markdownLinkFormat: 'wiki-style',
 	showFilename: true,
 	showFilenameWithExt: true,
-	filenameUseWrapping: false
+	filenameUseWrapping: false,
+	customFormats: [],
+	warnOnUnresolvedTokens: true
+}
+
+// Generates a stable id for a custom format. Prefers crypto.randomUUID (available
+// in Obsidian's Electron and modern mobile runtimes); falls back to a timestamp +
+// random suffix where it is not.
+function generateFormatId(): string {
+	if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+		return crypto.randomUUID();
+	}
+	return `fmt-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e9).toString(36)}`;
+}
+
+// Coerces possibly-corrupt or hand-edited persisted data into a valid CustomFormat
+// array. Anything missing falls back to a safe default.
+function normalizeCustomFormats(value: unknown): CustomFormat[] {
+	if (!Array.isArray(value)) {
+		return [];
+	}
+	const validWrapping: PathWrapping[] = ['none', 'double-quotes', 'single-quotes', 'backticks'];
+	return value.map((raw): CustomFormat => {
+		const item = (raw ?? {}) as Partial<CustomFormat>;
+		const wrapping = validWrapping.includes(item.wrapping as PathWrapping)
+			? (item.wrapping as PathWrapping)
+			: 'none';
+		return {
+			id: typeof item.id === 'string' && item.id ? item.id : generateFormatId(),
+			name: typeof item.name === 'string' ? item.name : 'Custom format',
+			template: typeof item.template === 'string' ? item.template : '',
+			wrapping,
+			enabled: item.enabled !== false,
+			showInMenu: item.showInMenu !== false,
+			showInCommands: item.showInCommands !== false
+		};
+	});
 }
 
 export default class ShellPathCopyPlugin extends Plugin {
@@ -71,6 +122,9 @@ export default class ShellPathCopyPlugin extends Plugin {
 	async loadSettings() {
 		const data = (await this.loadData()) as Partial<PathCopySettings> | null;
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
+		// Object.assign is shallow: guard the custom-formats array against a
+		// corrupt or hand-edited data.json and fill any missing per-item fields.
+		this.settings.customFormats = normalizeCustomFormats(this.settings.customFormats);
 	}
 
 	async saveSettings() {
@@ -195,6 +249,26 @@ export default class ShellPathCopyPlugin extends Plugin {
 				}
 			});
 		}
+
+		// Register a command for each enabled custom format. Commands register
+		// once at onload; adding or renaming a format needs an Obsidian reload,
+		// consistent with the menuDisplay setting's existing behavior.
+		for (const fmt of this.settings.customFormats) {
+			if (!fmt.enabled || !fmt.showInCommands) {
+				continue;
+			}
+			const formatId = fmt.id;
+			this.addCommand({
+				id: `custom-format-${formatId}`,
+				name: `Copy: ${fmt.name}`,
+				callback: () => {
+					const file = this.getActiveOrFocusedFile();
+					if (file) {
+						void this.copyCustomFormat(formatId, file);
+					}
+				}
+			});
+		}
 	}
 
 	private createPathMenuItem(menu: Menu, file: TAbstractFile, format: 'unix' | 'windows') {
@@ -307,6 +381,24 @@ export default class ShellPathCopyPlugin extends Plugin {
 					.setSection('shell-path-copy')
 					.onClick(async () => {
 						await this.copyFilename(file, true);
+					});
+			});
+		}
+
+		// Add a menu item for each enabled custom format. The menu is rebuilt on
+		// every right-click, so menu changes take effect without a reload.
+		for (const fmt of this.settings.customFormats) {
+			if (!fmt.enabled || !fmt.showInMenu) {
+				continue;
+			}
+			const formatId = fmt.id;
+			menu.addItem((item) => {
+				item
+					.setTitle(fmt.name)
+					.setIcon('clipboard-copy')
+					.setSection('shell-path-copy')
+					.onClick(async () => {
+						await this.copyCustomFormat(formatId, file);
 					});
 			});
 		}
@@ -499,6 +591,82 @@ export default class ShellPathCopyPlugin extends Plugin {
 		}
 	}
 
+	// Assembles the token context for a copy. All Obsidian API access for the
+	// token engine happens here so the engine itself stays pure and testable.
+	private buildTokenContext(file: TAbstractFile): TokenContext {
+		let absolutePath: string | null = null;
+		if (!Platform.isMobile) {
+			const adapter = this.app.vault.adapter;
+			if (adapter instanceof FileSystemAdapter) {
+				absolutePath = getNodePath().join(adapter.getBasePath(), file.path);
+			}
+		}
+
+		// The line number belongs to the editor's file, not necessarily the file
+		// being copied. Only resolve it when the two are the same file.
+		let lineNumber: number | null = null;
+		const activeEditor = this.app.workspace.activeEditor;
+		if (activeEditor?.editor && activeEditor.file?.path === file.path) {
+			lineNumber = activeEditor.editor.getCursor().line + 1;
+		}
+
+		return {
+			fileName: file.name,
+			filePath: file.path,
+			isFolder: !(file instanceof TFile),
+			vaultName: this.app.vault.getName(),
+			isWindows: Platform.isWin,
+			absolutePath,
+			lineNumber,
+			markdownLinkFormat: this.settings.markdownLinkFormat,
+			now: new Date()
+		};
+	}
+
+	async copyCustomFormat(formatId: string, file: TAbstractFile) {
+		try {
+			if (!navigator.clipboard) {
+				throw new Error('Clipboard API not available.');
+			}
+
+			const fmt = this.settings.customFormats.find((f) => f.id === formatId);
+			if (!fmt) {
+				new Notice('Custom format not found. It may have been deleted.');
+				return;
+			}
+
+			if (fmt.template.trim() === '') {
+				new Notice('This custom format has an empty template.');
+				return;
+			}
+
+			const applied = applyTemplate(fmt.template, this.buildTokenContext(file));
+			const result = wrapPath(applied.text, fmt.wrapping);
+
+			await navigator.clipboard.writeText(result);
+
+			// Surface tokens that could not resolve, if the user wants the warning.
+			if (this.settings.warnOnUnresolvedTokens) {
+				if (applied.usedDesktopTokenOnMobile) {
+					new Notice('Absolute path / file URL tokens are unavailable here and were left blank.');
+				} else if (applied.usedEditorTokenWithoutEditor) {
+					new Notice('The line number was unavailable (file not open in the editor) and was left blank.');
+				}
+			}
+
+			if (this.settings.showNotifications) {
+				new Notice(`${fmt.name} copied!`);
+			}
+		} catch (error) {
+			if (error instanceof Error && error.message.includes('Clipboard API')) {
+				new Notice('Error: Clipboard API is not available in this environment.');
+			} else {
+				console.error('Shell Path Copy: Failed to copy custom format:', error);
+				new Notice('Failed to copy custom format. See console for details.');
+			}
+		}
+	}
+
 	private getActiveOrFocusedFile(): TAbstractFile | null {
 		const file = this.app.workspace.getActiveFile();
 
@@ -685,6 +853,9 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 					}));
 		}
 
+		// ── Custom formats ───────────────────────────────────────────────
+		this.renderCustomFormatsSection(containerEl);
+
 		// Add support links at the bottom
 		containerEl.createEl('br');
 		containerEl.createEl('br');
@@ -707,5 +878,227 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 		createExternalLink('GitHub', 'https://github.com/ckelsoe/obsidian-shell-path-copy');
 		footerDiv.createSpan({ text: ' | ' });
 		createExternalLink('Report Issues', 'https://github.com/ckelsoe/obsidian-shell-path-copy/issues');
+	}
+
+	// A fixed sample file used to render the live template preview. Reflects the
+	// host platform so the preview matches what the user will actually get.
+	private sampleContext(): TokenContext {
+		const isWindows = Platform.isWin;
+		return {
+			fileName: 'My file.md',
+			filePath: 'Notes/My file.md',
+			isFolder: false,
+			vaultName: 'assorted',
+			isWindows,
+			absolutePath: Platform.isMobile
+				? null
+				: (isWindows
+					? 'C:\\Users\\name\\assorted\\Notes\\My file.md'
+					: '/home/name/assorted/Notes/My file.md'),
+			lineNumber: 42,
+			markdownLinkFormat: this.plugin.settings.markdownLinkFormat,
+			now: new Date()
+		};
+	}
+
+	// Renders the live preview line and portability badges for one template.
+	private renderPreview(previewEl: HTMLElement, badgesEl: HTMLElement, template: string): void {
+		previewEl.empty();
+		badgesEl.empty();
+
+		if (template.trim() === '') {
+			previewEl.setText('Preview: (empty template)');
+			return;
+		}
+
+		const applied = applyTemplate(template, this.sampleContext());
+		previewEl.setText(`Preview: ${applied.text}`);
+
+		const shownBadges = new Set<string>();
+		for (const issue of validateTemplate(template)) {
+			let label: string;
+			switch (issue.kind) {
+				case 'unknown-token': label = issue.detail; break;
+				case 'desktop-only-token': label = 'Not portable: blank on mobile'; break;
+				case 'editor-only-token': label = 'Needs the file open in the editor'; break;
+				default: label = issue.detail; break;
+			}
+			if (shownBadges.has(label)) {
+				continue;
+			}
+			shownBadges.add(label);
+			badgesEl.createSpan({ cls: 'shell-path-copy-badge-warn', text: label });
+		}
+	}
+
+	// Renders the "Custom formats" settings section.
+	private renderCustomFormatsSection(containerEl: HTMLElement): void {
+		new Setting(containerEl).setName('Custom formats').setHeading();
+
+		const intro = containerEl.createDiv({ cls: 'setting-item-description' });
+		intro.createDiv({
+			text: 'Define your own copy formats using tokens. Each format becomes a context-menu item and a command.'
+		});
+
+		const tokenList = intro.createDiv({ cls: 'shell-path-copy-token-list' });
+		for (const token of listTokens()) {
+			const row = tokenList.createDiv();
+			row.createSpan({ cls: 'shell-path-copy-token-name', text: `<${token.name}>` });
+			let suffix = ` ${token.description}`;
+			if (token.tier === 'desktop') {
+				suffix += ' (desktop only)';
+			} else if (token.tier === 'editor') {
+				suffix += ' (editor only)';
+			}
+			row.createSpan({ text: suffix });
+		}
+
+		const formats = this.plugin.settings.customFormats;
+		formats.forEach((fmt, index) => {
+			this.renderCustomFormat(containerEl, fmt, index);
+		});
+
+		new Setting(containerEl)
+			.addButton(button => button
+				.setButtonText('Add custom format')
+				.setCta()
+				.onClick(async () => {
+					this.plugin.settings.customFormats.push({
+						id: generateFormatId(),
+						name: 'New format',
+						template: '',
+						wrapping: 'none',
+						enabled: true,
+						showInMenu: true,
+						showInCommands: true
+					});
+					await this.plugin.saveSettings();
+					new Notice('Please reload Obsidian for command palette changes to take effect');
+					this.display();
+				}));
+
+		new Setting(containerEl)
+			.setName('Notify when a token could not be resolved')
+			.setDesc('Show a notice when a desktop-only or editor-only token is left blank')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.warnOnUnresolvedTokens)
+				.onChange(async (value) => {
+					this.plugin.settings.warnOnUnresolvedTokens = value;
+					await this.plugin.saveSettings();
+				}));
+	}
+
+	// Renders the editor card for a single custom format.
+	private renderCustomFormat(containerEl: HTMLElement, fmt: CustomFormat, index: number): void {
+		const card = containerEl.createDiv({ cls: 'shell-path-copy-format-card' });
+		let pendingDelete = false;
+		let previewEl: HTMLElement;
+		let badgesEl: HTMLElement;
+
+		new Setting(card)
+			.setName('Name')
+			.addText(text => text
+				.setValue(fmt.name)
+				.onChange(async (value) => {
+					fmt.name = value;
+					await this.plugin.saveSettings();
+				}))
+			.addExtraButton(btn => btn
+				.setIcon('arrow-up')
+				.onClick(() => {
+					const list = this.plugin.settings.customFormats;
+					if (index === 0) {
+						return;
+					}
+					[list[index - 1], list[index]] = [list[index], list[index - 1]];
+					void this.plugin.saveSettings();
+					this.display();
+				}))
+			.addExtraButton(btn => btn
+				.setIcon('arrow-down')
+				.onClick(() => {
+					const list = this.plugin.settings.customFormats;
+					if (index === list.length - 1) {
+						return;
+					}
+					[list[index + 1], list[index]] = [list[index], list[index + 1]];
+					void this.plugin.saveSettings();
+					this.display();
+				}))
+			.addExtraButton(btn => btn
+				.setIcon('trash')
+				.onClick(() => {
+					if (!pendingDelete) {
+						pendingDelete = true;
+						btn.setIcon('alert-triangle');
+						return;
+					}
+					this.plugin.settings.customFormats.splice(index, 1);
+					void this.plugin.saveSettings();
+					new Notice('Please reload Obsidian for command palette changes to take effect');
+					this.display();
+				}));
+
+		new Setting(card)
+			.setName('Template')
+			.addText(text => text
+				.setValue(fmt.template)
+				.setPlaceholder('<filename> -> <obsidian-url>')
+				.onChange(async (value) => {
+					fmt.template = value;
+					this.renderPreview(previewEl, badgesEl, value);
+					await this.plugin.saveSettings();
+				}));
+
+		previewEl = card.createDiv({ cls: 'shell-path-copy-template-preview' });
+		badgesEl = card.createDiv({ cls: 'shell-path-copy-badges' });
+		this.renderPreview(previewEl, badgesEl, fmt.template);
+
+		new Setting(card)
+			.setName('Wrapping')
+			.setDesc('Wrap the rendered result (useful for paths with spaces)')
+			.addDropdown(dropdown => dropdown
+				.addOption('none', 'None')
+				.addOption('double-quotes', 'Double quotes')
+				.addOption('single-quotes', 'Single quotes')
+				.addOption('backticks', 'Backticks')
+				.setValue(fmt.wrapping)
+				.onChange(async (value) => {
+					fmt.wrapping = value as PathWrapping;
+					this.renderPreview(previewEl, badgesEl, fmt.template);
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(card)
+			.setName('Enabled')
+			.setDesc('Turn this format on or off')
+			.addToggle(toggle => toggle
+				.setValue(fmt.enabled)
+				.onChange(async (value) => {
+					fmt.enabled = value;
+					await this.plugin.saveSettings();
+					new Notice('Please reload Obsidian for command palette changes to take effect');
+				}));
+
+		new Setting(card)
+			.setName('Show in menu')
+			.setDesc('Display this format in the file explorer right-click menu')
+			.addToggle(toggle => toggle
+				.setValue(fmt.showInMenu)
+				.onChange(async (value) => {
+					fmt.showInMenu = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(card)
+			.setName('Show in command palette')
+			.setDesc('Register this format as a command')
+			.addToggle(toggle => toggle
+				.setValue(fmt.showInCommands)
+				.onChange(async (value) => {
+					fmt.showInCommands = value;
+					await this.plugin.saveSettings();
+					new Notice('Please reload Obsidian for command palette changes to take effect');
+				}));
 	}
 }

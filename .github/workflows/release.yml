@@ -69,13 +69,19 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           tag="${GITHUB_REF#refs/tags/}"
+          # Mark pre-release tags (-beta/-rc/-alpha) so Obsidian's marketplace
+          # updater and stable BRAT installs do not pick them up as the latest.
+          prerelease=""
+          case "$tag" in
+            *-beta*|*-rc*|*-alpha*) prerelease="--prerelease" ;;
+          esac
           if [ -s release-notes.md ]; then
-            gh release create "$tag" \
+            gh release create "$tag" $prerelease \
               --title="$tag" \
               --notes-file release-notes.md \
               main.js manifest.json styles.css
           else
-            gh release create "$tag" \
+            gh release create "$tag" $prerelease \
               --title="$tag" \
               --generate-notes \
               main.js manifest.json styles.css

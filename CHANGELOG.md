@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.19.0-beta.1] - 2026-05-17
+
+### Added
+- Custom formats: define your own copy formats as token templates. Each format
+  becomes its own context-menu item and command. Tokens cover filename, paths,
+  file/Obsidian URLs, line number, date, and more. See `token-usage.md` for the
+  full token reference.
+- Per-format wrapping (none, quotes, backticks) applied to the rendered result.
+- Live preview in settings with portability badges flagging tokens that are blank
+  on mobile or need the file open in the editor.
+- Setting to notify when a token could not be resolved.
+
 ## [1.18.1] - 2026-05-12
 
 ### Fixed

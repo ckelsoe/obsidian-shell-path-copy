@@ -53,6 +53,7 @@ Shell Path Copy offers a comprehensive set of features designed to streamline yo
    * Double quotes: `"path/to/file"`
    * Single quotes: `'path/to/file'`
    * Backticks: `` `path/to/file` `` (default; recommended for paths with spaces).
+* **Custom formats**: define your own copy formats as token templates (e.g. `<filename> -> <obsidian-url>`). Each one becomes its own menu item and command. See [Custom formats](#custom-formats) below.
 * **Success notifications**: visual feedback when paths are copied.
 
 ## Installation
@@ -187,6 +188,24 @@ This is particularly useful for:
 * Cross-referencing files in project notes.
 * Building linked knowledge bases.
 
+## Custom formats
+
+If the built-in formats do not match what you need, define your own. A custom format is a template string containing tokens that the plugin substitutes from the file you copy.
+
+1. Open Settings → Community plugins → Shell Path Copy → Options.
+2. Scroll to **Custom formats** and click **Add custom format**.
+3. Give it a name and a template, for example `<filename> -> <obsidian-url>`.
+4. The settings panel shows a live preview as you type, plus badges warning you when a token will not work on mobile or needs the file open in the editor.
+5. Reload Obsidian so the new command registers. Your format then appears in the right-click menu and command palette.
+
+Example templates:
+
+* `<filename> -> <obsidian-url>` → `My file -> obsidian://open?vault=assorted&file=My%20file`
+* `<filename-ext>#L<line-number>` → `My file.md#L42`
+* `cat <relative-path-windows>` → `cat .\folder\My file.md`
+
+Each format has its own wrapping option (none, quotes, backticks) and toggles for whether it appears in the menu and command palette. The full list of tokens, with examples and fallback behavior, is in [`token-usage.md`](./token-usage.md).
+
 ## Compatibility with Notebook Navigator
 
 [Notebook Navigator](https://github.com/johansan/notebook-navigator) is a popular plugin that replaces Obsidian's default file explorer with an enhanced interface. If you use Notebook Navigator, you'll find that it includes some built-in path copying functionality.
@@ -235,7 +254,7 @@ We have no current plans to integrate directly with Notebook Navigator's context
 
 Access plugin settings via Settings → Community plugins → Shell Path Copy → Options.
 
-The settings tab is organized into three sections.
+The settings tab is organized into several sections.
 
 **Path wrapping**: choose how paths are wrapped when copied to the clipboard (none, double quotes, single quotes, or backticks).
 
@@ -263,6 +282,11 @@ The settings tab is organized into three sections.
 * **Show filename option**: toggle whether the copy filename (without extension) option appears in menus.
 * **Show filename with extension option**: toggle whether the copy filename (with extension) option appears in menus.
 * **Apply path wrapping to filenames**: when enabled, filenames use the same wrapping as paths (off by default).
+
+### Custom formats
+
+* **Add custom format**: create a token-template format. Each format has a name, template, wrapping option, and toggles for menu and command palette visibility. See [Custom formats](#custom-formats) above.
+* **Notify when a token could not be resolved**: show a notice when a desktop-only or editor-only token is left blank.
 
 ## Contributing
 
