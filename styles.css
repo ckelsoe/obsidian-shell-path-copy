@@ -43,6 +43,12 @@ Shell Path Copy Plugin Styles
 	align-items: center;
 }
 
+.shell-path-copy-move-button {
+	display: flex;
+	align-items: center;
+	padding: var(--size-2-1);
+}
+
 .shell-path-copy-format-icon {
 	display: flex;
 	align-items: center;

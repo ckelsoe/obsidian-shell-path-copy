@@ -172,13 +172,13 @@ export const TOKENS: readonly TokenDef[] = [
 		resolve: (ctx) => `[[${extractFilename(ctx.fileName, false)}]]`,
 	},
 	{
-		name: 'obsidian-url-section',
+		name: 'obsidian-url-heading',
 		tier: 'universal',
 		description: 'Obsidian URL to the cursor heading, or the file when there is none',
 		resolve: (ctx) => buildObsidianUrl(ctx.vaultName, ctx.filePath, ctx.currentHeading ?? undefined),
 	},
 	{
-		name: 'wikilink-section',
+		name: 'wikilink-heading',
 		tier: 'universal',
 		description: 'Wiki link to the cursor heading, or the file when there is none',
 		resolve: (ctx) => {

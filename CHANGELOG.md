@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0-beta.10] - 2026-05-17
+
+This is the first beta of the 2.0 line. The 1.19.0-beta.1 through beta.9
+pre-releases (listed below) were the earlier betas of the same work, renumbered
+to 2.0.0 because the rewrite is large enough to warrant a major version: the
+fixed built-in formats are gone, the settings schema changed, and the minimum
+Obsidian version was raised.
+
+### Fixed
+- Block links now target list items correctly. A block link from inside a list
+  previously put the `^id` marker after the whole list. Block links support
+  paragraphs and list items; on a heading, table, code block, or other
+  multi-line construct they fall back to a file link rather than write a
+  misplaced marker.
+- Release workflow no longer fails on the VirusTotal step. VirusTotal returns
+  HTTP 409 for a byte-identical artifact it has already scanned; the step is now
+  best-effort (`continue-on-error`) so it never blocks a release.
+
+### Changed
+- `minAppVersion` raised from `0.15.0` to `1.5.0` to match the Obsidian APIs the
+  plugin actually uses. The old value was inaccurate.
+- Heading link tokens renamed for consistency with the block tokens:
+  `<obsidian-url-section>` is now `<obsidian-url-heading>`, `<wikilink-section>`
+  is now `<wikilink-heading>`.
+- On mobile, custom formats can be reordered with up and down buttons.
+  Drag-and-drop reordering is desktop-only (touch devices cannot drag).
+- Manifest description updated to reflect the token-template model.
+
+### Internal
+- Seed/migration and block-resolution logic extracted into pure, unit-tested
+  modules (`seed-utils`, `block-utils`). Duplicate format ids in a hand-edited
+  `data.json` are now reassigned.
+
+### Note
+Beta testers who enabled "Obsidian URL (to heading)" or "Wiki link (to heading)"
+before beta.10 have the old token name saved in that format; edit it to the new
+name or re-add the format. Stable 1.18.x users are unaffected.
+
 ## [1.19.0-beta.9] - 2026-05-17
 
 ### Added

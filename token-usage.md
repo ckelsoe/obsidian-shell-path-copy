@@ -34,8 +34,8 @@ Every output on this page is computed against this fixed scenario:
 | `<time>` | Current time, `HH:mm` | universal | `14:30` |
 | `<line-number>` | Active editor cursor line, 1-based | editor only | `42` |
 | `<heading>` | Heading the cursor sits under | editor only | `Project notes` |
-| `<obsidian-url-section>` | Obsidian URL to the cursor heading, or the file when there is none | universal | `obsidian://open?vault=assorted&file=Notes%2FMy%20file%23Project%20notes` |
-| `<wikilink-section>` | Wiki link to the cursor heading, or the file when there is none | universal | `[[My file#Project notes]]` |
+| `<obsidian-url-heading>` | Obsidian URL to the cursor heading, or the file when there is none | universal | `obsidian://open?vault=assorted&file=Notes%2FMy%20file%23Project%20notes` |
+| `<wikilink-heading>` | Wiki link to the cursor heading, or the file when there is none | universal | `[[My file#Project notes]]` |
 | `<block-id>` | Block id at the cursor, created if needed | editor only | `a1b2c3` |
 | `<obsidian-url-block>` | Obsidian URL to the cursor block, or the file when there is none | universal | `obsidian://open?vault=assorted&file=Notes%2FMy%20file%23%5Ea1b2c3` |
 | `<wikilink-block>` | Wiki link to the cursor block, or the file when there is none | universal | `[[My file#^a1b2c3]]` |
@@ -73,9 +73,9 @@ To output a literal `<` or `>` or `\`, escape it with a backslash.
 - **Raw text** (no encoding): `<filename>`, `<filename-ext>`, `<extension>`,
   `<relative-path>`, `<relative-path-unix>`, `<relative-path-windows>`, `<absolute-path>`,
   `<vault-name>`, `<date>`, `<time>`, `<line-number>`, `<heading>`, `<block-id>`,
-  `<wikilink>`, `<wikilink-section>`, `<wikilink-block>`.
+  `<wikilink>`, `<wikilink-heading>`, `<wikilink-block>`.
 - **URL-encoded**: `<file-url>` (each path segment), `<obsidian-url>` (vault and file),
-  `<obsidian-url-section>` (vault, file, and heading), `<obsidian-url-block>` (vault, file,
+  `<obsidian-url-heading>` (vault, file, and heading), `<obsidian-url-block>` (vault, file,
   and block), `<vault-name-encoded>`.
 
 If you hand-build a URL, use the encoded tokens. Example: a vault named `My Vault` makes
@@ -86,13 +86,14 @@ If you hand-build a URL, use the encoded tokens. Example: a vault named `My Vaul
 - On mobile, `<absolute-path>` and `<file-url>` resolve to an empty string.
 - `<line-number>` and `<heading>` resolve to an empty string when no note is open, or when
   the file you copied is not the file currently open in the editor.
-- `<obsidian-url-section>` and `<wikilink-section>` never blank: with a heading they link to
+- `<obsidian-url-heading>` and `<wikilink-heading>` never blank: with a heading they link to
   it, otherwise they link to the file. They are the way to get an Obsidian link that jumps
   to the heading your cursor is in.
 - `<block-id>`, `<obsidian-url-block>`, and `<wikilink-block>` link to the block at the
   cursor. A block needs a `^id` marker; if the block has none, the plugin creates one and
-  writes it into the note (this is how Obsidian's own block links work). With no editor or
-  on a heading line, the block link tokens fall back to the file.
+  writes it into the note (this is how Obsidian's own block links work). They support
+  paragraphs and list items. With no editor, or on a heading, table, code block, or other
+  multi-line construct, the block link tokens fall back to the file.
 - When a token blanks out this way and "Notify when a token could not be resolved" is on,
   a notice explains which token was unavailable. The rest of the template still copies.
 - An unrecognized token such as `<bogus>` is left in the output verbatim as `<bogus>`, so

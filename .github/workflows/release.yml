@@ -44,9 +44,11 @@ jobs:
             styles.css
 
       - name: VirusTotal scan of release artifacts
-        # Skipped for pre-release tags: rapid beta builds resubmit byte-identical
-        # files, which VirusTotal rejects with HTTP 409. Stable releases scan.
-        if: ${{ !contains(github.ref, '-beta') && !contains(github.ref, '-rc') && !contains(github.ref, '-alpha') }}
+        # Best-effort: VirusTotal returns HTTP 409 ("resource already exists")
+        # when a byte-identical artifact was scanned before, and the action
+        # treats that as fatal. continue-on-error keeps a 409 (or any VirusTotal
+        # hiccup) from blocking the release; the scan still runs and reports.
+        continue-on-error: true
         uses: crazy-max/ghaction-virustotal@v4
         with:
           vt_api_key: ${{ secrets.VT_API_KEY }}

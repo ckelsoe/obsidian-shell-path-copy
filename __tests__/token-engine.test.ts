@@ -268,28 +268,28 @@ describe('applyTemplate - heading tokens', () => {
 		expect(applyTemplate('<heading>', noHeading).text).toBe('');
 	});
 
-	it('<obsidian-url-section> anchors to the heading when there is one', () => {
+	it('<obsidian-url-heading> anchors to the heading when there is one', () => {
 		// The heading goes into the file value as "#heading" (encoded %23);
 		// obsidian://open has no separate heading parameter.
-		expect(applyTemplate('<obsidian-url-section>', withHeading).text)
+		expect(applyTemplate('<obsidian-url-heading>', withHeading).text)
 			.toBe('obsidian://open?vault=assorted&file=Notes%2FMy%20file%23My%20heading');
 	});
 
-	it('<obsidian-url-section> falls back to the file URL with no heading', () => {
-		expect(applyTemplate('<obsidian-url-section>', noHeading).text)
+	it('<obsidian-url-heading> falls back to the file URL with no heading', () => {
+		expect(applyTemplate('<obsidian-url-heading>', noHeading).text)
 			.toBe('obsidian://open?vault=assorted&file=Notes%2FMy%20file');
 	});
 
-	it('<wikilink-section> anchors to the heading when there is one', () => {
-		expect(applyTemplate('<wikilink-section>', withHeading).text).toBe('[[My file#My heading]]');
+	it('<wikilink-heading> anchors to the heading when there is one', () => {
+		expect(applyTemplate('<wikilink-heading>', withHeading).text).toBe('[[My file#My heading]]');
 	});
 
-	it('<wikilink-section> falls back to the file link with no heading', () => {
-		expect(applyTemplate('<wikilink-section>', noHeading).text).toBe('[[My file]]');
+	it('<wikilink-heading> falls back to the file link with no heading', () => {
+		expect(applyTemplate('<wikilink-heading>', noHeading).text).toBe('[[My file]]');
 	});
 
 	it('the section tokens always resolve (universal tier)', () => {
-		const result = applyTemplate('<obsidian-url-section> <wikilink-section>', noHeading);
+		const result = applyTemplate('<obsidian-url-heading> <wikilink-heading>', noHeading);
 		expect(result.usedEditorTokenWithoutEditor).toBe(false);
 	});
 });

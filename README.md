@@ -1,6 +1,6 @@
 # Shell Path Copy for Obsidian
 
-[![CI](https://img.shields.io/github/actions/workflow/status/ckelsoe/obsidian-shell-path-copy/ci.yml?branch=main&label=CI&logo=github)](https://github.com/ckelsoe/obsidian-shell-path-copy/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/actions/workflow/status/ckelsoe/obsidian-shell-path-copy/release.yml?label=Release&logo=github)](https://github.com/ckelsoe/obsidian-shell-path-copy/actions/workflows/release.yml) [![GitHub Downloads](https://img.shields.io/github/downloads/ckelsoe/obsidian-shell-path-copy/total?logo=github&label=Downloads)](https://github.com/ckelsoe/obsidian-shell-path-copy/releases) [![GitHub Stars](https://img.shields.io/github/stars/ckelsoe/obsidian-shell-path-copy?style=flat&logo=github&label=Stars)](https://github.com/ckelsoe/obsidian-shell-path-copy) [![Obsidian](https://img.shields.io/badge/Obsidian-v0.15.0%2B-7C3AED?logo=obsidian&logoColor=white)](https://obsidian.md) [![License](https://img.shields.io/github/license/ckelsoe/obsidian-shell-path-copy)](https://github.com/ckelsoe/obsidian-shell-path-copy/blob/main/LICENSE) [![Latest Release](https://img.shields.io/github/v/release/ckelsoe/obsidian-shell-path-copy?label=Latest)](https://github.com/ckelsoe/obsidian-shell-path-copy/releases/latest)
+[![CI](https://img.shields.io/github/actions/workflow/status/ckelsoe/obsidian-shell-path-copy/ci.yml?branch=main&label=CI&logo=github)](https://github.com/ckelsoe/obsidian-shell-path-copy/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/actions/workflow/status/ckelsoe/obsidian-shell-path-copy/release.yml?label=Release&logo=github)](https://github.com/ckelsoe/obsidian-shell-path-copy/actions/workflows/release.yml) [![GitHub Downloads](https://img.shields.io/github/downloads/ckelsoe/obsidian-shell-path-copy/total?logo=github&label=Downloads)](https://github.com/ckelsoe/obsidian-shell-path-copy/releases) [![GitHub Stars](https://img.shields.io/github/stars/ckelsoe/obsidian-shell-path-copy?style=flat&logo=github&label=Stars)](https://github.com/ckelsoe/obsidian-shell-path-copy) [![Obsidian](https://img.shields.io/badge/Obsidian-v1.5.0%2B-7C3AED?logo=obsidian&logoColor=white)](https://obsidian.md) [![License](https://img.shields.io/github/license/ckelsoe/obsidian-shell-path-copy)](https://github.com/ckelsoe/obsidian-shell-path-copy/blob/main/LICENSE) [![Latest Release](https://img.shields.io/github/v/release/ckelsoe/obsidian-shell-path-copy?label=Latest)](https://github.com/ckelsoe/obsidian-shell-path-copy/releases/latest)
 
 Copy file and folder paths from your Obsidian vault in whatever format you need: shell paths, URLs, Markdown links, or your own custom formats built from tokens.
 
@@ -79,8 +79,8 @@ Six more formats ship disabled, ready to enable or copy from:
 |---|---|---|
 | Example: name and Obsidian URL | `<filename> -> <obsidian-url>` | `file -> obsidian://open?vault=MyVault&file=folder%2Ffile` |
 | Example: line reference | `<filename-ext>#L<line-number>` | `file.md#L42` |
-| Obsidian URL (to heading) | `<obsidian-url-section>` | `obsidian://open?vault=MyVault&file=folder%2Ffile%23Notes` |
-| Wiki link (to heading) | `<wikilink-section>` | `[[file#Notes]]` |
+| Obsidian URL (to heading) | `<obsidian-url-heading>` | `obsidian://open?vault=MyVault&file=folder%2Ffile%23Notes` |
+| Wiki link (to heading) | `<wikilink-heading>` | `[[file#Notes]]` |
 | Obsidian URL (to block) | `<obsidian-url-block>` | `obsidian://open?vault=MyVault&file=folder%2Ffile%23%5Ea1b2c3` |
 | Wiki link (to block) | `<wikilink-block>` | `[[file#^a1b2c3]]` |
 
@@ -125,8 +125,8 @@ A token is a name in angle brackets. Unknown tokens are left as typed. Escape a 
 | `<time>` | Current time, `HH:mm` | All |
 | `<line-number>` | Active editor cursor line | Editor only |
 | `<heading>` | Heading the cursor sits under | Editor only |
-| `<obsidian-url-section>` | Obsidian URL to the cursor heading, or the file when there is none | All |
-| `<wikilink-section>` | Wiki link to the cursor heading, or the file when there is none | All |
+| `<obsidian-url-heading>` | Obsidian URL to the cursor heading, or the file when there is none | All |
+| `<wikilink-heading>` | Wiki link to the cursor heading, or the file when there is none | All |
 | `<block-id>` | Block id at the cursor, created if needed | Editor only |
 | `<obsidian-url-block>` | Obsidian URL to the cursor block, or the file when there is none | All |
 | `<wikilink-block>` | Wiki link to the cursor block, or the file when there is none | All |
@@ -142,7 +142,7 @@ The block tokens (`<block-id>`, `<obsidian-url-block>`, `<wikilink-block>`) link
 
 A block link needs a `^id` marker in the note. Obsidian works this way for all block links. If the block at your cursor does not already have one, Shell Path Copy generates a short id and writes it into the note, exactly as Obsidian does when you create a block link yourself. This is the one case where the plugin modifies a note; every other format is read-only.
 
-If you copy a block format with no note open, or with the cursor on a heading line, the block link falls back to a plain file link and nothing is written.
+Block links support **paragraphs and list items**. If you copy a block format with no note open, or with the cursor on a heading, table, code block, or other multi-line construct, the block link falls back to a plain file link and nothing is written.
 
 ## Settings
 
