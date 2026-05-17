@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Targeted for release as 2.0.0. A major version because the plugin is rewritten
-around a token engine, the fixed built-in formats are gone, the settings schema
-changed, and the minimum Obsidian version was raised.
+## [2.0.0] - 2026-05-17
+
+A major version: the plugin is rewritten around a token engine. The fixed
+built-in formats are gone, the settings schema changed, and the minimum
+Obsidian version was raised. Existing 1.18.x settings migrate automatically.
 
 ### Added
 - Custom formats: define your own copy formats as token templates. Each format
@@ -229,7 +231,8 @@ The compiled `main.js` bundle is byte-identical to `1.18.0` (esbuild strips comm
 - Success notifications
 - Works on desktop and mobile platforms
 
-[unreleased]: https://github.com/ckelsoe/obsidian-shell-path-copy/compare/1.18.1...HEAD
+[unreleased]: https://github.com/ckelsoe/obsidian-shell-path-copy/compare/2.0.0...HEAD
+[2.0.0]: https://github.com/ckelsoe/obsidian-shell-path-copy/compare/1.18.1...2.0.0
 [1.17.0]: https://github.com/ckelsoe/obsidian-shell-path-copy/compare/1.16.1...1.17.0
 [1.16.1]: https://github.com/ckelsoe/obsidian-shell-path-copy/compare/1.16.0...1.16.1
 [1.16.0]: https://github.com/ckelsoe/obsidian-shell-path-copy/compare/1.15.0...1.16.0
