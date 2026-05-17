@@ -20,7 +20,7 @@ describe('seedAllFormats - fresh install', () => {
 	const formats = seedAllFormats(null);
 
 	it('seeds every built-in', () => {
-		expect(formats.length).toBe(14);
+		expect(formats.length).toBe(15);
 	});
 
 	it('enables exactly the core four', () => {
@@ -105,8 +105,15 @@ describe('seedFormatsForVersion', () => {
 		);
 	});
 
-	it('current version is 3', () => {
-		expect(SETTINGS_VERSION).toBe(3);
+	it('returns the plain-words line example for version 4', () => {
+		const formats = seedFormatsForVersion(4);
+		expect(formats.map((f) => f.name)).toEqual(['Example: name and line number']);
+		expect(formats[0].template).toBe('<filename-ext> Line <line-number>');
+		expect(formats[0].enabled).toBe(false);
+	});
+
+	it('current version is 4', () => {
+		expect(SETTINGS_VERSION).toBe(4);
 	});
 });
 

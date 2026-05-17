@@ -7,7 +7,8 @@ import { PathWrapping } from './path-utils';
 //   1: token engine; built-ins seeded as custom formats.
 //   2: heading-aware link seeds added.
 //   3: block-aware link seeds added.
-export const SETTINGS_VERSION = 3;
+//   4: plain-words line reference example seed added.
+export const SETTINGS_VERSION = 4;
 
 // A user-defined copy format. Each entry produces its own context-menu item and
 // command-palette command via the token engine. The built-ins ship as seeded
@@ -51,6 +52,7 @@ const BUILTIN_SEEDS: SeedSpec[] = [
 	// Example formats from issue 13. Seeded disabled as starting points.
 	{ name: 'Example: name and Obsidian URL', template: '<filename> -> <obsidian-url>', icon: 'link-2', wrapMode: 'plain', core: false, legacyKey: '', sinceVersion: 1 },
 	{ name: 'Example: line reference', template: '<filename-ext>#L<line-number>', icon: 'hash', wrapMode: 'plain', core: false, legacyKey: '', sinceVersion: 1 },
+	{ name: 'Example: name and line number', template: '<filename-ext> Line <line-number>', icon: 'hash', wrapMode: 'plain', core: false, legacyKey: '', sinceVersion: 4 },
 	// Heading-aware links: jump to the cursor's heading, or the file if none.
 	{ name: 'Obsidian URL (to heading)', template: '<obsidian-url-heading>', icon: 'link-2', wrapMode: 'plain', core: false, legacyKey: '', sinceVersion: 2 },
 	{ name: 'Wiki link (to heading)', template: '<wikilink-heading>', icon: 'hash', wrapMode: 'plain', core: false, legacyKey: '', sinceVersion: 2 },

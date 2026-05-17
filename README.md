@@ -75,12 +75,13 @@ These formats are seeded into every vault. Enable, edit, or delete any of them i
 | Filename | `<filename>` | `file` |
 | Filename with extension | `<filename-ext>` | `file.md` |
 
-Six more formats ship disabled, ready to enable or copy from:
+Seven more formats ship disabled, ready to enable or copy from:
 
 | Format | Template | Example result |
 |---|---|---|
 | Example: name and Obsidian URL | `<filename> -> <obsidian-url>` | `file -> obsidian://open?vault=MyVault&file=folder%2Ffile` |
 | Example: line reference | `<filename-ext>#L<line-number>` | `file.md#L42` |
+| Example: name and line number | `<filename-ext> Line <line-number>` | `file.md Line 42` |
 | Obsidian URL (to heading) | `<obsidian-url-heading>` | `obsidian://open?vault=MyVault&file=folder%2Ffile%23Notes` |
 | Wiki link (to heading) | `<wikilink-heading>` | `[[file#Notes]]` |
 | Obsidian URL (to block) | `<obsidian-url-block>` | `obsidian://open?vault=MyVault&file=folder%2Ffile%23%5Ea1b2c3` |

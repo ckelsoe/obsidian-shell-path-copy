@@ -53,6 +53,7 @@ Tier meaning: **universal** always resolves; **desktop only** is blank on mobile
 |---|---|
 | `<filename> -> <obsidian-url>` | `My file -> obsidian://open?vault=assorted&file=Notes%2FMy%20file` |
 | `<filename-ext>#L<line-number>` | `My file.md#L42` |
+| `<filename-ext> Line <line-number>` | `My file.md Line 42` |
 | `<relative-path-unix>:<line-number>` | `./Notes/My file.md:42` |
 | `cat <relative-path-windows>` | `cat .\Notes\My file.md` |
 | `[<filename>](<file-url>)` | `[My file](file:///C:/Users/name/assorted/Notes/My%20file.md)` |
