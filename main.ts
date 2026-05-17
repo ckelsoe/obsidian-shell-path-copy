@@ -1,5 +1,5 @@
-import { App, Menu, Notice, Plugin, PluginSettingTab, Setting, TAbstractFile, TFile, TextAreaComponent, Platform, FileSystemAdapter } from 'obsidian';
-import { wrapPath, formatRelativePath, buildFileUrl, buildObsidianUrl, buildMarkdownLink, extractFilename, PathWrapping, MarkdownLinkFormat } from './path-utils';
+import { App, Menu, Notice, Plugin, PluginSettingTab, Setting, TAbstractFile, TFile, TextAreaComponent, Platform, FileSystemAdapter, setIcon } from 'obsidian';
+import { wrapPath, PathWrapping, MarkdownLinkFormat } from './path-utils';
 import { applyTemplate, validateTemplate, listTokens, TokenContext } from './token-engine';
 
 // Node 'path' is only available on desktop. Load lazily behind a Platform.isDesktop
@@ -16,79 +16,70 @@ function getNodePath(): NodePathLike {
 	return require('path');
 }
 
+// Settings schema version. Bumped when a one-time migration is needed.
+const SETTINGS_VERSION = 1;
 
-// A user-defined custom copy format (issue 13). Each entry produces its own
-// context-menu item and command-palette command via the token engine.
+// A user-defined copy format. Each entry produces its own context-menu item and
+// command-palette command via the token engine. The 8 built-ins ship as seeded
+// CustomFormat entries; there is no separate built-in code path.
 interface CustomFormat {
 	id: string;            // stable unique id, used for command ids
 	name: string;
 	template: string;
 	wrapping: PathWrapping; // applied around the rendered result
+	icon: string;          // Lucide icon name shown in the menu
 	enabled: boolean;
 	showInMenu: boolean;
 	showInCommands: boolean;
 }
 
 interface PathCopySettings {
-	pathWrapping: PathWrapping;
 	showNotifications: boolean;
-	menuDisplay: 'both' | 'windows' | 'linux-mac';
-	showAbsolutePath: boolean;
-	showFileUrl: boolean;
-	showObsidianUrl: boolean;
-	showMarkdownLink: boolean;
 	markdownLinkFormat: MarkdownLinkFormat;
-	showFilename: boolean;
-	showFilenameWithExt: boolean;
-	filenameUseWrapping: boolean;
-	customFormats: CustomFormat[];
 	warnOnUnresolvedTokens: boolean;
-	seededBuiltins: boolean; // true once the built-in seed formats have been added
+	customFormats: CustomFormat[];
+	settingsVersion: number;
 }
 
 const DEFAULT_SETTINGS: PathCopySettings = {
-	pathWrapping: 'backticks',
 	showNotifications: true,
-	menuDisplay: 'both',
-	showAbsolutePath: true,
-	showFileUrl: true,
-	showObsidianUrl: true,
-	showMarkdownLink: true,
 	markdownLinkFormat: 'wiki-style',
-	showFilename: true,
-	showFilenameWithExt: true,
-	filenameUseWrapping: false,
-	customFormats: [],
 	warnOnUnresolvedTokens: true,
-	seededBuiltins: false
+	customFormats: [],
+	settingsVersion: 0
 }
 
-// The built-in formats expressed as token templates. Seeded once into a vault's
-// custom-format list as disabled, editable starting points. The 8 live built-in
-// commands and menu items are unaffected; these seeds only become visible if the
-// user enables them. Path formats default to backtick wrapping (shell-friendly,
-// the plugin default); URLs, links, and filenames are left unwrapped.
-function builtinSeedFormats(): CustomFormat[] {
-	const seeds: Array<Omit<CustomFormat, 'id' | 'enabled' | 'showInMenu' | 'showInCommands'>> = [
-		{ name: 'Linux/macOS path', template: '<relative-path-unix>', wrapping: 'backticks' },
-		{ name: 'Windows path', template: '<relative-path-windows>', wrapping: 'backticks' },
-		{ name: 'Absolute path', template: '<absolute-path>', wrapping: 'backticks' },
-		{ name: 'file:// URL', template: '<file-url>', wrapping: 'none' },
-		{ name: 'Obsidian URL', template: '<obsidian-url>', wrapping: 'none' },
-		{ name: 'Markdown link', template: '<markdown-link>', wrapping: 'none' },
-		{ name: 'Filename', template: '<filename>', wrapping: 'none' },
-		{ name: 'Filename with extension', template: '<filename-ext>', wrapping: 'none' }
-	];
-	return seeds.map((seed) => ({
-		id: generateFormatId(),
-		name: seed.name,
-		template: seed.template,
-		wrapping: seed.wrapping,
-		enabled: false,
-		showInMenu: true,
-		showInCommands: true
-	}));
+const VALID_WRAPPINGS: PathWrapping[] = ['none', 'double-quotes', 'single-quotes', 'backticks'];
+
+// Curated set of menu-relevant icons offered in the per-format icon picker.
+const ICON_CHOICES: string[] = [
+	'clipboard-copy', 'clipboard', 'copy', 'file', 'file-text', 'file-code',
+	'files', 'folder', 'folder-closed', 'link', 'link-2', 'globe', 'terminal',
+	'hash', 'book', 'bookmark', 'external-link', 'list'
+];
+
+// Specification for a seeded built-in format. `legacyKey` maps to the pre-1.19
+// boolean setting (or 'unix'/'windows' for the menuDisplay-governed paths) so
+// migration can carry the user's prior choices forward.
+interface SeedSpec {
+	name: string;
+	template: string;
+	icon: string;
+	wrapMode: 'path' | 'filename' | 'plain';
+	core: boolean;        // enabled by default on a fresh install
+	legacyKey: string;
 }
+
+const BUILTIN_SEEDS: SeedSpec[] = [
+	{ name: 'Relative Linux/macOS path', template: '<relative-path-unix>', icon: 'terminal', wrapMode: 'path', core: true, legacyKey: 'unix' },
+	{ name: 'Relative Windows path', template: '<relative-path-windows>', icon: 'folder-closed', wrapMode: 'path', core: true, legacyKey: 'windows' },
+	{ name: 'Absolute path', template: '<absolute-path>', icon: 'folder-closed', wrapMode: 'path', core: false, legacyKey: 'showAbsolutePath' },
+	{ name: 'file:// URL', template: '<file-url>', icon: 'globe', wrapMode: 'plain', core: false, legacyKey: 'showFileUrl' },
+	{ name: 'Obsidian URL', template: '<obsidian-url>', icon: 'link-2', wrapMode: 'plain', core: true, legacyKey: 'showObsidianUrl' },
+	{ name: 'Markdown link', template: '<markdown-link>', icon: 'link', wrapMode: 'plain', core: true, legacyKey: 'showMarkdownLink' },
+	{ name: 'Filename', template: '<filename>', icon: 'file-text', wrapMode: 'filename', core: false, legacyKey: 'showFilename' },
+	{ name: 'Filename with extension', template: '<filename-ext>', icon: 'file', wrapMode: 'filename', core: false, legacyKey: 'showFilenameWithExt' }
+];
 
 // Generates a stable id for a custom format. Prefers crypto.randomUUID (available
 // in Obsidian's Electron and modern mobile runtimes); falls back to a timestamp +
@@ -100,16 +91,59 @@ function generateFormatId(): string {
 	return `fmt-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e9).toString(36)}`;
 }
 
+// Builds the 8 seeded built-in formats. With no legacy data (fresh install) the
+// core set is enabled with default wrapping. With legacy data, enabled state and
+// wrapping are migrated from the pre-1.19 boolean settings so existing users keep
+// exactly what they had.
+function seedFormats(legacy: Record<string, unknown> | null): CustomFormat[] {
+	const oldWrap: PathWrapping = legacy && VALID_WRAPPINGS.includes(legacy.pathWrapping as PathWrapping)
+		? (legacy.pathWrapping as PathWrapping)
+		: 'backticks';
+	const menuDisplay = legacy ? legacy.menuDisplay : undefined;
+	const filenameWrap = legacy ? legacy.filenameUseWrapping === true : false;
+
+	return BUILTIN_SEEDS.map((spec): CustomFormat => {
+		let enabled: boolean;
+		if (!legacy) {
+			enabled = spec.core;
+		} else if (spec.legacyKey === 'unix') {
+			enabled = menuDisplay !== 'windows';
+		} else if (spec.legacyKey === 'windows') {
+			enabled = menuDisplay !== 'linux-mac';
+		} else {
+			// Pre-1.19 show* booleans defaulted to true; absent counts as enabled.
+			enabled = legacy[spec.legacyKey] !== false;
+		}
+
+		let wrapping: PathWrapping = 'none';
+		if (spec.wrapMode === 'path') {
+			wrapping = legacy ? oldWrap : 'backticks';
+		} else if (spec.wrapMode === 'filename') {
+			wrapping = legacy && filenameWrap ? oldWrap : 'none';
+		}
+
+		return {
+			id: generateFormatId(),
+			name: spec.name,
+			template: spec.template,
+			wrapping,
+			icon: spec.icon,
+			enabled,
+			showInMenu: true,
+			showInCommands: true
+		};
+	});
+}
+
 // Coerces possibly-corrupt or hand-edited persisted data into a valid CustomFormat
 // array. Anything missing falls back to a safe default.
 function normalizeCustomFormats(value: unknown): CustomFormat[] {
 	if (!Array.isArray(value)) {
 		return [];
 	}
-	const validWrapping: PathWrapping[] = ['none', 'double-quotes', 'single-quotes', 'backticks'];
 	return value.map((raw): CustomFormat => {
 		const item = (raw ?? {}) as Partial<CustomFormat>;
-		const wrapping = validWrapping.includes(item.wrapping as PathWrapping)
+		const wrapping = VALID_WRAPPINGS.includes(item.wrapping as PathWrapping)
 			? (item.wrapping as PathWrapping)
 			: 'none';
 		return {
@@ -117,6 +151,7 @@ function normalizeCustomFormats(value: unknown): CustomFormat[] {
 			name: typeof item.name === 'string' ? item.name : 'Custom format',
 			template: typeof item.template === 'string' ? item.template : '',
 			wrapping,
+			icon: typeof item.icon === 'string' && item.icon ? item.icon : 'clipboard-copy',
 			enabled: item.enabled !== false,
 			showInMenu: item.showInMenu !== false,
 			showInCommands: item.showInCommands !== false
@@ -149,18 +184,40 @@ export default class ShellPathCopyPlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		const data = (await this.loadData()) as Partial<PathCopySettings> | null;
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
-		// Object.assign is shallow: guard the custom-formats array against a
-		// corrupt or hand-edited data.json and fill any missing per-item fields.
-		this.settings.customFormats = normalizeCustomFormats(this.settings.customFormats);
+		const raw = (await this.loadData()) as Record<string, unknown> | null;
+		this.settings = { ...DEFAULT_SETTINGS };
 
-		// Seed the built-in formats as disabled, editable starting points. The
-		// flag ensures this happens exactly once per vault, so formats the user
-		// later deletes are not re-created.
-		if (!this.settings.seededBuiltins) {
-			this.settings.customFormats.push(...builtinSeedFormats());
-			this.settings.seededBuiltins = true;
+		// Fresh install: seed the built-in formats with the core set enabled.
+		if (raw === null) {
+			this.settings.customFormats = seedFormats(null);
+			this.settings.settingsVersion = SETTINGS_VERSION;
+			await this.saveSettings();
+			return;
+		}
+
+		// Copy forward the settings that survive into 1.19.
+		if (typeof raw.showNotifications === 'boolean') {
+			this.settings.showNotifications = raw.showNotifications;
+		}
+		if (raw.markdownLinkFormat === 'wiki-style' || raw.markdownLinkFormat === 'standard-markdown') {
+			this.settings.markdownLinkFormat = raw.markdownLinkFormat;
+		}
+		if (typeof raw.warnOnUnresolvedTokens === 'boolean') {
+			this.settings.warnOnUnresolvedTokens = raw.warnOnUnresolvedTokens;
+		}
+		if (typeof raw.settingsVersion === 'number') {
+			this.settings.settingsVersion = raw.settingsVersion;
+		}
+		this.settings.customFormats = normalizeCustomFormats(raw.customFormats);
+
+		// One-time migration from the pre-1.19 fixed built-in settings. The 8
+		// built-ins are reinstalled as seeded formats with enabled state and
+		// wrapping carried over from the old boolean settings. Pre-1.19 users had
+		// no custom formats, so nothing is lost; pre-release beta formats are
+		// replaced (beta data is disposable).
+		if (this.settings.settingsVersion < SETTINGS_VERSION) {
+			this.settings.customFormats = seedFormats(raw);
+			this.settings.settingsVersion = SETTINGS_VERSION;
 			await this.saveSettings();
 		}
 	}
@@ -170,127 +227,8 @@ export default class ShellPathCopyPlugin extends Plugin {
 	}
 
 	private registerCommands() {
-		const showBoth = this.settings.menuDisplay === 'both';
-		const showWindows = this.settings.menuDisplay === 'windows';
-		const showLinuxMac = this.settings.menuDisplay === 'linux-mac';
-
-		// Direct format commands (always registered, respecting menuDisplay setting)
-		if (showBoth || showLinuxMac) {
-			this.addCommand({
-				id: 'copy-unix-path',
-				name: 'Copy as Linux/macOS path',
-				callback: () => {
-					const file = this.getActiveOrFocusedFile();
-					if (file) {
-						void this.copyPath(file, 'unix');
-					}
-				}
-			});
-		}
-
-		if (showBoth || showWindows) {
-			this.addCommand({
-				id: 'copy-windows-path',
-				name: 'Copy as Windows path',
-				callback: () => {
-					const file = this.getActiveOrFocusedFile();
-					if (file) {
-						void this.copyPath(file, 'windows');
-					}
-				}
-			});
-		}
-
-		// Add absolute path command ONLY on desktop and if enabled
-		if (!Platform.isMobile && this.settings.showAbsolutePath) {
-			// Determine OS-specific naming for clarity
-			const osName = Platform.isWin ? 'Windows' : 'Linux/macOS';
-
-			this.addCommand({
-				id: 'copy-absolute-path',
-				name: `Copy as absolute ${osName} path`,
-				callback: () => {
-					const file = this.getActiveOrFocusedFile();
-					if (file) {
-						void this.copyAbsolutePath(file);
-					}
-				}
-			});
-		}
-
-		// Add file URL command ONLY on desktop and if enabled
-		if (!Platform.isMobile && this.settings.showFileUrl) {
-			this.addCommand({
-				id: 'copy-file-url',
-				name: 'Copy as file:// URL',
-				callback: () => {
-					const file = this.getActiveOrFocusedFile();
-					if (file) {
-						void this.copyFileUrl(file);
-					}
-				}
-			});
-		}
-
-		// Add Obsidian URL command if enabled
-		if (this.settings.showObsidianUrl) {
-			this.addCommand({
-				id: 'copy-obsidian-url',
-				name: 'Copy as Obsidian URL',
-				callback: () => {
-					const file = this.getActiveOrFocusedFile();
-					if (file) {
-						void this.copyObsidianUrl(file);
-					}
-				}
-			});
-		}
-
-		// Add markdown link command if enabled
-		if (this.settings.showMarkdownLink) {
-			this.addCommand({
-				id: 'copy-markdown-link',
-				name: 'Copy as Markdown link',
-				callback: () => {
-					const file = this.getActiveOrFocusedFile();
-					if (file) {
-						void this.copyMarkdownLink(file);
-					}
-				}
-			});
-		}
-
-		// Add filename command if enabled
-		if (this.settings.showFilename) {
-			this.addCommand({
-				id: 'copy-filename',
-				name: 'Copy filename',
-				callback: () => {
-					const file = this.getActiveOrFocusedFile();
-					if (file) {
-						void this.copyFilename(file, false);
-					}
-				}
-			});
-		}
-
-		// Add filename with extension command if enabled
-		if (this.settings.showFilenameWithExt) {
-			this.addCommand({
-				id: 'copy-filename-with-ext',
-				name: 'Copy filename with extension',
-				callback: () => {
-					const file = this.getActiveOrFocusedFile();
-					if (file) {
-						void this.copyFilename(file, true);
-					}
-				}
-			});
-		}
-
-		// Register a command for each enabled custom format. Commands register
-		// once at onload; adding or renaming a format needs an Obsidian reload,
-		// consistent with the menuDisplay setting's existing behavior.
+		// One command per enabled custom format. Commands register once at
+		// onload; adding, renaming, or toggling a format needs an Obsidian reload.
 		for (const fmt of this.settings.customFormats) {
 			if (!fmt.enabled || !fmt.showInCommands) {
 				continue;
@@ -309,323 +247,27 @@ export default class ShellPathCopyPlugin extends Plugin {
 		}
 	}
 
-	private createPathMenuItem(menu: Menu, file: TAbstractFile, format: 'unix' | 'windows') {
-		const isUnix = format === 'unix';
-		const title = isUnix ? 'Copy relative Linux/macOS path' : 'Copy relative Windows path';
-		const icon = isUnix ? 'terminal' : 'folder-closed';
-
-		menu.addItem((item) => {
-			item
-				.setTitle(title)
-				.setIcon(icon)
-				.setSection('shell-path-copy')
-				.onClick(async () => {
-					await this.copyPath(file, format);
-				});
-		});
-	}
-
 	private addPathCopyMenuItems(menu: Menu, file: TAbstractFile) {
-		const showBoth = this.settings.menuDisplay === 'both';
-		const showWindows = this.settings.menuDisplay === 'windows';
-		const showLinuxMac = this.settings.menuDisplay === 'linux-mac';
+		const visible = this.settings.customFormats.filter((fmt) => fmt.enabled && fmt.showInMenu);
+		if (visible.length === 0) {
+			return;
+		}
 
 		menu.addSeparator();
 
-		// Show relative path options based on settings
-		if (showBoth || showLinuxMac) {
-			this.createPathMenuItem(menu, file, 'unix');
-		}
-
-		if (showBoth || showWindows) {
-			this.createPathMenuItem(menu, file, 'windows');
-		}
-
-		// Add absolute path option ONLY on desktop and if enabled
-		if (!Platform.isMobile && this.settings.showAbsolutePath) {
-			// Determine OS-specific naming and icon for clarity
-			const osName = Platform.isWin ? 'Windows' : 'Linux/macOS';
-			const icon = Platform.isWin ? 'folder-closed' : 'terminal';
-
-			menu.addItem((item) => {
-				item
-					.setTitle(`Copy absolute ${osName} path`)
-					.setIcon(icon)
-					.setSection('shell-path-copy')
-					.onClick(async () => {
-						await this.copyAbsolutePath(file);
-					});
-			});
-		}
-
-		// Add file URL option ONLY on desktop and if enabled
-		if (!Platform.isMobile && this.settings.showFileUrl) {
-			menu.addItem((item) => {
-				item
-					.setTitle('Copy as file:// URL')
-					.setIcon('globe')
-					.setSection('shell-path-copy')
-					.onClick(async () => {
-						await this.copyFileUrl(file);
-					});
-			});
-		}
-
-		// Add Obsidian URL option if enabled
-		if (this.settings.showObsidianUrl) {
-			menu.addItem((item) => {
-				item
-					.setTitle('Copy as Obsidian URL')
-					.setIcon('link-2')
-					.setSection('shell-path-copy')
-					.onClick(async () => {
-						await this.copyObsidianUrl(file);
-					});
-			});
-		}
-
-		// Add markdown link option if enabled
-		if (this.settings.showMarkdownLink) {
-			menu.addItem((item) => {
-				item
-					.setTitle('Copy as Markdown link')
-					.setIcon('link')
-					.setSection('shell-path-copy')
-					.onClick(async () => {
-						await this.copyMarkdownLink(file);
-					});
-			});
-		}
-
-		// Add filename option if enabled
-		if (this.settings.showFilename) {
-			menu.addItem((item) => {
-				item
-					.setTitle('Copy filename')
-					.setIcon('file-text')
-					.setSection('shell-path-copy')
-					.onClick(async () => {
-						await this.copyFilename(file, false);
-					});
-			});
-		}
-
-		// Add filename with extension option if enabled
-		if (this.settings.showFilenameWithExt) {
-			menu.addItem((item) => {
-				item
-					.setTitle('Copy filename with extension')
-					.setIcon('file')
-					.setSection('shell-path-copy')
-					.onClick(async () => {
-						await this.copyFilename(file, true);
-					});
-			});
-		}
-
-		// Add a menu item for each enabled custom format. The menu is rebuilt on
-		// every right-click, so menu changes take effect without a reload.
-		for (const fmt of this.settings.customFormats) {
-			if (!fmt.enabled || !fmt.showInMenu) {
-				continue;
-			}
+		// The menu is rebuilt on every right-click, so menu changes take effect
+		// without a reload.
+		for (const fmt of visible) {
 			const formatId = fmt.id;
 			menu.addItem((item) => {
 				item
 					.setTitle(fmt.name)
-					.setIcon('clipboard-copy')
+					.setIcon(fmt.icon)
 					.setSection('shell-path-copy')
 					.onClick(async () => {
 						await this.copyCustomFormat(formatId, file);
 					});
 			});
-		}
-	}
-
-	async copyPath(file: TAbstractFile, format: 'unix' | 'windows') {
-		try {
-			if (!navigator.clipboard) {
-				throw new Error('Clipboard API not available.');
-			}
-
-			const relativePath = formatRelativePath(file.path, format);
-			const wrappedPath = wrapPath(relativePath, this.settings.pathWrapping);
-
-			// Copy to clipboard
-			await navigator.clipboard.writeText(wrappedPath);
-
-			// Show notification if enabled
-			if (this.settings.showNotifications) {
-				const formatName = format === 'unix' ? 'Linux/macOS' : 'Windows';
-				new Notice(`${formatName} path copied!`);
-			}
-		} catch (error) {
-			// Check the error message to provide more specific feedback
-			if (error instanceof Error && error.message.includes('Clipboard API')) {
-				new Notice('Error: Clipboard API is not available in this environment.');
-			} else {
-				console.error('Shell Path Copy: Failed to copy path:', error);
-				new Notice('Failed to copy path. See console for details.');
-			}
-		}
-	}
-
-	async copyAbsolutePath(file: TAbstractFile) {
-		try {
-			if (!navigator.clipboard) {
-				throw new Error('Clipboard API not available.');
-			}
-
-			// Only attempt to get absolute path on desktop
-			// This is a failsafe - should never be reached on mobile since
-			// the command and menu items are not registered on mobile platforms
-			if (Platform.isMobile) {
-				new Notice('Absolute paths are not available on mobile devices.');
-				return;
-			}
-
-			// Get the absolute system path using the public FileSystemAdapter API
-			const adapter = this.app.vault.adapter;
-
-			if (!(adapter instanceof FileSystemAdapter)) {
-				throw new Error('File system adapter not available.');
-			}
-
-			const absolutePath = getNodePath().join(adapter.getBasePath(), file.path);
-
-			const wrappedPath = wrapPath(absolutePath, this.settings.pathWrapping);
-
-			// Copy to clipboard
-			await navigator.clipboard.writeText(wrappedPath);
-
-			// Show notification if enabled
-			if (this.settings.showNotifications) {
-				new Notice('Absolute path copied!');
-			}
-		} catch (error) {
-			if (error instanceof Error && error.message.includes('Clipboard API')) {
-				new Notice('Error: Clipboard API is not available in this environment.');
-			} else {
-				console.error('Shell Path Copy: Failed to copy absolute path:', error);
-				new Notice('Failed to copy absolute path. See console for details.');
-			}
-		}
-	}
-
-	async copyFileUrl(file: TAbstractFile) {
-		try {
-			if (!navigator.clipboard) {
-				throw new Error('Clipboard API not available.');
-			}
-			
-			// Only attempt to get absolute path on desktop
-			if (Platform.isMobile) {
-				new Notice('The file URL feature is not available on mobile devices.');
-				return;
-			}
-			
-			// Get the absolute system path using the public FileSystemAdapter API
-			const adapter = this.app.vault.adapter;
-
-			if (!(adapter instanceof FileSystemAdapter)) {
-				throw new Error('File system adapter not available.');
-			}
-
-			const absolutePath = getNodePath().join(adapter.getBasePath(), file.path);
-			const fileUrl = buildFileUrl(absolutePath);
-
-			// Copy to clipboard (file URLs are typically not wrapped in quotes)
-			await navigator.clipboard.writeText(fileUrl);
-
-			// Show notification if enabled
-			if (this.settings.showNotifications) {
-				new Notice('File URL copied!');
-			}
-		} catch (error) {
-			if (error instanceof Error && error.message.includes('Clipboard API')) {
-				new Notice('Error: Clipboard API is not available in this environment.');
-			} else {
-				console.error('Shell Path Copy: Failed to copy file URL:', error);
-				new Notice('Failed to copy file URL. See console for details.');
-			}
-		}
-	}
-
-	async copyMarkdownLink(file: TAbstractFile) {
-		try {
-			if (!navigator.clipboard) {
-				throw new Error('Clipboard API not available.');
-			}
-
-			const markdownLink = buildMarkdownLink(file.name, file.path, this.settings.markdownLinkFormat);
-
-			// Copy to clipboard
-			await navigator.clipboard.writeText(markdownLink);
-
-			// Show notification if enabled
-			if (this.settings.showNotifications) {
-				const formatName = this.settings.markdownLinkFormat === 'wiki-style' ?
-					'Wiki-style link' : 'Markdown link';
-				new Notice(`${formatName} copied!`);
-			}
-		} catch (error) {
-			if (error instanceof Error && error.message.includes('Clipboard API')) {
-				new Notice('Error: Clipboard API is not available in this environment.');
-			} else {
-				console.error('Shell Path Copy: Failed to copy Markdown link:', error);
-				new Notice('Failed to copy Markdown link. See console for details.');
-			}
-		}
-	}
-
-	async copyObsidianUrl(file: TAbstractFile) {
-		try {
-			if (!navigator.clipboard) {
-				throw new Error('Clipboard API not available.');
-			}
-
-			const obsidianUrl = buildObsidianUrl(this.app.vault.getName(), file.path);
-
-			// Copy to clipboard
-			await navigator.clipboard.writeText(obsidianUrl);
-			
-			// Show notification if enabled
-			if (this.settings.showNotifications) {
-				new Notice('Obsidian URL copied!');
-			}
-		} catch (error) {
-			if (error instanceof Error && error.message.includes('Clipboard API')) {
-				new Notice('Error: Clipboard API is not available in this environment.');
-			} else {
-				console.error('Shell Path Copy: Failed to copy Obsidian URL:', error);
-				new Notice('Failed to copy Obsidian URL. See console for details.');
-			}
-		}
-	}
-
-	async copyFilename(file: TAbstractFile, includeExtension: boolean) {
-		try {
-			if (!navigator.clipboard) {
-				throw new Error('Clipboard API not available.');
-			}
-
-			const filename = extractFilename(file.name, includeExtension);
-			const result = this.settings.filenameUseWrapping
-				? wrapPath(filename, this.settings.pathWrapping)
-				: filename;
-
-			await navigator.clipboard.writeText(result);
-
-			if (this.settings.showNotifications) {
-				new Notice('Filename copied!');
-			}
-		} catch (error) {
-			if (error instanceof Error && error.message.includes('Clipboard API')) {
-				new Notice('Error: Clipboard API is not available in this environment.');
-			} else {
-				console.error('Shell Path Copy: Failed to copy filename:', error);
-				new Notice('Failed to copy filename. See console for details.');
-			}
 		}
 	}
 
@@ -717,8 +359,14 @@ export default class ShellPathCopyPlugin extends Plugin {
 
 }
 
+const RELOAD_NOTICE = 'Please reload Obsidian for command palette changes to take effect';
+
 class ShellPathCopySettingTab extends PluginSettingTab {
 	plugin: ShellPathCopyPlugin;
+	// Id of the format whose editor is currently expanded, or null.
+	private expandedId: string | null = null;
+	// Index of the row being dragged during a reorder, or null.
+	private dragIndex: number | null = null;
 
 	constructor(app: App, plugin: ShellPathCopyPlugin) {
 		super(app, plugin);
@@ -727,54 +375,11 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 
 	display(): void {
 		const { containerEl } = this;
-
 		containerEl.empty();
-
-		// Path format examples
-		new Setting(containerEl)
-			.setName('Path format examples')
-			.setHeading();
-		const examplesDiv = containerEl.createDiv({ cls: 'setting-item-description' });
-		examplesDiv.createDiv({ text: '• Relative Linux/macOS: ./folder/subfolder/file.md' });
-		examplesDiv.createDiv({ text: '• Relative Windows: .\\folder\\subfolder\\file.md' });
-		examplesDiv.createDiv({ text: '• Absolute Windows: C:\\Users\\name\\vault\\folder\\file.md' });
-		examplesDiv.createDiv({ text: '• Absolute Linux/macOS: /home/user/vault/folder/file.md' });
-		examplesDiv.createDiv({ text: '• File URL: file:///C:/Users/name/vault/folder/file.md (Windows) or file:///home/user/vault/folder/file.md (Linux/macOS)' });
-		examplesDiv.createDiv({ text: '• Obsidian URL: obsidian://open?vault=MyVault&file=folder/file' });
-		examplesDiv.createDiv({ text: '• Markdown link: [[filename]] (wiki-style) or [filename.md](./path/filename.md) (standard)' });
-		examplesDiv.createDiv({ text: '• Filename: file (without extension) or file.md (with extension)' });
-
-		new Setting(containerEl)
-			.setName('Path wrapping')
-			.setDesc('Choose how paths are wrapped when copied to clipboard (useful for paths with spaces)')
-			.addDropdown(dropdown => dropdown
-				.addOption('none', 'None - /path with spaces/file.md')
-				.addOption('double-quotes', 'Double quotes - "/path with spaces/file.md"')
-				.addOption('single-quotes', 'Single quotes - \'/path with spaces/file.md\'')
-				.addOption('backticks', 'Backticks - `/path with spaces/file.md`')
-				.setValue(this.plugin.settings.pathWrapping)
-				.onChange(async (value) => {
-					this.plugin.settings.pathWrapping = value as PathCopySettings['pathWrapping'];
-					await this.plugin.saveSettings();
-				}));
-
-		new Setting(containerEl)
-			.setName('Menu display')
-			.setDesc('Control which path formats appear in the context menu')
-			.addDropdown(dropdown => dropdown
-				.addOption('both', 'Show both Windows and Linux/macOS options')
-				.addOption('windows', 'Show Windows options only')
-				.addOption('linux-mac', 'Show Linux/macOS options only')
-				.setValue(this.plugin.settings.menuDisplay)
-				.onChange(async (value) => {
-					this.plugin.settings.menuDisplay = value as PathCopySettings['menuDisplay'];
-					await this.plugin.saveSettings();
-					new Notice('Please reload Obsidian for command palette changes to take effect');
-				}));
 
 		new Setting(containerEl)
 			.setName('Show notifications')
-			.setDesc('Display a notification when a path is copied')
+			.setDesc('Display a notification when something is copied')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.showNotifications)
 				.onChange(async (value) => {
@@ -782,119 +387,31 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
-		// ── Paths ────────────────────────────────────────────────────────
-		if (!Platform.isMobile) {
-			new Setting(containerEl)
-				.setName('Paths')
-				.setHeading();
-
-			new Setting(containerEl)
-				.setName('Show absolute path option')
-				.setDesc('Display absolute path copy option in menus (desktop only)')
-				.addToggle(toggle => toggle
-					.setValue(this.plugin.settings.showAbsolutePath)
-					.onChange(async (value) => {
-						this.plugin.settings.showAbsolutePath = value;
-						await this.plugin.saveSettings();
-						new Notice('Please reload Obsidian for command palette changes to take effect');
-					}));
-
-			new Setting(containerEl)
-				.setName('Show file:// URL option')
-				.setDesc('Display the file:// URL copy option in menus (desktop only)')
-				.addToggle(toggle => toggle
-					.setValue(this.plugin.settings.showFileUrl)
-					.onChange(async (value) => {
-						this.plugin.settings.showFileUrl = value;
-						await this.plugin.saveSettings();
-						new Notice('Please reload Obsidian for command palette changes to take effect');
-					}));
-		}
-
-		// ── Links ────────────────────────────────────────────────────────
 		new Setting(containerEl)
-			.setName('Links')
-			.setHeading();
-
-		new Setting(containerEl)
-			.setName('Show Obsidian URL option')
-			.setDesc('Display the Obsidian URL copy option in menus')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.showObsidianUrl)
+			.setName('Markdown link format')
+			.setDesc('Format used by the <markdown-link> token')
+			.addDropdown(dropdown => dropdown
+				.addOption('wiki-style', 'Wiki-style - [[filename]]')
+				.addOption('standard-markdown', 'Standard Markdown - [filename](path)')
+				.setValue(this.plugin.settings.markdownLinkFormat)
 				.onChange(async (value) => {
-					this.plugin.settings.showObsidianUrl = value;
+					this.plugin.settings.markdownLinkFormat = value as MarkdownLinkFormat;
 					await this.plugin.saveSettings();
-					new Notice('Please reload Obsidian for command palette changes to take effect');
 				}));
 
 		new Setting(containerEl)
-			.setName('Show Markdown link option')
-			.setDesc('Display the Markdown link copy option in menus')
+			.setName('Notify when a token could not be resolved')
+			.setDesc('Show a notice when a desktop-only or editor-only token is left blank')
 			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.showMarkdownLink)
+				.setValue(this.plugin.settings.warnOnUnresolvedTokens)
 				.onChange(async (value) => {
-					this.plugin.settings.showMarkdownLink = value;
+					this.plugin.settings.warnOnUnresolvedTokens = value;
 					await this.plugin.saveSettings();
-					new Notice('Please reload Obsidian for command palette changes to take effect');
 				}));
 
-		if (this.plugin.settings.showMarkdownLink) {
-			new Setting(containerEl)
-				.setName('Markdown link format')
-				.setDesc('Choose the format for Markdown links')
-				.addDropdown(dropdown => dropdown
-					.addOption('wiki-style', 'Wiki-style - [[filename]]')
-					.addOption('standard-markdown', 'Standard Markdown - [filename](path)')
-					.setValue(this.plugin.settings.markdownLinkFormat)
-					.onChange(async (value) => {
-						this.plugin.settings.markdownLinkFormat = value as PathCopySettings['markdownLinkFormat'];
-						await this.plugin.saveSettings();
-					}));
-		}
-
-		// ── Filenames ────────────────────────────────────────────────────
-		new Setting(containerEl)
-			.setName('Filenames')
-			.setHeading();
-
-		new Setting(containerEl)
-			.setName('Show filename option')
-			.setDesc('Display the copy filename (without extension) option in menus')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.showFilename)
-				.onChange(async (value) => {
-					this.plugin.settings.showFilename = value;
-					await this.plugin.saveSettings();
-					new Notice('Please reload Obsidian for command palette changes to take effect');
-				}));
-
-		new Setting(containerEl)
-			.setName('Show filename with extension option')
-			.setDesc('Display the copy filename (with extension) option in menus')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.showFilenameWithExt)
-				.onChange(async (value) => {
-					this.plugin.settings.showFilenameWithExt = value;
-					await this.plugin.saveSettings();
-					new Notice('Please reload Obsidian for command palette changes to take effect');
-				}));
-
-		if (this.plugin.settings.showFilename || this.plugin.settings.showFilenameWithExt) {
-			new Setting(containerEl)
-				.setName('Apply path wrapping to filenames')
-				.setDesc('Use the path wrapping setting above when copying filenames')
-				.addToggle(toggle => toggle
-					.setValue(this.plugin.settings.filenameUseWrapping)
-					.onChange(async (value) => {
-						this.plugin.settings.filenameUseWrapping = value;
-						await this.plugin.saveSettings();
-					}));
-		}
-
-		// ── Custom formats ───────────────────────────────────────────────
 		this.renderCustomFormatsSection(containerEl);
 
-		// Add support links at the bottom
+		// Support links at the bottom
 		containerEl.createEl('br');
 		containerEl.createEl('br');
 
@@ -916,6 +433,260 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 		createExternalLink('GitHub', 'https://github.com/ckelsoe/obsidian-shell-path-copy');
 		footerDiv.createSpan({ text: ' | ' });
 		createExternalLink('Report Issues', 'https://github.com/ckelsoe/obsidian-shell-path-copy/issues');
+	}
+
+	// Renders the "Custom formats" section: a compact draggable list, with the
+	// one expanded format showing its full editor.
+	private renderCustomFormatsSection(containerEl: HTMLElement): void {
+		new Setting(containerEl).setName('Custom formats').setHeading();
+
+		containerEl.createDiv({
+			cls: 'setting-item-description',
+			text: 'Each format is a token template that becomes a context-menu item and a command. Drag to reorder; the order is the menu order.'
+		});
+
+		const listEl = containerEl.createDiv({ cls: 'shell-path-copy-format-list' });
+		this.plugin.settings.customFormats.forEach((fmt, index) => {
+			this.renderFormatRow(listEl, fmt, index);
+		});
+
+		new Setting(containerEl)
+			.addButton(button => button
+				.setButtonText('Add custom format')
+				.setCta()
+				.onClick(async () => {
+					const created: CustomFormat = {
+						id: generateFormatId(),
+						name: 'New format',
+						template: '',
+						wrapping: 'none',
+						icon: 'clipboard-copy',
+						enabled: true,
+						showInMenu: true,
+						showInCommands: true
+					};
+					this.plugin.settings.customFormats.push(created);
+					this.expandedId = created.id;
+					await this.plugin.saveSettings();
+					new Notice(RELOAD_NOTICE);
+					this.display();
+				}));
+	}
+
+	// Renders one compact list row, plus the full editor panel when expanded.
+	private renderFormatRow(listEl: HTMLElement, fmt: CustomFormat, index: number): void {
+		const expanded = this.expandedId === fmt.id;
+
+		const row = listEl.createDiv({ cls: 'shell-path-copy-format-row' });
+		row.draggable = true;
+
+		row.addEventListener('dragstart', () => {
+			this.dragIndex = index;
+			row.addClass('is-dragging');
+		});
+		row.addEventListener('dragend', () => {
+			this.dragIndex = null;
+			row.removeClass('is-dragging');
+		});
+		row.addEventListener('dragover', (event) => {
+			event.preventDefault();
+			row.addClass('is-dragover');
+		});
+		row.addEventListener('dragleave', () => {
+			row.removeClass('is-dragover');
+		});
+		row.addEventListener('drop', (event) => {
+			event.preventDefault();
+			row.removeClass('is-dragover');
+			if (this.dragIndex !== null && this.dragIndex !== index) {
+				this.moveFormat(this.dragIndex, index);
+				void this.plugin.saveSettings();
+				new Notice(RELOAD_NOTICE);
+				this.display();
+			}
+		});
+
+		const handle = row.createSpan({ cls: 'shell-path-copy-drag-handle' });
+		setIcon(handle, 'grip-vertical');
+
+		const iconEl = row.createSpan({ cls: 'shell-path-copy-format-icon' });
+		setIcon(iconEl, fmt.icon);
+
+		const nameSpan = row.createSpan({ cls: 'shell-path-copy-format-name', text: fmt.name });
+
+		const stateButton = row.createEl('button', {
+			cls: 'shell-path-copy-state-button',
+			text: fmt.enabled ? 'On' : 'Off'
+		});
+		if (!fmt.enabled) {
+			stateButton.addClass('is-off');
+		}
+		stateButton.addEventListener('click', () => {
+			fmt.enabled = !fmt.enabled;
+			void this.plugin.saveSettings();
+			new Notice(RELOAD_NOTICE);
+			this.display();
+		});
+
+		const editButton = row.createEl('button', { text: expanded ? 'Close' : 'Edit' });
+		editButton.addEventListener('click', () => {
+			this.expandedId = expanded ? null : fmt.id;
+			this.display();
+		});
+
+		if (expanded) {
+			this.renderFormatEditor(listEl, fmt, index, nameSpan, iconEl);
+		}
+	}
+
+	// Moves a format within the list (drag-drop reorder).
+	private moveFormat(from: number, to: number): void {
+		const list = this.plugin.settings.customFormats;
+		if (from < 0 || to < 0 || from >= list.length || to >= list.length) {
+			return;
+		}
+		const [moved] = list.splice(from, 1);
+		list.splice(to, 0, moved);
+	}
+
+	// Renders the expanded editor panel for one format.
+	private renderFormatEditor(
+		listEl: HTMLElement,
+		fmt: CustomFormat,
+		index: number,
+		nameSpan: HTMLElement,
+		iconEl: HTMLElement
+	): void {
+		const editor = listEl.createDiv({ cls: 'shell-path-copy-format-editor' });
+		let previewEl: HTMLElement;
+		let badgesEl: HTMLElement;
+		let pendingDelete = false;
+
+		new Setting(editor)
+			.setName('Name')
+			.addText(text => text
+				.setValue(fmt.name)
+				.onChange(async (value) => {
+					fmt.name = value;
+					nameSpan.setText(value);
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(editor)
+			.setName('Icon')
+			.setDesc('Icon shown next to this format in the menu')
+			.addDropdown(dropdown => {
+				for (const icon of ICON_CHOICES) {
+					dropdown.addOption(icon, icon);
+				}
+				dropdown.setValue(ICON_CHOICES.includes(fmt.icon) ? fmt.icon : 'clipboard-copy');
+				dropdown.onChange(async (value) => {
+					fmt.icon = value;
+					setIcon(iconEl, value);
+					await this.plugin.saveSettings();
+				});
+			});
+
+		let templateRef: TextAreaComponent;
+		new Setting(editor)
+			.setName('Template')
+			.setDesc('Use tokens like <filename>. Click a token below to insert it at the cursor.')
+			.addTextArea(text => {
+				templateRef = text;
+				text.setValue(fmt.template)
+					.setPlaceholder('<filename> -> <obsidian-url>')
+					.onChange(async (value) => {
+						fmt.template = value;
+						this.renderPreview(previewEl, badgesEl, value);
+						await this.plugin.saveSettings();
+					});
+				text.inputEl.addClass('shell-path-copy-template-input');
+			});
+
+		// Token palette: clicking a token inserts <token> at the cursor.
+		const palette = editor.createDiv({ cls: 'shell-path-copy-token-palette' });
+		for (const token of listTokens()) {
+			const tip = token.tier === 'desktop'
+				? ' (desktop only)'
+				: token.tier === 'editor' ? ' (editor only)' : '';
+			const button = palette.createEl('button', {
+				cls: 'shell-path-copy-token-button',
+				text: `<${token.name}>`,
+				attr: { title: `${token.description}${tip}` }
+			});
+			button.addEventListener('click', () => {
+				const input = templateRef.inputEl;
+				const insert = `<${token.name}>`;
+				const start = input.selectionStart;
+				const end = input.selectionEnd;
+				const next = input.value.slice(0, start) + insert + input.value.slice(end);
+				templateRef.setValue(next);
+				fmt.template = next;
+				this.renderPreview(previewEl, badgesEl, next);
+				void this.plugin.saveSettings();
+				input.focus();
+				const caret = start + insert.length;
+				input.setSelectionRange(caret, caret);
+			});
+		}
+
+		previewEl = editor.createDiv({ cls: 'shell-path-copy-template-preview' });
+		badgesEl = editor.createDiv({ cls: 'shell-path-copy-badges' });
+		this.renderPreview(previewEl, badgesEl, fmt.template);
+
+		new Setting(editor)
+			.setName('Wrapping')
+			.setDesc('Wrap the rendered result (useful for paths with spaces)')
+			.addDropdown(dropdown => dropdown
+				.addOption('none', 'None')
+				.addOption('double-quotes', 'Double quotes')
+				.addOption('single-quotes', 'Single quotes')
+				.addOption('backticks', 'Backticks')
+				.setValue(fmt.wrapping)
+				.onChange(async (value) => {
+					fmt.wrapping = value as PathWrapping;
+					this.renderPreview(previewEl, badgesEl, fmt.template);
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(editor)
+			.setName('Show in menu')
+			.setDesc('Display this format in the file explorer right-click menu')
+			.addToggle(toggle => toggle
+				.setValue(fmt.showInMenu)
+				.onChange(async (value) => {
+					fmt.showInMenu = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(editor)
+			.setName('Show in command palette')
+			.setDesc('Register this format as a command')
+			.addToggle(toggle => toggle
+				.setValue(fmt.showInCommands)
+				.onChange(async (value) => {
+					fmt.showInCommands = value;
+					await this.plugin.saveSettings();
+					new Notice(RELOAD_NOTICE);
+				}));
+
+		new Setting(editor)
+			.setName('Delete this format')
+			.addButton(button => button
+				.setButtonText('Delete')
+				.setWarning()
+				.onClick(async () => {
+					if (!pendingDelete) {
+						pendingDelete = true;
+						button.setButtonText('Click again to confirm');
+						return;
+					}
+					this.plugin.settings.customFormats.splice(index, 1);
+					this.expandedId = null;
+					await this.plugin.saveSettings();
+					new Notice(RELOAD_NOTICE);
+					this.display();
+				}));
 	}
 
 	// A fixed sample file used to render the live template preview. Reflects the
@@ -967,204 +738,5 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 			shownBadges.add(label);
 			badgesEl.createSpan({ cls: 'shell-path-copy-badge-warn', text: label });
 		}
-	}
-
-	// Renders the "Custom formats" settings section.
-	private renderCustomFormatsSection(containerEl: HTMLElement): void {
-		new Setting(containerEl).setName('Custom formats').setHeading();
-
-		const intro = containerEl.createDiv({ cls: 'setting-item-description' });
-		intro.createDiv({
-			text: 'Define your own copy formats using tokens. Each format becomes a context-menu item and a command.'
-		});
-
-		const tokenList = intro.createDiv({ cls: 'shell-path-copy-token-list' });
-		for (const token of listTokens()) {
-			const row = tokenList.createDiv();
-			row.createSpan({ cls: 'shell-path-copy-token-name', text: `<${token.name}>` });
-			let suffix = ` ${token.description}`;
-			if (token.tier === 'desktop') {
-				suffix += ' (desktop only)';
-			} else if (token.tier === 'editor') {
-				suffix += ' (editor only)';
-			}
-			row.createSpan({ text: suffix });
-		}
-
-		const formats = this.plugin.settings.customFormats;
-		formats.forEach((fmt, index) => {
-			this.renderCustomFormat(containerEl, fmt, index);
-		});
-
-		new Setting(containerEl)
-			.addButton(button => button
-				.setButtonText('Add custom format')
-				.setCta()
-				.onClick(async () => {
-					this.plugin.settings.customFormats.push({
-						id: generateFormatId(),
-						name: 'New format',
-						template: '',
-						wrapping: 'none',
-						enabled: true,
-						showInMenu: true,
-						showInCommands: true
-					});
-					await this.plugin.saveSettings();
-					new Notice('Please reload Obsidian for command palette changes to take effect');
-					this.display();
-				}));
-
-		new Setting(containerEl)
-			.setName('Notify when a token could not be resolved')
-			.setDesc('Show a notice when a desktop-only or editor-only token is left blank')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.warnOnUnresolvedTokens)
-				.onChange(async (value) => {
-					this.plugin.settings.warnOnUnresolvedTokens = value;
-					await this.plugin.saveSettings();
-				}));
-	}
-
-	// Renders the editor card for a single custom format.
-	private renderCustomFormat(containerEl: HTMLElement, fmt: CustomFormat, index: number): void {
-		const card = containerEl.createDiv({ cls: 'shell-path-copy-format-card' });
-		let pendingDelete = false;
-		let previewEl: HTMLElement;
-		let badgesEl: HTMLElement;
-
-		new Setting(card)
-			.setName('Name')
-			.addText(text => text
-				.setValue(fmt.name)
-				.onChange(async (value) => {
-					fmt.name = value;
-					await this.plugin.saveSettings();
-				}))
-			.addExtraButton(btn => btn
-				.setIcon('arrow-up')
-				.onClick(() => {
-					const list = this.plugin.settings.customFormats;
-					if (index === 0) {
-						return;
-					}
-					[list[index - 1], list[index]] = [list[index], list[index - 1]];
-					void this.plugin.saveSettings();
-					this.display();
-				}))
-			.addExtraButton(btn => btn
-				.setIcon('arrow-down')
-				.onClick(() => {
-					const list = this.plugin.settings.customFormats;
-					if (index === list.length - 1) {
-						return;
-					}
-					[list[index + 1], list[index]] = [list[index], list[index + 1]];
-					void this.plugin.saveSettings();
-					this.display();
-				}))
-			.addExtraButton(btn => btn
-				.setIcon('trash')
-				.onClick(() => {
-					if (!pendingDelete) {
-						pendingDelete = true;
-						btn.setIcon('alert-triangle');
-						return;
-					}
-					this.plugin.settings.customFormats.splice(index, 1);
-					void this.plugin.saveSettings();
-					new Notice('Please reload Obsidian for command palette changes to take effect');
-					this.display();
-				}));
-
-		let templateRef: TextAreaComponent;
-		new Setting(card)
-			.setName('Template')
-			.setDesc('Use tokens like <filename>. Click a token below to insert it at the cursor.')
-			.addTextArea(text => {
-				templateRef = text;
-				text.setValue(fmt.template)
-					.setPlaceholder('<filename> -> <obsidian-url>')
-					.onChange(async (value) => {
-						fmt.template = value;
-						this.renderPreview(previewEl, badgesEl, value);
-						await this.plugin.saveSettings();
-					});
-				text.inputEl.addClass('shell-path-copy-template-input');
-			});
-
-		// Token palette: clicking a token inserts <token> at the cursor.
-		const palette = card.createDiv({ cls: 'shell-path-copy-token-palette' });
-		for (const token of listTokens()) {
-			const button = palette.createEl('button', {
-				cls: 'shell-path-copy-token-button',
-				text: `<${token.name}>`
-			});
-			button.addEventListener('click', () => {
-				const input = templateRef.inputEl;
-				const insert = `<${token.name}>`;
-				const start = input.selectionStart;
-				const end = input.selectionEnd;
-				const next = input.value.slice(0, start) + insert + input.value.slice(end);
-				templateRef.setValue(next);
-				fmt.template = next;
-				this.renderPreview(previewEl, badgesEl, next);
-				void this.plugin.saveSettings();
-				input.focus();
-				const caret = start + insert.length;
-				input.setSelectionRange(caret, caret);
-			});
-		}
-
-		previewEl = card.createDiv({ cls: 'shell-path-copy-template-preview' });
-		badgesEl = card.createDiv({ cls: 'shell-path-copy-badges' });
-		this.renderPreview(previewEl, badgesEl, fmt.template);
-
-		new Setting(card)
-			.setName('Wrapping')
-			.setDesc('Wrap the rendered result (useful for paths with spaces)')
-			.addDropdown(dropdown => dropdown
-				.addOption('none', 'None')
-				.addOption('double-quotes', 'Double quotes')
-				.addOption('single-quotes', 'Single quotes')
-				.addOption('backticks', 'Backticks')
-				.setValue(fmt.wrapping)
-				.onChange(async (value) => {
-					fmt.wrapping = value as PathWrapping;
-					this.renderPreview(previewEl, badgesEl, fmt.template);
-					await this.plugin.saveSettings();
-				}));
-
-		new Setting(card)
-			.setName('Enabled')
-			.setDesc('Turn this format on or off')
-			.addToggle(toggle => toggle
-				.setValue(fmt.enabled)
-				.onChange(async (value) => {
-					fmt.enabled = value;
-					await this.plugin.saveSettings();
-					new Notice('Please reload Obsidian for command palette changes to take effect');
-				}));
-
-		new Setting(card)
-			.setName('Show in menu')
-			.setDesc('Display this format in the file explorer right-click menu')
-			.addToggle(toggle => toggle
-				.setValue(fmt.showInMenu)
-				.onChange(async (value) => {
-					fmt.showInMenu = value;
-					await this.plugin.saveSettings();
-				}));
-
-		new Setting(card)
-			.setName('Show in command palette')
-			.setDesc('Register this format as a command')
-			.addToggle(toggle => toggle
-				.setValue(fmt.showInCommands)
-				.onChange(async (value) => {
-					fmt.showInCommands = value;
-					await this.plugin.saveSettings();
-					new Notice('Please reload Obsidian for command palette changes to take effect');
-				}));
 	}
 }

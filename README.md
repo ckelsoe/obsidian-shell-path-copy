@@ -43,18 +43,10 @@ Shell Path Copy offers a comprehensive set of features designed to streamline yo
    * **Filename only**:
       * Without extension: `my notes`
       * With extension: `my notes.md`
-      * Optional path wrapping (off by default for easy pasting in emails and chat).
-* **Configurable display options**: choose which path formats appear in menus:
-   * Show both Windows and Linux/macOS options (default).
-   * Show Windows options only.
-   * Show Linux/macOS options only.
-* **Smart path wrapping**: automatically wraps paths using configurable delimiters to handle spaces properly:
-   * None: `path/to/file`
-   * Double quotes: `"path/to/file"`
-   * Single quotes: `'path/to/file'`
-   * Backticks: `` `path/to/file` `` (default; recommended for paths with spaces).
-* **Custom formats**: define your own copy formats as token templates (e.g. `<filename> -> <obsidian-url>`). Each one becomes its own menu item and command. See [Custom formats](#custom-formats) below.
-* **Success notifications**: visual feedback when paths are copied.
+* **Fully customizable**: every format, including the eight that ship enabled by default, is a token template you can rename, re-icon, reorder, edit, disable, or delete. Add as many of your own as you like. See [Custom formats](#custom-formats) below.
+* **Per-format wrapping**: wrap any format in none, double quotes, single quotes, or backticks (handy for paths with spaces).
+* **Per-format visibility**: choose whether each format appears in the right-click menu, the command palette, or both.
+* **Success notifications**: visual feedback when something is copied.
 
 ## Installation
 
@@ -254,39 +246,24 @@ We have no current plans to integrate directly with Notebook Navigator's context
 
 Access plugin settings via Settings → Community plugins → Shell Path Copy → Options.
 
-The settings tab is organized into several sections.
+Global options:
 
-**Path wrapping**: choose how paths are wrapped when copied to the clipboard (none, double quotes, single quotes, or backticks).
-
-**Menu display**: control which path formats appear in both the context menu and command palette:
-
-* Show both Windows and Linux/macOS options (default).
-* Show Windows options only.
-* Show Linux/macOS options only.
-
-**Show notifications**: toggle success notifications on or off.
-
-### Paths (desktop only)
-
-* **Show absolute path option**: toggle whether the absolute path copy option appears in menus.
-* **Show file:// URL option**: toggle whether the `file://` URL copy option appears in menus.
-
-### Links
-
-* **Show Obsidian URL option**: toggle whether the Obsidian URL copy option appears in menus.
-* **Show Markdown link option**: toggle whether the Markdown link copy option appears in menus.
-* **Markdown link format**: choose between wiki-style (`[[filename]]`) and standard Markdown (`[filename](path)`) formats. Only shown when the Markdown link option is enabled.
-
-### Filenames
-
-* **Show filename option**: toggle whether the copy filename (without extension) option appears in menus.
-* **Show filename with extension option**: toggle whether the copy filename (with extension) option appears in menus.
-* **Apply path wrapping to filenames**: when enabled, filenames use the same wrapping as paths (off by default).
+* **Show notifications**: toggle the success notification on or off.
+* **Markdown link format**: wiki-style (`[[filename]]`) or standard Markdown (`[filename](path)`). Used by the `<markdown-link>` token.
+* **Notify when a token could not be resolved**: show a notice when a desktop-only or editor-only token is left blank.
 
 ### Custom formats
 
-* **Add custom format**: create a token-template format. Each format has a name, template, wrapping option, and toggles for menu and command palette visibility. See [Custom formats](#custom-formats) above.
-* **Notify when a token could not be resolved**: show a notice when a desktop-only or editor-only token is left blank.
+Every copy format, including the eight that ship enabled by default, is a custom format. The custom formats list is a compact, drag-to-reorder list; list order is the menu order. Click a format to expand its editor, where you can set:
+
+* **Name**: shown in the menu and command palette.
+* **Icon**: the icon shown next to the format in the menu.
+* **Template**: the token template. A token palette below the field inserts tokens at the cursor, and a live preview shows the result.
+* **Wrapping**: none, double quotes, single quotes, or backticks, applied around the rendered result.
+* **Show in menu** / **Show in command palette**: where the format appears.
+* **Delete**: remove the format.
+
+Use **Add custom format** to create a new one. See [Custom formats](#custom-formats) above for token details.
 
 ## Contributing
 

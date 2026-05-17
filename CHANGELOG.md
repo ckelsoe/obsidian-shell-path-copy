@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.19.0-beta.3] - 2026-05-17
+
+### Changed
+- The 8 built-in formats are now the seeded custom formats themselves. The
+  separate built-in code path is removed; every copy goes through the token
+  engine. Existing users' enabled formats and their wrapping and Markdown link
+  choices are migrated automatically on first load.
+- Settings redesigned: custom formats are a compact, drag-to-reorder list.
+  Click a format to expand its editor; the token palette appears once, inside
+  the open editor.
+
+### Added
+- Per-format icon picker.
+- Drag-and-drop reordering. List order is the menu order.
+
+### Removed
+- The fixed "Path wrapping", "Menu display", and Paths/Links/Filenames
+  settings sections, replaced by per-format options.
+
+### Note
+Custom formats created in 1.19.0-beta.1 or beta.2 are replaced by the
+migration. Beta data is disposable; this does not affect stable 1.18.x users.
+
 ## [1.19.0-beta.2] - 2026-05-17
 
 ### Added

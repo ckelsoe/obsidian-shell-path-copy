@@ -9,23 +9,66 @@ Shell Path Copy Plugin Styles
 
 /* Custom formats settings section */
 
-.shell-path-copy-token-list {
-	margin-top: var(--size-4-2);
-	display: flex;
-	flex-direction: column;
-	gap: var(--size-2-1);
-}
-
-.shell-path-copy-token-name {
-	font-family: var(--font-monospace);
-	color: var(--text-accent);
-}
-
-.shell-path-copy-format-card {
+.shell-path-copy-format-list {
+	margin: var(--size-4-2) 0;
 	border: 1px solid var(--background-modifier-border);
 	border-radius: var(--radius-m);
-	padding: 0 var(--size-4-3);
-	margin: var(--size-4-2) 0;
+	overflow: hidden;
+}
+
+.shell-path-copy-format-row {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2);
+	padding: var(--size-2-3) var(--size-4-2);
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.shell-path-copy-format-row:last-child {
+	border-bottom: none;
+}
+
+.shell-path-copy-format-row.is-dragging {
+	opacity: 0.5;
+}
+
+.shell-path-copy-format-row.is-dragover {
+	border-top: 2px solid var(--interactive-accent);
+}
+
+.shell-path-copy-drag-handle {
+	cursor: grab;
+	color: var(--text-faint);
+	display: flex;
+	align-items: center;
+}
+
+.shell-path-copy-format-icon {
+	display: flex;
+	align-items: center;
+	color: var(--text-muted);
+}
+
+.shell-path-copy-format-name {
+	flex-grow: 1;
+}
+
+.shell-path-copy-state-button {
+	min-width: 3.5em;
+}
+
+.shell-path-copy-state-button.is-off {
+	color: var(--text-muted);
+}
+
+.shell-path-copy-format-editor {
+	padding: var(--size-2-2) var(--size-4-3) var(--size-4-2);
+	border-bottom: 1px solid var(--background-modifier-border);
+	background-color: var(--background-secondary);
+}
+
+.shell-path-copy-format-editor:last-child {
+	border-bottom: none;
 }
 
 .shell-path-copy-template-input {
