@@ -79,7 +79,7 @@ Four more formats ship disabled, ready to enable or copy from:
 |---|---|---|
 | Example: name and Obsidian URL | `<filename> -> <obsidian-url>` | `file -> obsidian://open?vault=MyVault&file=folder%2Ffile` |
 | Example: line reference | `<filename-ext>#L<line-number>` | `file.md#L42` |
-| Obsidian URL (to heading) | `<obsidian-url-section>` | `obsidian://open?vault=MyVault&file=folder%2Ffile&heading=Notes` |
+| Obsidian URL (to heading) | `<obsidian-url-section>` | `obsidian://open?vault=MyVault&file=folder%2Ffile%23Notes` |
 | Wiki link (to heading) | `<wikilink-section>` | `[[file#Notes]]` |
 
 The two "to heading" formats link to the heading your cursor is in when a note is open, and to the file otherwise. They are the way to get an Obsidian link that jumps to a section. Absolute path and file:// URL are desktop-only; on mobile they produce nothing.

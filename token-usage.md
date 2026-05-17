@@ -34,7 +34,7 @@ Every output on this page is computed against this fixed scenario:
 | `<time>` | Current time, `HH:mm` | universal | `14:30` |
 | `<line-number>` | Active editor cursor line, 1-based | editor only | `42` |
 | `<heading>` | Heading the cursor sits under | editor only | `Project notes` |
-| `<obsidian-url-section>` | Obsidian URL to the cursor heading, or the file when there is none | universal | `obsidian://open?vault=assorted&file=Notes%2FMy%20file&heading=Project%20notes` |
+| `<obsidian-url-section>` | Obsidian URL to the cursor heading, or the file when there is none | universal | `obsidian://open?vault=assorted&file=Notes%2FMy%20file%23Project%20notes` |
 | `<wikilink-section>` | Wiki link to the cursor heading, or the file when there is none | universal | `[[My file#Project notes]]` |
 | `<nl>` | A literal newline | universal | (line break) |
 

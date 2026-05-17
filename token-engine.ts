@@ -173,12 +173,7 @@ export const TOKENS: readonly TokenDef[] = [
 		name: 'obsidian-url-section',
 		tier: 'universal',
 		description: 'Obsidian URL to the cursor heading, or the file when there is none',
-		resolve: (ctx) => {
-			const base = buildObsidianUrl(ctx.vaultName, ctx.filePath);
-			return ctx.currentHeading
-				? `${base}&heading=${encodeURIComponent(ctx.currentHeading)}`
-				: base;
-		},
+		resolve: (ctx) => buildObsidianUrl(ctx.vaultName, ctx.filePath, ctx.currentHeading ?? undefined),
 	},
 	{
 		name: 'wikilink-section',

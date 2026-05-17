@@ -268,8 +268,10 @@ describe('applyTemplate - heading tokens', () => {
 	});
 
 	it('<obsidian-url-section> anchors to the heading when there is one', () => {
+		// The heading goes into the file value as "#heading" (encoded %23);
+		// obsidian://open has no separate heading parameter.
 		expect(applyTemplate('<obsidian-url-section>', withHeading).text)
-			.toBe('obsidian://open?vault=assorted&file=Notes%2FMy%20file&heading=My%20heading');
+			.toBe('obsidian://open?vault=assorted&file=Notes%2FMy%20file%23My%20heading');
 	});
 
 	it('<obsidian-url-section> falls back to the file URL with no heading', () => {

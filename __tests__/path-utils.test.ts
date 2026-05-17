@@ -164,6 +164,18 @@ describe('buildObsidianUrl', () => {
 			'obsidian://open?vault=Vault&file=file'
 		);
 	});
+
+	it('appends a heading to the file value as encoded #heading', () => {
+		expect(buildObsidianUrl('Vault', 'folder/note.md', 'My Heading')).toBe(
+			'obsidian://open?vault=Vault&file=folder%2Fnote%23My%20Heading'
+		);
+	});
+
+	it('ignores an empty heading', () => {
+		expect(buildObsidianUrl('Vault', 'note.md', '')).toBe(
+			'obsidian://open?vault=Vault&file=note'
+		);
+	});
 });
 
 // ─── extractFilename ──────────────────────────────────────────────────────────

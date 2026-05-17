@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.19.0-beta.8] - 2026-05-17
+
+### Fixed
+- `<obsidian-url-section>` now jumps to the heading. Obsidian's open URI has no
+  separate heading parameter; the heading must be appended to the file value as
+  `#heading`. The previous `&heading=` query parameter was ignored, so the link
+  opened only the file.
+
 ## [1.19.0-beta.7] - 2026-05-17
 
 ### Added
