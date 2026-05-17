@@ -78,7 +78,10 @@ const BUILTIN_SEEDS: SeedSpec[] = [
 	{ name: 'Obsidian URL', template: '<obsidian-url>', icon: 'link-2', wrapMode: 'plain', core: true, legacyKey: 'showObsidianUrl' },
 	{ name: 'Markdown link', template: '<markdown-link>', icon: 'link', wrapMode: 'plain', core: true, legacyKey: 'showMarkdownLink' },
 	{ name: 'Filename', template: '<filename>', icon: 'file-text', wrapMode: 'filename', core: false, legacyKey: 'showFilename' },
-	{ name: 'Filename with extension', template: '<filename-ext>', icon: 'file', wrapMode: 'filename', core: false, legacyKey: 'showFilenameWithExt' }
+	{ name: 'Filename with extension', template: '<filename-ext>', icon: 'file', wrapMode: 'filename', core: false, legacyKey: 'showFilenameWithExt' },
+	// Example formats from issue 13. Seeded disabled as starting points.
+	{ name: 'Example: name and Obsidian URL', template: '<filename> -> <obsidian-url>', icon: 'link-2', wrapMode: 'plain', core: false, legacyKey: '' },
+	{ name: 'Example: line reference', template: '<filename-ext>#L<line-number>', icon: 'hash', wrapMode: 'plain', core: false, legacyKey: '' }
 ];
 
 // Generates a stable id for a custom format. Prefers crypto.randomUUID (available
@@ -104,7 +107,8 @@ function seedFormats(legacy: Record<string, unknown> | null): CustomFormat[] {
 
 	return BUILTIN_SEEDS.map((spec): CustomFormat => {
 		let enabled: boolean;
-		if (!legacy) {
+		if (!legacy || spec.legacyKey === '') {
+			// Fresh install, or a seed with no pre-1.19 equivalent (the examples).
 			enabled = spec.core;
 		} else if (spec.legacyKey === 'unix') {
 			enabled = menuDisplay !== 'windows';
@@ -559,7 +563,7 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 	): void {
 		const editor = listEl.createDiv({ cls: 'shell-path-copy-format-editor' });
 		let previewEl: HTMLElement;
-		let badgesEl: HTMLElement;
+		let infoEl: HTMLElement;
 		let pendingDelete = false;
 
 		new Setting(editor)
@@ -597,7 +601,7 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 					.setPlaceholder('<filename> -> <obsidian-url>')
 					.onChange(async (value) => {
 						fmt.template = value;
-						this.renderPreview(previewEl, badgesEl, value);
+						this.renderPreview(previewEl, infoEl, value);
 						await this.plugin.saveSettings();
 					});
 				text.inputEl.addClass('shell-path-copy-template-input');
@@ -622,7 +626,7 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 				const next = input.value.slice(0, start) + insert + input.value.slice(end);
 				templateRef.setValue(next);
 				fmt.template = next;
-				this.renderPreview(previewEl, badgesEl, next);
+				this.renderPreview(previewEl, infoEl, next);
 				void this.plugin.saveSettings();
 				input.focus();
 				const caret = start + insert.length;
@@ -631,8 +635,8 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 		}
 
 		previewEl = editor.createDiv({ cls: 'shell-path-copy-template-preview' });
-		badgesEl = editor.createDiv({ cls: 'shell-path-copy-badges' });
-		this.renderPreview(previewEl, badgesEl, fmt.template);
+		infoEl = editor.createDiv({ cls: 'shell-path-copy-format-info' });
+		this.renderPreview(previewEl, infoEl, fmt.template);
 
 		new Setting(editor)
 			.setName('Wrapping')
@@ -645,7 +649,7 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 				.setValue(fmt.wrapping)
 				.onChange(async (value) => {
 					fmt.wrapping = value as PathWrapping;
-					this.renderPreview(previewEl, badgesEl, fmt.template);
+					this.renderPreview(previewEl, infoEl, fmt.template);
 					await this.plugin.saveSettings();
 				}));
 
@@ -710,10 +714,21 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 		};
 	}
 
-	// Renders the live preview line and portability badges for one template.
-	private renderPreview(previewEl: HTMLElement, badgesEl: HTMLElement, template: string): void {
+	// Renders one Desktop/Mobile support row item with a check or cross icon.
+	private renderCompatItem(parent: HTMLElement, label: string, ok: boolean): void {
+		const item = parent.createSpan({ cls: 'shell-path-copy-compat-item' });
+		const mark = item.createSpan({
+			cls: ok ? 'shell-path-copy-compat-ok' : 'shell-path-copy-compat-bad'
+		});
+		setIcon(mark, ok ? 'check' : 'x');
+		item.createSpan({ text: label });
+	}
+
+	// Renders the live preview line, the Desktop/Mobile support row, and any
+	// notes about tokens that will not resolve everywhere.
+	private renderPreview(previewEl: HTMLElement, infoEl: HTMLElement, template: string): void {
 		previewEl.empty();
-		badgesEl.empty();
+		infoEl.empty();
 
 		if (template.trim() === '') {
 			previewEl.setText('Preview: (empty template)');
@@ -723,20 +738,28 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 		const applied = applyTemplate(template, this.sampleContext());
 		previewEl.setText(`Preview: ${applied.text}`);
 
-		const shownBadges = new Set<string>();
-		for (const issue of validateTemplate(template)) {
-			let label: string;
-			switch (issue.kind) {
-				case 'unknown-token': label = issue.detail; break;
-				case 'desktop-only-token': label = 'Not portable: blank on mobile'; break;
-				case 'editor-only-token': label = 'Needs the file open in the editor'; break;
-				default: label = issue.detail; break;
-			}
-			if (shownBadges.has(label)) {
-				continue;
-			}
-			shownBadges.add(label);
-			badgesEl.createSpan({ cls: 'shell-path-copy-badge-warn', text: label });
+		const issues = validateTemplate(template);
+		const desktopOnly = issues.filter((i) => i.kind === 'desktop-only-token');
+		const editorOnly = issues.filter((i) => i.kind === 'editor-only-token');
+		const unknown = issues.filter((i) => i.kind === 'unknown-token');
+
+		// Desktop/Mobile support. Everything works on desktop; mobile fails only
+		// when the template uses a desktop-only token.
+		const compat = infoEl.createDiv({ cls: 'shell-path-copy-compat' });
+		this.renderCompatItem(compat, 'Desktop', true);
+		this.renderCompatItem(compat, 'Mobile', desktopOnly.length === 0);
+
+		for (const issue of desktopOnly) {
+			infoEl.createDiv({ cls: 'shell-path-copy-info-note', text: issue.detail });
+		}
+		if (editorOnly.length > 0) {
+			infoEl.createDiv({
+				cls: 'shell-path-copy-info-note',
+				text: 'The line number fills in only when this file is open in the editor.'
+			});
+		}
+		for (const issue of unknown) {
+			infoEl.createDiv({ cls: 'shell-path-copy-badge-warn', text: issue.detail });
 		}
 	}
 }

@@ -73,7 +73,7 @@ Shell Path Copy Plugin Styles
 
 .shell-path-copy-template-input {
 	width: 100%;
-	min-height: 4em;
+	min-height: 9em;
 	font-family: var(--font-monospace);
 	resize: vertical;
 }
@@ -101,11 +101,38 @@ Shell Path Copy Plugin Styles
 	padding: var(--size-2-1) 0;
 }
 
-.shell-path-copy-badges {
+.shell-path-copy-format-info {
 	display: flex;
-	flex-wrap: wrap;
-	gap: var(--size-2-2);
+	flex-direction: column;
+	gap: var(--size-2-1);
 	padding-bottom: var(--size-2-2);
+}
+
+.shell-path-copy-compat {
+	display: flex;
+	gap: var(--size-4-3);
+	padding: var(--size-2-1) 0;
+}
+
+.shell-path-copy-compat-item {
+	display: flex;
+	align-items: center;
+	gap: var(--size-2-1);
+}
+
+.shell-path-copy-compat-ok {
+	display: flex;
+	color: var(--text-success);
+}
+
+.shell-path-copy-compat-bad {
+	display: flex;
+	color: var(--text-error);
+}
+
+.shell-path-copy-info-note {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
 }
 
 .shell-path-copy-badge-warn {
@@ -114,4 +141,5 @@ Shell Path Copy Plugin Styles
 	background-color: var(--text-warning);
 	border-radius: var(--radius-s);
 	padding: var(--size-2-1) var(--size-2-2);
+	align-self: flex-start;
 }

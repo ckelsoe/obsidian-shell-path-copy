@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.19.0-beta.4] - 2026-05-17
+
+### Added
+- Two example formats from issue 13, seeded disabled: "name and Obsidian URL"
+  and "line reference".
+
+### Changed
+- Larger template editing box.
+- The mobile-portability warning is now a Desktop / Mobile support row with
+  check and cross icons, plus a note naming any token that is blank on mobile.
+
 ## [1.19.0-beta.3] - 2026-05-17
 
 ### Changed
