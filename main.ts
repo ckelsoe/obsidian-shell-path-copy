@@ -17,7 +17,9 @@ function getNodePath(): NodePathLike {
 }
 
 // Settings schema version. Bumped when a one-time migration is needed.
-const SETTINGS_VERSION = 1;
+//   1: token engine; built-ins seeded as custom formats.
+//   2: heading-aware link seeds added.
+const SETTINGS_VERSION = 2;
 
 // A user-defined copy format. Each entry produces its own context-menu item and
 // command-palette command via the token engine. The 8 built-ins ship as seeded
@@ -68,20 +70,24 @@ interface SeedSpec {
 	wrapMode: 'path' | 'filename' | 'plain';
 	core: boolean;        // enabled by default on a fresh install
 	legacyKey: string;
+	sinceVersion: number; // settings version that introduced this seed
 }
 
 const BUILTIN_SEEDS: SeedSpec[] = [
-	{ name: 'Relative Linux/macOS path', template: '<relative-path-unix>', icon: 'terminal', wrapMode: 'path', core: true, legacyKey: 'unix' },
-	{ name: 'Relative Windows path', template: '<relative-path-windows>', icon: 'folder-closed', wrapMode: 'path', core: true, legacyKey: 'windows' },
-	{ name: 'Absolute path', template: '<absolute-path>', icon: 'folder-closed', wrapMode: 'path', core: false, legacyKey: 'showAbsolutePath' },
-	{ name: 'file:// URL', template: '<file-url>', icon: 'globe', wrapMode: 'plain', core: false, legacyKey: 'showFileUrl' },
-	{ name: 'Obsidian URL', template: '<obsidian-url>', icon: 'link-2', wrapMode: 'plain', core: true, legacyKey: 'showObsidianUrl' },
-	{ name: 'Markdown link', template: '<markdown-link>', icon: 'link', wrapMode: 'plain', core: true, legacyKey: 'showMarkdownLink' },
-	{ name: 'Filename', template: '<filename>', icon: 'file-text', wrapMode: 'filename', core: false, legacyKey: 'showFilename' },
-	{ name: 'Filename with extension', template: '<filename-ext>', icon: 'file', wrapMode: 'filename', core: false, legacyKey: 'showFilenameWithExt' },
+	{ name: 'Relative Linux/macOS path', template: '<relative-path-unix>', icon: 'terminal', wrapMode: 'path', core: true, legacyKey: 'unix', sinceVersion: 1 },
+	{ name: 'Relative Windows path', template: '<relative-path-windows>', icon: 'folder-closed', wrapMode: 'path', core: true, legacyKey: 'windows', sinceVersion: 1 },
+	{ name: 'Absolute path', template: '<absolute-path>', icon: 'folder-closed', wrapMode: 'path', core: false, legacyKey: 'showAbsolutePath', sinceVersion: 1 },
+	{ name: 'file:// URL', template: '<file-url>', icon: 'globe', wrapMode: 'plain', core: false, legacyKey: 'showFileUrl', sinceVersion: 1 },
+	{ name: 'Obsidian URL', template: '<obsidian-url>', icon: 'link-2', wrapMode: 'plain', core: true, legacyKey: 'showObsidianUrl', sinceVersion: 1 },
+	{ name: 'Markdown link', template: '<markdown-link>', icon: 'link', wrapMode: 'plain', core: true, legacyKey: 'showMarkdownLink', sinceVersion: 1 },
+	{ name: 'Filename', template: '<filename>', icon: 'file-text', wrapMode: 'filename', core: false, legacyKey: 'showFilename', sinceVersion: 1 },
+	{ name: 'Filename with extension', template: '<filename-ext>', icon: 'file', wrapMode: 'filename', core: false, legacyKey: 'showFilenameWithExt', sinceVersion: 1 },
 	// Example formats from issue 13. Seeded disabled as starting points.
-	{ name: 'Example: name and Obsidian URL', template: '<filename> -> <obsidian-url>', icon: 'link-2', wrapMode: 'plain', core: false, legacyKey: '' },
-	{ name: 'Example: line reference', template: '<filename-ext>#L<line-number>', icon: 'hash', wrapMode: 'plain', core: false, legacyKey: '' }
+	{ name: 'Example: name and Obsidian URL', template: '<filename> -> <obsidian-url>', icon: 'link-2', wrapMode: 'plain', core: false, legacyKey: '', sinceVersion: 1 },
+	{ name: 'Example: line reference', template: '<filename-ext>#L<line-number>', icon: 'hash', wrapMode: 'plain', core: false, legacyKey: '', sinceVersion: 1 },
+	// Heading-aware links: jump to the cursor's heading, or the file if none.
+	{ name: 'Obsidian URL (to heading)', template: '<obsidian-url-section>', icon: 'link-2', wrapMode: 'plain', core: false, legacyKey: '', sinceVersion: 2 },
+	{ name: 'Wiki link (to heading)', template: '<wikilink-section>', icon: 'hash', wrapMode: 'plain', core: false, legacyKey: '', sinceVersion: 2 }
 ];
 
 // Generates a stable id for a custom format. Prefers crypto.randomUUID (available
@@ -94,49 +100,58 @@ function generateFormatId(): string {
 	return `fmt-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e9).toString(36)}`;
 }
 
-// Builds the 8 seeded built-in formats. With no legacy data (fresh install) the
-// core set is enabled with default wrapping. With legacy data, enabled state and
-// wrapping are migrated from the pre-1.19 boolean settings so existing users keep
-// exactly what they had.
-function seedFormats(legacy: Record<string, unknown> | null): CustomFormat[] {
+// Builds one CustomFormat from a seed spec. With no legacy data (fresh install)
+// the core set is enabled with default wrapping. With legacy data, enabled state
+// and wrapping are migrated from the pre-1.19 boolean settings so existing users
+// keep exactly what they had.
+function makeSeed(spec: SeedSpec, legacy: Record<string, unknown> | null): CustomFormat {
 	const oldWrap: PathWrapping = legacy && VALID_WRAPPINGS.includes(legacy.pathWrapping as PathWrapping)
 		? (legacy.pathWrapping as PathWrapping)
 		: 'backticks';
 	const menuDisplay = legacy ? legacy.menuDisplay : undefined;
 	const filenameWrap = legacy ? legacy.filenameUseWrapping === true : false;
 
-	return BUILTIN_SEEDS.map((spec): CustomFormat => {
-		let enabled: boolean;
-		if (!legacy || spec.legacyKey === '') {
-			// Fresh install, or a seed with no pre-1.19 equivalent (the examples).
-			enabled = spec.core;
-		} else if (spec.legacyKey === 'unix') {
-			enabled = menuDisplay !== 'windows';
-		} else if (spec.legacyKey === 'windows') {
-			enabled = menuDisplay !== 'linux-mac';
-		} else {
-			// Pre-1.19 show* booleans defaulted to true; absent counts as enabled.
-			enabled = legacy[spec.legacyKey] !== false;
-		}
+	let enabled: boolean;
+	if (!legacy || spec.legacyKey === '') {
+		// Fresh install, or a seed with no pre-1.19 equivalent.
+		enabled = spec.core;
+	} else if (spec.legacyKey === 'unix') {
+		enabled = menuDisplay !== 'windows';
+	} else if (spec.legacyKey === 'windows') {
+		enabled = menuDisplay !== 'linux-mac';
+	} else {
+		// Pre-1.19 show* booleans defaulted to true; absent counts as enabled.
+		enabled = legacy[spec.legacyKey] !== false;
+	}
 
-		let wrapping: PathWrapping = 'none';
-		if (spec.wrapMode === 'path') {
-			wrapping = legacy ? oldWrap : 'backticks';
-		} else if (spec.wrapMode === 'filename') {
-			wrapping = legacy && filenameWrap ? oldWrap : 'none';
-		}
+	let wrapping: PathWrapping = 'none';
+	if (spec.wrapMode === 'path') {
+		wrapping = legacy ? oldWrap : 'backticks';
+	} else if (spec.wrapMode === 'filename') {
+		wrapping = legacy && filenameWrap ? oldWrap : 'none';
+	}
 
-		return {
-			id: generateFormatId(),
-			name: spec.name,
-			template: spec.template,
-			wrapping,
-			icon: spec.icon,
-			enabled,
-			showInMenu: true,
-			showInCommands: true
-		};
-	});
+	return {
+		id: generateFormatId(),
+		name: spec.name,
+		template: spec.template,
+		wrapping,
+		icon: spec.icon,
+		enabled,
+		showInMenu: true,
+		showInCommands: true
+	};
+}
+
+// All seeded formats, for a fresh install or a pre-1.19 upgrade.
+function seedAllFormats(legacy: Record<string, unknown> | null): CustomFormat[] {
+	return BUILTIN_SEEDS.map((spec) => makeSeed(spec, legacy));
+}
+
+// Seeds introduced in a specific settings version, for incremental migration.
+// These are always new (no legacy mapping), so they use fresh-install defaults.
+function seedFormatsForVersion(version: number): CustomFormat[] {
+	return BUILTIN_SEEDS.filter((spec) => spec.sinceVersion === version).map((spec) => makeSeed(spec, null));
 }
 
 // Coerces possibly-corrupt or hand-edited persisted data into a valid CustomFormat
@@ -191,36 +206,38 @@ export default class ShellPathCopyPlugin extends Plugin {
 		const raw = (await this.loadData()) as Record<string, unknown> | null;
 		this.settings = { ...DEFAULT_SETTINGS };
 
-		// Fresh install: seed the built-in formats with the core set enabled.
-		if (raw === null) {
-			this.settings.customFormats = seedFormats(null);
-			this.settings.settingsVersion = SETTINGS_VERSION;
-			await this.saveSettings();
-			return;
-		}
-
 		// Copy forward the settings that survive into 1.19.
-		if (typeof raw.showNotifications === 'boolean') {
-			this.settings.showNotifications = raw.showNotifications;
+		if (raw !== null) {
+			if (typeof raw.showNotifications === 'boolean') {
+				this.settings.showNotifications = raw.showNotifications;
+			}
+			if (raw.markdownLinkFormat === 'wiki-style' || raw.markdownLinkFormat === 'standard-markdown') {
+				this.settings.markdownLinkFormat = raw.markdownLinkFormat;
+			}
+			if (typeof raw.warnOnUnresolvedTokens === 'boolean') {
+				this.settings.warnOnUnresolvedTokens = raw.warnOnUnresolvedTokens;
+			}
+			if (typeof raw.settingsVersion === 'number') {
+				this.settings.settingsVersion = raw.settingsVersion;
+			}
+			this.settings.customFormats = normalizeCustomFormats(raw.customFormats);
 		}
-		if (raw.markdownLinkFormat === 'wiki-style' || raw.markdownLinkFormat === 'standard-markdown') {
-			this.settings.markdownLinkFormat = raw.markdownLinkFormat;
-		}
-		if (typeof raw.warnOnUnresolvedTokens === 'boolean') {
-			this.settings.warnOnUnresolvedTokens = raw.warnOnUnresolvedTokens;
-		}
-		if (typeof raw.settingsVersion === 'number') {
-			this.settings.settingsVersion = raw.settingsVersion;
-		}
-		this.settings.customFormats = normalizeCustomFormats(raw.customFormats);
 
-		// One-time migration from the pre-1.19 fixed built-in settings. The 8
-		// built-ins are reinstalled as seeded formats with enabled state and
-		// wrapping carried over from the old boolean settings. Pre-1.19 users had
-		// no custom formats, so nothing is lost; pre-release beta formats are
-		// replaced (beta data is disposable).
-		if (this.settings.settingsVersion < SETTINGS_VERSION) {
-			this.settings.customFormats = seedFormats(raw);
+		const fromVersion = this.settings.settingsVersion;
+		if (fromVersion < SETTINGS_VERSION) {
+			if (fromVersion < 1) {
+				// Fresh install (raw null) or pre-1.19 upgrade (raw carries the
+				// legacy booleans). Seed all built-ins; on an upgrade their enabled
+				// state and wrapping are migrated from the old settings. Pre-1.19
+				// users had no custom formats, so nothing is lost.
+				this.settings.customFormats = seedAllFormats(raw);
+			} else {
+				// Incremental: append the seeds introduced in each newer version,
+				// leaving the user's existing formats untouched.
+				for (let v = fromVersion + 1; v <= SETTINGS_VERSION; v++) {
+					this.settings.customFormats.push(...seedFormatsForVersion(v));
+				}
+			}
 			this.settings.settingsVersion = SETTINGS_VERSION;
 			await this.saveSettings();
 		}
@@ -286,12 +303,26 @@ export default class ShellPathCopyPlugin extends Plugin {
 			}
 		}
 
-		// The line number belongs to the editor's file, not necessarily the file
-		// being copied. Only resolve it when the two are the same file.
+		// The line number and heading belong to the editor's file, not
+		// necessarily the file being copied. Only resolve them when the editor
+		// is showing the same file.
 		let lineNumber: number | null = null;
+		let currentHeading: string | null = null;
 		const activeEditor = this.app.workspace.activeEditor;
-		if (activeEditor?.editor && activeEditor.file?.path === file.path) {
-			lineNumber = activeEditor.editor.getCursor().line + 1;
+		if (activeEditor?.editor && activeEditor.file && activeEditor.file.path === file.path) {
+			const cursorLine = activeEditor.editor.getCursor().line;
+			lineNumber = cursorLine + 1;
+			// The cursor's heading is the last heading at or above the cursor.
+			const headings = this.app.metadataCache.getFileCache(activeEditor.file)?.headings;
+			if (headings) {
+				for (const entry of headings) {
+					if (entry.position.start.line <= cursorLine) {
+						currentHeading = entry.heading;
+					} else {
+						break;
+					}
+				}
+			}
 		}
 
 		return {
@@ -302,6 +333,7 @@ export default class ShellPathCopyPlugin extends Plugin {
 			isWindows: Platform.isWin,
 			absolutePath,
 			lineNumber,
+			currentHeading,
 			markdownLinkFormat: this.settings.markdownLinkFormat,
 			now: new Date()
 		};
@@ -709,6 +741,7 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 					? 'C:\\Users\\name\\assorted\\Notes\\My file.md'
 					: '/home/name/assorted/Notes/My file.md'),
 			lineNumber: 42,
+			currentHeading: 'My heading',
 			markdownLinkFormat: this.plugin.settings.markdownLinkFormat,
 			now: new Date()
 		};

@@ -12,6 +12,7 @@ function makeContext(overrides: Partial<TokenContext> = {}): TokenContext {
 		isWindows: false,
 		absolutePath: '/home/name/assorted/Notes/My file.md',
 		lineNumber: 42,
+		currentHeading: null,
 		markdownLinkFormat: 'wiki-style',
 		now: new Date(2026, 4, 17, 14, 30),
 		...overrides,
@@ -252,6 +253,44 @@ describe('applyTemplate - encoding edges', () => {
 	});
 });
 
+// ─── heading tokens ───────────────────────────────────────────────────────────
+
+describe('applyTemplate - heading tokens', () => {
+	const withHeading = makeContext({ currentHeading: 'My heading' });
+	const noHeading = makeContext({ currentHeading: null });
+
+	it('<heading> resolves to the cursor heading', () => {
+		expect(applyTemplate('<heading>', withHeading).text).toBe('My heading');
+	});
+
+	it('<heading> is blank when the cursor is under no heading', () => {
+		expect(applyTemplate('<heading>', noHeading).text).toBe('');
+	});
+
+	it('<obsidian-url-section> anchors to the heading when there is one', () => {
+		expect(applyTemplate('<obsidian-url-section>', withHeading).text)
+			.toBe('obsidian://open?vault=assorted&file=Notes%2FMy%20file&heading=My%20heading');
+	});
+
+	it('<obsidian-url-section> falls back to the file URL with no heading', () => {
+		expect(applyTemplate('<obsidian-url-section>', noHeading).text)
+			.toBe('obsidian://open?vault=assorted&file=Notes%2FMy%20file');
+	});
+
+	it('<wikilink-section> anchors to the heading when there is one', () => {
+		expect(applyTemplate('<wikilink-section>', withHeading).text).toBe('[[My file#My heading]]');
+	});
+
+	it('<wikilink-section> falls back to the file link with no heading', () => {
+		expect(applyTemplate('<wikilink-section>', noHeading).text).toBe('[[My file]]');
+	});
+
+	it('the section tokens always resolve (universal tier)', () => {
+		const result = applyTemplate('<obsidian-url-section> <wikilink-section>', noHeading);
+		expect(result.usedEditorTokenWithoutEditor).toBe(false);
+	});
+});
+
 // ─── validateTemplate ─────────────────────────────────────────────────────────
 
 describe('validateTemplate', () => {
@@ -285,7 +324,7 @@ describe('validateTemplate', () => {
 describe('listTokens', () => {
 	it('returns the full token set with tiers', () => {
 		const tokens = listTokens();
-		expect(tokens.length).toBe(17);
+		expect(tokens.length).toBe(20);
 		const absolutePath = tokens.find((t) => t.name === 'absolute-path');
 		expect(absolutePath?.tier).toBe('desktop');
 		const lineNumber = tokens.find((t) => t.name === 'line-number');

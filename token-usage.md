@@ -10,7 +10,7 @@ Every output on this page is computed against this fixed scenario:
 - Vault name: `assorted`
 - File copied: `Notes/My file.md` (display name `My file.md`)
 - Host: desktop, Windows, vault stored at `C:\Users\name\assorted`
-- The copied file is open in the editor with the cursor on line 42
+- The copied file is open in the editor with the cursor on line 42, under the heading "Project notes"
 - Date/time when copied: `2026-05-17`, `14:30`
 
 ## Every token
@@ -33,6 +33,9 @@ Every output on this page is computed against this fixed scenario:
 | `<date>` | Current date, `YYYY-MM-DD` | universal | `2026-05-17` |
 | `<time>` | Current time, `HH:mm` | universal | `14:30` |
 | `<line-number>` | Active editor cursor line, 1-based | editor only | `42` |
+| `<heading>` | Heading the cursor sits under | editor only | `Project notes` |
+| `<obsidian-url-section>` | Obsidian URL to the cursor heading, or the file when there is none | universal | `obsidian://open?vault=assorted&file=Notes%2FMy%20file&heading=Project%20notes` |
+| `<wikilink-section>` | Wiki link to the cursor heading, or the file when there is none | universal | `[[My file#Project notes]]` |
 | `<nl>` | A literal newline | universal | (line break) |
 
 Tier meaning: **universal** always resolves; **desktop only** is blank on mobile;
@@ -66,9 +69,9 @@ To output a literal `<` or `>` or `\`, escape it with a backslash.
 
 - **Raw text** (no encoding): `<filename>`, `<filename-ext>`, `<extension>`,
   `<relative-path>`, `<relative-path-unix>`, `<relative-path-windows>`, `<absolute-path>`,
-  `<vault-name>`, `<date>`, `<time>`, `<line-number>`.
+  `<vault-name>`, `<date>`, `<time>`, `<line-number>`, `<heading>`, `<wikilink-section>`.
 - **URL-encoded**: `<file-url>` (each path segment), `<obsidian-url>` (vault and file),
-  `<vault-name-encoded>`.
+  `<obsidian-url-section>` (vault, file, and heading), `<vault-name-encoded>`.
 
 If you hand-build a URL, use the encoded tokens. Example: a vault named `My Vault` makes
 `<vault-name>` produce `My Vault` but `<vault-name-encoded>` produce `My%20Vault`.
@@ -76,8 +79,11 @@ If you hand-build a URL, use the encoded tokens. Example: a vault named `My Vaul
 ## Fallback behavior
 
 - On mobile, `<absolute-path>` and `<file-url>` resolve to an empty string.
-- `<line-number>` resolves to an empty string when no note is open, or when the file you
-  copied is not the file currently open in the editor.
+- `<line-number>` and `<heading>` resolve to an empty string when no note is open, or when
+  the file you copied is not the file currently open in the editor.
+- `<obsidian-url-section>` and `<wikilink-section>` never blank: with a heading they link to
+  it, otherwise they link to the file. They are the way to get an Obsidian link that jumps
+  to the heading your cursor is in.
 - When a token blanks out this way and "Notify when a token could not be resolved" is on,
   a notice explains which token was unavailable. The rest of the template still copies.
 - An unrecognized token such as `<bogus>` is left in the output verbatim as `<bogus>`, so

@@ -30,6 +30,8 @@ export interface TokenContext {
 	absolutePath: string | null;
 	/** Active editor cursor line (1-based), or null when it does not apply. */
 	lineNumber: number | null;
+	/** Heading the cursor sits under, or null when there is none / no editor. */
+	currentHeading: string | null;
 	/** Markdown link style chosen in plugin settings. */
 	markdownLinkFormat: MarkdownLinkFormat;
 	/** Injected so <date>/<time> are deterministic in tests. */
@@ -168,6 +170,26 @@ export const TOKENS: readonly TokenDef[] = [
 		resolve: (ctx) => `[[${extractFilename(ctx.fileName, false)}]]`,
 	},
 	{
+		name: 'obsidian-url-section',
+		tier: 'universal',
+		description: 'Obsidian URL to the cursor heading, or the file when there is none',
+		resolve: (ctx) => {
+			const base = buildObsidianUrl(ctx.vaultName, ctx.filePath);
+			return ctx.currentHeading
+				? `${base}&heading=${encodeURIComponent(ctx.currentHeading)}`
+				: base;
+		},
+	},
+	{
+		name: 'wikilink-section',
+		tier: 'universal',
+		description: 'Wiki link to the cursor heading, or the file when there is none',
+		resolve: (ctx) => {
+			const base = extractFilename(ctx.fileName, false);
+			return ctx.currentHeading ? `[[${base}#${ctx.currentHeading}]]` : `[[${base}]]`;
+		},
+	},
+	{
 		name: 'date',
 		tier: 'universal',
 		description: 'Current date, YYYY-MM-DD',
@@ -184,6 +206,12 @@ export const TOKENS: readonly TokenDef[] = [
 		tier: 'editor',
 		description: 'Active editor cursor line, 1-based (editor only)',
 		resolve: (ctx) => (ctx.lineNumber !== null ? String(ctx.lineNumber) : ''),
+	},
+	{
+		name: 'heading',
+		tier: 'editor',
+		description: 'Heading the cursor sits under (editor only)',
+		resolve: (ctx) => ctx.currentHeading ?? '',
 	},
 	{
 		name: 'nl',

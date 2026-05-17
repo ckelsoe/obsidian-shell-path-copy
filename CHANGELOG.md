@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.19.0-beta.5] - 2026-05-17
+
+### Added
+- Heading-aware linking. Three new tokens: `<heading>` (the heading the cursor
+  sits under), `<obsidian-url-section>`, and `<wikilink-section>`. The two
+  section tokens link to the cursor's heading when a note is open, and to the
+  file otherwise.
+- Two seeded formats, disabled by default: "Obsidian URL (to heading)" and
+  "Wiki link (to heading)".
+
+### Changed
+- Full README rewrite for the token-template model.
+
+### Note
+Settings schema is now version 2. Vaults already on version 1 gain the two new
+heading formats on first load; existing formats are untouched.
+
 ## [1.19.0-beta.4] - 2026-05-17
 
 ### Added
