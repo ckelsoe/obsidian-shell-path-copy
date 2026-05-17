@@ -185,6 +185,7 @@ This project is licensed under the MIT License. See the [LICENSE](./LICENSE) fil
 
 ## Acknowledgments
 
+- Thanks to [@craziedde](https://github.com/craziedde) for feature requests and feedback that shaped the plugin.
 - Inspired by the need for better file path handling when working with AI coding assistants.
 - Built for [Obsidian](https://obsidian.md) using the [Obsidian API](https://github.com/obsidianmd/obsidian-api).
 - Thanks to the Obsidian developers and community.
