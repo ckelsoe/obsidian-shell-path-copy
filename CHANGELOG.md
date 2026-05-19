@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-05-18
+
+### Added
+- Selection tokens `<line-start>`, `<line-end>`, and `<line-range>` for the first
+  and last line of the editor selection. `<line-range>` copies `42-58` for a
+  multi-line selection and a single number when nothing is selected. With no
+  selection all three fall back to the cursor line. Useful for building a file
+  plus line-range reference such as `<absolute-path>#L<line-range>` to hand to an
+  AI coding agent. See `token-usage.md`. (issue #13)
+
 ## [2.0.0] - 2026-05-17
 
 A major version: the plugin is rewritten around a token engine. The fixed

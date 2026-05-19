@@ -12,6 +12,8 @@ function makeContext(overrides: Partial<TokenContext> = {}): TokenContext {
 		isWindows: false,
 		absolutePath: '/home/name/assorted/Notes/My file.md',
 		lineNumber: 42,
+		selectionStartLine: 42,
+		selectionEndLine: 58,
 		currentHeading: null,
 		blockId: null,
 		markdownLinkFormat: 'wiki-style',
@@ -108,6 +110,23 @@ describe('applyTemplate - individual tokens', () => {
 		expect(applyTemplate('<line-number>', ctx).text).toBe('42');
 	});
 
+	it('<line-start> is the first selected line', () => {
+		expect(applyTemplate('<line-start>', ctx).text).toBe('42');
+	});
+
+	it('<line-end> is the last selected line', () => {
+		expect(applyTemplate('<line-end>', ctx).text).toBe('58');
+	});
+
+	it('<line-range> is start-end when a span is selected', () => {
+		expect(applyTemplate('<line-range>', ctx).text).toBe('42-58');
+	});
+
+	it('<line-range> is a single number when nothing is selected', () => {
+		const single = makeContext({ selectionStartLine: 42, selectionEndLine: 42 });
+		expect(applyTemplate('<line-range>', single).text).toBe('42');
+	});
+
 	it('<nl> is a literal newline', () => {
 		expect(applyTemplate('a<nl>b', ctx).text).toBe('a\nb');
 	});
@@ -125,6 +144,11 @@ describe('applyTemplate - composition', () => {
 
 	it('renders an LLM-CLI line reference', () => {
 		expect(applyTemplate('<filename-ext>#L<line-number>', ctx).text).toBe('My file.md#L42');
+	});
+
+	it('renders an absolute-path line range for an AI agent', () => {
+		expect(applyTemplate('<absolute-path>#L<line-range>', ctx).text)
+			.toBe('/home/name/assorted/Notes/My file.md#L42-58');
 	});
 
 	it('passes literal text through unchanged', () => {
@@ -216,6 +240,17 @@ describe('applyTemplate - editor token without an editor', () => {
 	it('blanks <line-number> and flags it', () => {
 		const noEditor = makeContext({ lineNumber: null });
 		const result = applyTemplate('<filename-ext>#L<line-number>', noEditor);
+		expect(result.text).toBe('My file.md#L');
+		expect(result.usedEditorTokenWithoutEditor).toBe(true);
+	});
+
+	it('blanks the selection tokens and flags them', () => {
+		const noEditor = makeContext({
+			lineNumber: null,
+			selectionStartLine: null,
+			selectionEndLine: null,
+		});
+		const result = applyTemplate('<filename-ext>#L<line-range>', noEditor);
 		expect(result.text).toBe('My file.md#L');
 		expect(result.usedEditorTokenWithoutEditor).toBe(true);
 	});
@@ -360,11 +395,13 @@ describe('validateTemplate', () => {
 describe('listTokens', () => {
 	it('returns the full token set with tiers', () => {
 		const tokens = listTokens();
-		expect(tokens.length).toBe(23);
+		expect(tokens.length).toBe(26);
 		const absolutePath = tokens.find((t) => t.name === 'absolute-path');
 		expect(absolutePath?.tier).toBe('desktop');
 		const lineNumber = tokens.find((t) => t.name === 'line-number');
 		expect(lineNumber?.tier).toBe('editor');
+		const lineRange = tokens.find((t) => t.name === 'line-range');
+		expect(lineRange?.tier).toBe('editor');
 		const filename = tokens.find((t) => t.name === 'filename');
 		expect(filename?.tier).toBe('universal');
 	});

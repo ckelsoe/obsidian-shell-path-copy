@@ -208,11 +208,22 @@ export default class ShellPathCopyPlugin extends Plugin {
 
 		// The line number, heading, and block come from that editor's cursor.
 		let lineNumber: number | null = null;
+		let selectionStartLine: number | null = null;
+		let selectionEndLine: number | null = null;
 		let currentHeading: string | null = null;
 		let blockId: string | null = null;
 		if (sourceEditor && file instanceof TFile) {
 			const cursorLine = sourceEditor.getCursor().line;
 			lineNumber = cursorLine + 1;
+			// Selection span. 'from'/'to' are normalized so 'from' precedes 'to'.
+			// With no selection both equal the cursor. When a selection ends at
+			// column 0 of a later line, the visible highlight stops on the line
+			// above, so trim that trailing line off a multi-line selection.
+			const from = sourceEditor.getCursor('from');
+			const to = sourceEditor.getCursor('to');
+			const endLine = to.ch === 0 && to.line > from.line ? to.line - 1 : to.line;
+			selectionStartLine = from.line + 1;
+			selectionEndLine = endLine + 1;
 			// The cursor's heading is the last heading at or above the cursor.
 			const headings = this.app.metadataCache.getFileCache(file)?.headings;
 			if (headings) {
@@ -237,6 +248,8 @@ export default class ShellPathCopyPlugin extends Plugin {
 			isWindows: Platform.isWin,
 			absolutePath,
 			lineNumber,
+			selectionStartLine,
+			selectionEndLine,
 			currentHeading,
 			blockId,
 			markdownLinkFormat: this.settings.markdownLinkFormat,
@@ -702,6 +715,8 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 					? 'C:\\Users\\name\\assorted\\Notes\\My file.md'
 					: '/home/name/assorted/Notes/My file.md'),
 			lineNumber: 42,
+			selectionStartLine: 42,
+			selectionEndLine: 58,
 			currentHeading: 'My heading',
 			blockId: 'a1b2c3',
 			markdownLinkFormat: this.plugin.settings.markdownLinkFormat,

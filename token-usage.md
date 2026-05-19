@@ -14,6 +14,7 @@ Every output on this page is computed against this fixed scenario:
 - File copied: `Notes/My file.md` (display name `My file.md`)
 - Host: desktop, Windows, vault stored at `C:\Users\name\assorted`
 - The copied file is open in the editor with the cursor on line 42, under the heading "Project notes", in a block whose id is `a1b2c3`
+- A selection in that editor spans lines 42 through 58
 - Date/time when copied: `2026-05-17`, `14:30`
 
 ## Every token
@@ -36,6 +37,9 @@ Every output on this page is computed against this fixed scenario:
 | `<date>` | Current date, `YYYY-MM-DD` | universal | `2026-05-17` |
 | `<time>` | Current time, `HH:mm` | universal | `14:30` |
 | `<line-number>` | Active editor cursor line, 1-based | editor only | `42` |
+| `<line-start>` | First line of the editor selection, 1-based | editor only | `42` |
+| `<line-end>` | Last line of the editor selection, 1-based | editor only | `58` |
+| `<line-range>` | Selected line range; a single line when nothing is selected | editor only | `42-58` |
 | `<heading>` | Heading the cursor sits under | editor only | `Project notes` |
 | `<obsidian-url-heading>` | Obsidian URL to the cursor heading, or the file when there is none | universal | `obsidian://open?vault=assorted&file=Notes%2FMy%20file%23Project%20notes` |
 | `<wikilink-heading>` | Wiki link to the cursor heading, or the file when there is none | universal | `[[My file#Project notes]]` |
@@ -55,12 +59,39 @@ Tier meaning: **universal** always resolves; **desktop only** is blank on mobile
 | `<filename-ext>#L<line-number>` | `My file.md#L42` |
 | `<filename-ext> Line <line-number>` | `My file.md Line 42` |
 | `<relative-path-unix>:<line-number>` | `./Notes/My file.md:42` |
+| `<filename-ext>#L<line-range>` | `My file.md#L42-58` |
+| `<absolute-path>#L<line-range>` | `C:\Users\name\assorted\Notes\My file.md#L42-58` |
+| `<filename-ext> lines <line-start>-<line-end>` | `My file.md lines 42-58` |
 | `cat <relative-path-windows>` | `cat .\Notes\My file.md` |
 | `[<filename>](<file-url>)` | `[My file](file:///C:/Users/name/assorted/Notes/My%20file.md)` |
 | `# <filename><nl>Path: <relative-path>` | `# My file` then a new line `Path: .\Notes\My file.md` (host is Windows) |
 
 Per-format wrapping (set per custom format) is applied around the whole result after
 substitution. With backtick wrapping, `<relative-path-unix>` yields `` `./Notes/My file.md` ``.
+
+## Line references and what reads them
+
+`<line-number>`, `<line-start>`, `<line-end>`, and `<line-range>` produce plain line
+numbers. `<line-range>` is the convenient one: it copies `42-58` for a multi-line
+selection and just `42` when nothing is selected.
+
+These tokens are a text reference, not an Obsidian link. Obsidian itself cannot
+navigate to a line. An Obsidian `#` anchor only resolves to a heading (`#Heading`) or a
+block (`#^block-id`); it has no concept of a line number. So a string like
+`My file.md#L42-58` will not jump anywhere if you click it inside Obsidian. For
+in-Obsidian navigation use the heading or block tokens instead.
+
+Where line references do work is as input to a tool that opens the file and reads it,
+for example an AI coding agent. For that case pair the line tokens with `<absolute-path>`,
+not the bare filename. A bare `My file.md#L42-58` gives the agent no location, so it has
+to search for the file first. `<absolute-path>#L<line-range>` gives a full path the agent
+can open directly:
+
+```
+<absolute-path>#L<line-range>   ->   C:\Users\name\assorted\Notes\My file.md#L42-58
+```
+
+`<relative-path-unix>` also works when the agent's working directory is the vault root.
 
 ## Escaping
 
@@ -76,8 +107,9 @@ To output a literal `<` or `>` or `\`, escape it with a backslash.
 
 - **Raw text** (no encoding): `<filename>`, `<filename-ext>`, `<extension>`,
   `<relative-path>`, `<relative-path-unix>`, `<relative-path-windows>`, `<absolute-path>`,
-  `<vault-name>`, `<date>`, `<time>`, `<line-number>`, `<heading>`, `<block-id>`,
-  `<wikilink>`, `<wikilink-heading>`, `<wikilink-block>`.
+  `<vault-name>`, `<date>`, `<time>`, `<line-number>`, `<line-start>`, `<line-end>`,
+  `<line-range>`, `<heading>`, `<block-id>`, `<wikilink>`, `<wikilink-heading>`,
+  `<wikilink-block>`.
 - **URL-encoded**: `<file-url>` (each path segment), `<obsidian-url>` (vault and file),
   `<obsidian-url-heading>` (vault, file, and heading), `<obsidian-url-block>` (vault, file,
   and block), `<vault-name-encoded>`.
@@ -88,8 +120,13 @@ If you hand-build a URL, use the encoded tokens. Example: a vault named `My Vaul
 ## Fallback behavior
 
 - On mobile, `<absolute-path>` and `<file-url>` resolve to an empty string.
-- `<line-number>` and `<heading>` resolve to an empty string when no note is open, or when
-  the file you copied is not the file currently open in the editor.
+- `<line-number>`, `<line-start>`, `<line-end>`, `<line-range>`, and `<heading>` resolve to
+  an empty string when no note is open, or when the file you copied is not the file
+  currently open in the editor.
+- `<line-start>`, `<line-end>`, and `<line-range>` use the editor selection. With no
+  selection all three fall back to the cursor line, so `<line-range>` copies a single
+  number. They report whole lines: a selection that starts or ends mid-line still yields
+  the line numbers it spans, not character offsets.
 - `<obsidian-url-heading>` and `<wikilink-heading>` never blank: with a heading they link to
   it, otherwise they link to the file. They are the way to get an Obsidian link that jumps
   to the heading your cursor is in.

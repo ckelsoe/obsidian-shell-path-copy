@@ -30,6 +30,10 @@ export interface TokenContext {
 	absolutePath: string | null;
 	/** Active editor cursor line (1-based), or null when it does not apply. */
 	lineNumber: number | null;
+	/** First line of the editor selection (1-based), or null when not applicable. */
+	selectionStartLine: number | null;
+	/** Last line of the editor selection (1-based), or null when not applicable. */
+	selectionEndLine: number | null;
 	/** Heading the cursor sits under, or null when there is none / no editor. */
 	currentHeading: string | null;
 	/** Block id at the cursor (created if needed), or null when not applicable. */
@@ -219,6 +223,31 @@ export const TOKENS: readonly TokenDef[] = [
 		tier: 'editor',
 		description: 'Active editor cursor line, 1-based (editor only)',
 		resolve: (ctx) => (ctx.lineNumber !== null ? String(ctx.lineNumber) : ''),
+	},
+	{
+		name: 'line-start',
+		tier: 'editor',
+		description: 'First line of the editor selection, 1-based (editor only)',
+		resolve: (ctx) => (ctx.selectionStartLine !== null ? String(ctx.selectionStartLine) : ''),
+	},
+	{
+		name: 'line-end',
+		tier: 'editor',
+		description: 'Last line of the editor selection, 1-based (editor only)',
+		resolve: (ctx) => (ctx.selectionEndLine !== null ? String(ctx.selectionEndLine) : ''),
+	},
+	{
+		name: 'line-range',
+		tier: 'editor',
+		description: 'Selected line range, e.g. 43-56; a single line when nothing is selected (editor only)',
+		resolve: (ctx) => {
+			if (ctx.selectionStartLine === null || ctx.selectionEndLine === null) {
+				return '';
+			}
+			return ctx.selectionStartLine === ctx.selectionEndLine
+				? String(ctx.selectionStartLine)
+				: `${ctx.selectionStartLine}-${ctx.selectionEndLine}`;
+		},
 	},
 	{
 		name: 'heading',
