@@ -79,18 +79,46 @@ jobs:
           fi
 
       - name: VirusTotal scan of release artifacts
-        # Runs after Create release so update_release_body has a release body
-        # to append VirusTotal analysis links to. Best-effort: VirusTotal
-        # returns HTTP 409 ("resource already exists") when a byte-identical
-        # artifact was scanned before, and the action treats that as fatal.
-        # continue-on-error keeps a 409 (or any VirusTotal hiccup) from
-        # blocking the release; the scan still runs and reports.
+        id: virustotal
+        # Best-effort: VirusTotal returns HTTP 409 ("resource already exists")
+        # when a byte-identical artifact was scanned before, and the action
+        # treats that as fatal. continue-on-error keeps a 409 (or any
+        # VirusTotal hiccup) from blocking the release; the scan still runs
+        # and reports. The action's own update_release_body input is not used
+        # because it only fires on `release`-event-triggered workflows; we
+        # trigger on `push: tags`, so the next step appends the links itself.
         continue-on-error: true
         uses: crazy-max/ghaction-virustotal@v5
         with:
           vt_api_key: ${{ secrets.VT_API_KEY }}
-          update_release_body: true
           files: |
             main.js
             manifest.json
             styles.css
+
+      - name: Append VirusTotal links to release body
+        # Parses the VirusTotal action's `analysis` output (format:
+        # name1=url1,name2=url2,...) into a markdown list and appends it to
+        # the release body via `gh release edit`. Skipped if the VirusTotal
+        # step produced no analysis output (continue-on-error above could
+        # leave it empty on total failure).
+        if: steps.virustotal.outputs.analysis != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VT_ANALYSIS: ${{ steps.virustotal.outputs.analysis }}
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          {
+            echo
+            echo "### VirusTotal scan"
+            echo
+            IFS=','
+            for entry in $VT_ANALYSIS; do
+              name="${entry%%=*}"
+              url="${entry#*=}"
+              echo "- [\`$name\`]($url)"
+            done
+          } > vt-section.md
+          gh release view "$tag" --json body --jq .body > current-body.md
+          cat current-body.md vt-section.md > new-body.md
+          gh release edit "$tag" --notes-file new-body.md
