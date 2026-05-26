@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.1] - 2026-05-26
+
+### Changed
+- Release workflow now appends VirusTotal scan analysis links to the GitHub
+  release body (`update_release_body: true`) and runs the VirusTotal step
+  after release creation. The scans had been running on every release but the
+  result links were not visible in the release notes. No plugin behavior
+  change.
+
 ## [2.2.0] - 2026-05-26
 
 ### Added

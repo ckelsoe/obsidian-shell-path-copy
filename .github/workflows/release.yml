@@ -43,20 +43,6 @@ jobs:
             manifest.json
             styles.css
 
-      - name: VirusTotal scan of release artifacts
-        # Best-effort: VirusTotal returns HTTP 409 ("resource already exists")
-        # when a byte-identical artifact was scanned before, and the action
-        # treats that as fatal. continue-on-error keeps a 409 (or any VirusTotal
-        # hiccup) from blocking the release; the scan still runs and reports.
-        continue-on-error: true
-        uses: crazy-max/ghaction-virustotal@v5
-        with:
-          vt_api_key: ${{ secrets.VT_API_KEY }}
-          files: |
-            main.js
-            manifest.json
-            styles.css
-
       - name: Extract release notes from CHANGELOG
         id: notes
         run: |
@@ -91,3 +77,20 @@ jobs:
               --generate-notes \
               main.js manifest.json styles.css
           fi
+
+      - name: VirusTotal scan of release artifacts
+        # Runs after Create release so update_release_body has a release body
+        # to append VirusTotal analysis links to. Best-effort: VirusTotal
+        # returns HTTP 409 ("resource already exists") when a byte-identical
+        # artifact was scanned before, and the action treats that as fatal.
+        # continue-on-error keeps a 409 (or any VirusTotal hiccup) from
+        # blocking the release; the scan still runs and reports.
+        continue-on-error: true
+        uses: crazy-max/ghaction-virustotal@v5
+        with:
+          vt_api_key: ${{ secrets.VT_API_KEY }}
+          update_release_body: true
+          files: |
+            main.js
+            manifest.json
+            styles.css
