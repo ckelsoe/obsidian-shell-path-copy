@@ -1,6 +1,6 @@
 # Shell Path Copy for Obsidian
 
-[![CI](https://img.shields.io/github/actions/workflow/status/ckelsoe/obsidian-shell-path-copy/ci.yml?branch=main&label=CI&logo=github)](https://github.com/ckelsoe/obsidian-shell-path-copy/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/actions/workflow/status/ckelsoe/obsidian-shell-path-copy/release.yml?label=Release&logo=github)](https://github.com/ckelsoe/obsidian-shell-path-copy/actions/workflows/release.yml) [![GitHub Downloads](https://img.shields.io/github/downloads/ckelsoe/obsidian-shell-path-copy/total?logo=github&label=Downloads)](https://github.com/ckelsoe/obsidian-shell-path-copy/releases) [![GitHub Stars](https://img.shields.io/github/stars/ckelsoe/obsidian-shell-path-copy?style=flat&logo=github&label=Stars)](https://github.com/ckelsoe/obsidian-shell-path-copy) [![Obsidian](https://img.shields.io/badge/Obsidian-v1.5.0%2B-7C3AED?logo=obsidian&logoColor=white)](https://obsidian.md) [![License](https://img.shields.io/github/license/ckelsoe/obsidian-shell-path-copy)](https://github.com/ckelsoe/obsidian-shell-path-copy/blob/main/LICENSE) [![Latest Release](https://img.shields.io/github/v/release/ckelsoe/obsidian-shell-path-copy?label=Latest)](https://github.com/ckelsoe/obsidian-shell-path-copy/releases/latest)
+[![CI](https://img.shields.io/github/actions/workflow/status/ckelsoe/obsidian-shell-path-copy/ci.yml?branch=main&label=CI&logo=github)](https://github.com/ckelsoe/obsidian-shell-path-copy/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/actions/workflow/status/ckelsoe/obsidian-shell-path-copy/release.yml?label=Release&logo=github)](https://github.com/ckelsoe/obsidian-shell-path-copy/actions/workflows/release.yml) [![GitHub Downloads](https://img.shields.io/github/downloads/ckelsoe/obsidian-shell-path-copy/total?logo=github&label=Downloads)](https://github.com/ckelsoe/obsidian-shell-path-copy/releases) [![GitHub Stars](https://img.shields.io/github/stars/ckelsoe/obsidian-shell-path-copy?style=flat&logo=github&label=Stars)](https://github.com/ckelsoe/obsidian-shell-path-copy) [![Obsidian](https://img.shields.io/badge/Obsidian-v1.6.0%2B-7C3AED?logo=obsidian&logoColor=white)](https://obsidian.md) [![License](https://img.shields.io/github/license/ckelsoe/obsidian-shell-path-copy)](https://github.com/ckelsoe/obsidian-shell-path-copy/blob/main/LICENSE) [![Latest Release](https://img.shields.io/github/v/release/ckelsoe/obsidian-shell-path-copy?label=Latest)](https://github.com/ckelsoe/obsidian-shell-path-copy/releases/latest)
 
 Copy a file or folder path out of your Obsidian vault. Right-click, pick a format, paste.
 
@@ -56,7 +56,7 @@ You can copy from three places:
 - **Right-click inside an open note.** The formats act on that note, and the heading-aware formats link to the heading your cursor is in.
 - **Command palette** (`Ctrl/Cmd+P`): type `Copy:` and pick a format. It acts on the active file.
 
-Pick a format from the Shell Path Copy section of the menu; the result lands on your clipboard.
+In the right-click menu, the enabled formats sit inside a **Copy path as** submenu to keep the menu tidy. Pick the format you want and the result lands on your clipboard. You can pin individual formats to the root menu, or turn the submenu off entirely, in settings.
 
 Out of the box four formats are enabled: Relative Linux/macOS path, Relative Windows path, Obsidian URL, and Markdown link. Open the settings to enable the others or add your own.
 
@@ -101,6 +101,7 @@ A custom format is a token template. Build one in settings:
    - **Template**: the token template. The token palette below the field inserts a token at the cursor. A live preview shows the rendered result, and a Desktop / Mobile row shows where the template works.
    - **Wrapping**: none, double quotes, single quotes, or backticks, applied around the whole result.
    - **Show in menu** and **Show in command palette**: where the format appears.
+   - **Pin to root menu**: also show this format at the top of the right-click menu, not only inside the **Copy path as** submenu. Useful for the one or two formats you reach for most.
 4. Reload Obsidian so the command registers.
 
 The format list is compact and drag-to-reorder; list order is the menu order. Click a format to expand its editor.
@@ -127,6 +128,9 @@ A token is a name in angle brackets. Unknown tokens are left as typed. Escape a 
 | `<date>` | Current date, `YYYY-MM-DD` | All |
 | `<time>` | Current time, `HH:mm` | All |
 | `<line-number>` | Active editor cursor line | Editor only |
+| `<line-start>` | First line of the editor selection | Editor only |
+| `<line-end>` | Last line of the editor selection | Editor only |
+| `<line-range>` | Selected line range like `42-58`, or a single line when nothing is selected | Editor only |
 | `<heading>` | Heading the cursor sits under | Editor only |
 | `<obsidian-url-heading>` | Obsidian URL to the cursor heading, or the file when there is none | All |
 | `<wikilink-heading>` | Wiki link to the cursor heading, or the file when there is none | All |
@@ -156,6 +160,7 @@ Global options:
 - **Show notifications**: show a notice when something is copied.
 - **Markdown link format**: wiki-style (`[[filename]]`) or standard Markdown (`[filename](path)`). Used by the `<markdown-link>` token.
 - **Notify when a token could not be resolved**: show a notice when a desktop-only or editor-only token is left blank.
+- **Group formats under a submenu**: nest every format inside one **Copy path as** right-click submenu (on by default). Turn it off to put every enabled format directly at the root menu, the way 2.1.x worked.
 
 Everything else is per format, in the Custom formats list.
 
