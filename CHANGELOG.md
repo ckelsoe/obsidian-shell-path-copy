@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-05-26
+
+### Added
+- "Copy path as" submenu groups every custom format under a single right-click
+  menu entry, decluttering the file/folder and in-document context menus
+  ([#15](https://github.com/ckelsoe/obsidian-shell-path-copy/issues/15)).
+- Per-format "Pin to root menu" toggle keeps favorite formats accessible at the
+  top level while still showing them inside the submenu.
+- Global "Group formats under a submenu" toggle in settings (on by default) to
+  opt back into the flat layout.
+
+### Changed
+- `minAppVersion` raised from `1.5.0` to `1.6.0` so the menu-submenu API can be
+  used directly (no runtime feature detection).
+- Settings schema version bumped from `4` to `5`; the new `pinToRoot` field
+  defaults to `false` on existing custom formats on first load.
+
 ## [2.1.0] - 2026-05-18
 
 ### Added

@@ -10,6 +10,7 @@ import {
 	normalizeCustomFormats,
 } from './seed-utils';
 import { resolveBlockTargetLine, findExistingBlockId, generateBlockId } from './block-utils';
+import { pickRootFormats } from './menu-utils';
 
 // Node 'path' is only available on desktop. Load lazily behind a Platform.isDesktop
 // guard so mobile builds do not pull in unavailable Node built-ins. The narrow
@@ -29,6 +30,7 @@ interface PathCopySettings {
 	showNotifications: boolean;
 	markdownLinkFormat: MarkdownLinkFormat;
 	warnOnUnresolvedTokens: boolean;
+	useSubmenu: boolean;
 	customFormats: CustomFormat[];
 	settingsVersion: number;
 }
@@ -37,6 +39,7 @@ const DEFAULT_SETTINGS: PathCopySettings = {
 	showNotifications: true,
 	markdownLinkFormat: 'wiki-style',
 	warnOnUnresolvedTokens: true,
+	useSubmenu: true,
 	customFormats: [],
 	settingsVersion: 0
 }
@@ -104,6 +107,9 @@ export default class ShellPathCopyPlugin extends Plugin {
 			if (typeof raw.warnOnUnresolvedTokens === 'boolean') {
 				this.settings.warnOnUnresolvedTokens = raw.warnOnUnresolvedTokens;
 			}
+			if (typeof raw.useSubmenu === 'boolean') {
+				this.settings.useSubmenu = raw.useSubmenu;
+			}
 			if (typeof raw.settingsVersion === 'number') {
 				this.settings.settingsVersion = raw.settingsVersion;
 			}
@@ -157,6 +163,9 @@ export default class ShellPathCopyPlugin extends Plugin {
 
 	// Adds the enabled custom-format items to a context menu. `editor` is passed
 	// from the in-document right-click so the cursor's heading and line resolve.
+	// When useSubmenu is on, items live inside a 'Copy path as' submenu; pinned
+	// items also appear at the root. The menu is rebuilt on every right-click,
+	// so changes here take effect without a reload.
 	private addPathCopyMenuItems(menu: Menu, file: TAbstractFile, editor?: Editor) {
 		const visible = this.settings.customFormats.filter((fmt) => fmt.enabled && fmt.showInMenu);
 		if (visible.length === 0) {
@@ -165,20 +174,43 @@ export default class ShellPathCopyPlugin extends Plugin {
 
 		menu.addSeparator();
 
-		// The menu is rebuilt on every right-click, so menu changes take effect
-		// without a reload.
-		for (const fmt of visible) {
-			const formatId = fmt.id;
-			menu.addItem((item) => {
-				item
-					.setTitle(fmt.name)
-					.setIcon(fmt.icon)
-					.setSection('shell-path-copy')
-					.onClick(async () => {
-						await this.copyCustomFormat(formatId, file, editor);
-					});
+		const useSubmenu = this.settings.useSubmenu;
+
+		for (const fmt of pickRootFormats(visible, useSubmenu)) {
+			this.addFormatMenuItem(menu, fmt, file, editor, true);
+		}
+
+		if (useSubmenu) {
+			menu.addItem((parent) => {
+				parent
+					.setTitle('Copy path as')
+					.setIcon('clipboard-copy')
+					.setSection('shell-path-copy');
+				const submenu = parent.setSubmenu();
+				for (const fmt of visible) {
+					this.addFormatMenuItem(submenu, fmt, file, editor, false);
+				}
 			});
 		}
+	}
+
+	// Adds a single format as an item on the given menu. `inRootSection` controls
+	// the section assignment: root items use the 'shell-path-copy' section so
+	// they group with other plugin items; submenu items omit the section because
+	// the submenu itself already groups them.
+	private addFormatMenuItem(menu: Menu, fmt: CustomFormat, file: TAbstractFile, editor: Editor | undefined, inRootSection: boolean) {
+		const formatId = fmt.id;
+		menu.addItem((item) => {
+			item
+				.setTitle(fmt.name)
+				.setIcon(fmt.icon)
+				.onClick(async () => {
+					await this.copyCustomFormat(formatId, file, editor);
+				});
+			if (inRootSection) {
+				item.setSection('shell-path-copy');
+			}
+		});
 	}
 
 	// Assembles the token context for a copy. All Obsidian API access for the
@@ -394,6 +426,16 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
+		new Setting(containerEl)
+			.setName('Group formats under a submenu')
+			.setDesc('Nest every format inside one right-click submenu. Pin individual formats below to also show them at the root menu.')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.useSubmenu)
+				.onChange(async (value) => {
+					this.plugin.settings.useSubmenu = value;
+					await this.plugin.saveSettings();
+				}));
+
 		this.renderCustomFormatsSection(containerEl);
 
 		// Support links at the bottom
@@ -448,7 +490,8 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 						icon: 'clipboard-copy',
 						enabled: true,
 						showInMenu: true,
-						showInCommands: true
+						showInCommands: true,
+						pinToRoot: false
 					};
 					this.plugin.settings.customFormats.push(created);
 					this.expandedId = created.id;
@@ -666,6 +709,19 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 				.setValue(fmt.showInMenu)
 				.onChange(async (value) => {
 					fmt.showInMenu = value;
+					await this.plugin.saveSettings();
+					// Re-render so the pin toggle below updates its disabled state.
+					this.display();
+				}));
+
+		new Setting(editor)
+			.setName('Pin to root menu')
+			.setDesc('Also show this format at the top of the right-click menu, not only inside the submenu.')
+			.addToggle(toggle => toggle
+				.setValue(fmt.pinToRoot)
+				.setDisabled(!fmt.showInMenu)
+				.onChange(async (value) => {
+					fmt.pinToRoot = value;
 					await this.plugin.saveSettings();
 				}));
 

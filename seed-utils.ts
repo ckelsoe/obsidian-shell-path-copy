@@ -8,7 +8,8 @@ import { PathWrapping } from './path-utils';
 //   2: heading-aware link seeds added.
 //   3: block-aware link seeds added.
 //   4: plain-words line reference example seed added.
-export const SETTINGS_VERSION = 4;
+//   5: pinToRoot field added to CustomFormat (defaults to false on read).
+export const SETTINGS_VERSION = 5;
 
 // A user-defined copy format. Each entry produces its own context-menu item and
 // command-palette command via the token engine. The built-ins ship as seeded
@@ -22,6 +23,7 @@ export interface CustomFormat {
 	enabled: boolean;
 	showInMenu: boolean;
 	showInCommands: boolean;
+	pinToRoot: boolean;    // also show at the root menu when the submenu is on
 }
 
 export const VALID_WRAPPINGS: PathWrapping[] = ['none', 'double-quotes', 'single-quotes', 'backticks'];
@@ -110,7 +112,8 @@ function makeSeed(spec: SeedSpec, legacy: Record<string, unknown> | null): Custo
 		icon: spec.icon,
 		enabled,
 		showInMenu: true,
-		showInCommands: true
+		showInCommands: true,
+		pinToRoot: false
 	};
 }
 
@@ -150,7 +153,8 @@ export function normalizeCustomFormats(value: unknown): CustomFormat[] {
 			icon: typeof item.icon === 'string' && item.icon ? item.icon : 'clipboard-copy',
 			enabled: item.enabled !== false,
 			showInMenu: item.showInMenu !== false,
-			showInCommands: item.showInCommands !== false
+			showInCommands: item.showInCommands !== false,
+			pinToRoot: item.pinToRoot === true
 		};
 	});
 }

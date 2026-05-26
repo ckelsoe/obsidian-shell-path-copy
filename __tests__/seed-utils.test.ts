@@ -112,8 +112,12 @@ describe('seedFormatsForVersion', () => {
 		expect(formats[0].enabled).toBe(false);
 	});
 
-	it('current version is 4', () => {
-		expect(SETTINGS_VERSION).toBe(4);
+	it('current version is 5', () => {
+		expect(SETTINGS_VERSION).toBe(5);
+	});
+
+	it('returns no new seed formats for version 5 (pinToRoot is a field add, not a seed)', () => {
+		expect(seedFormatsForVersion(5)).toEqual([]);
 	});
 });
 
@@ -150,7 +154,7 @@ describe('normalizeCustomFormats', () => {
 
 	it('preserves a valid format', () => {
 		const result = normalizeCustomFormats([
-			{ id: 'x1', name: 'Keep', template: '<filename>', wrapping: 'backticks', icon: 'file', enabled: false, showInMenu: false, showInCommands: true },
+			{ id: 'x1', name: 'Keep', template: '<filename>', wrapping: 'backticks', icon: 'file', enabled: false, showInMenu: false, showInCommands: true, pinToRoot: true },
 		]);
 		expect(result[0]).toEqual({
 			id: 'x1',
@@ -161,6 +165,36 @@ describe('normalizeCustomFormats', () => {
 			enabled: false,
 			showInMenu: false,
 			showInCommands: true,
+			pinToRoot: true,
 		});
+	});
+
+	it('defaults pinToRoot to false when absent', () => {
+		const result = normalizeCustomFormats([{ name: 'X' }]);
+		expect(result[0].pinToRoot).toBe(false);
+	});
+
+	it('defaults pinToRoot to false for non-boolean values', () => {
+		const result = normalizeCustomFormats([{ name: 'X', pinToRoot: 'yes' as unknown as boolean }]);
+		expect(result[0].pinToRoot).toBe(false);
+	});
+
+	it('preserves pinToRoot=true', () => {
+		const result = normalizeCustomFormats([{ name: 'X', pinToRoot: true }]);
+		expect(result[0].pinToRoot).toBe(true);
+	});
+});
+
+// ─── seedAllFormats: pinToRoot defaults ──────────────────────────────────────
+
+describe('seedAllFormats - pinToRoot', () => {
+	it('seeds every built-in with pinToRoot=false on fresh install', () => {
+		const formats = seedAllFormats(null);
+		expect(formats.every((f) => f.pinToRoot === false)).toBe(true);
+	});
+
+	it('seeds every built-in with pinToRoot=false on legacy migration', () => {
+		const formats = seedAllFormats({ pathWrapping: 'backticks', showAbsolutePath: true });
+		expect(formats.every((f) => f.pinToRoot === false)).toBe(true);
 	});
 });
