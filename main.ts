@@ -31,6 +31,7 @@ interface PathCopySettings {
 	markdownLinkFormat: MarkdownLinkFormat;
 	warnOnUnresolvedTokens: boolean;
 	useSubmenu: boolean;
+	groupWithNativeCopyPath: boolean;
 	customFormats: CustomFormat[];
 	settingsVersion: number;
 }
@@ -40,9 +41,22 @@ const DEFAULT_SETTINGS: PathCopySettings = {
 	markdownLinkFormat: 'wiki-style',
 	warnOnUnresolvedTokens: true,
 	useSubmenu: true,
+	groupWithNativeCopyPath: false,
 	customFormats: [],
 	settingsVersion: 0
 }
+
+// Obsidian's section id for items that render inside the native "Copy path"
+// virtual submenu (alongside "as Obsidian URL", "from vault folder",
+// "from system root"). The dotted name is a section-collapse convention:
+// Obsidian groups every MenuItem sharing this section into one labeled
+// submenu in the parent menu. Items added with this section render as
+// children of the "Copy path" submenu using only public-API setSection.
+// Verified empirically against Obsidian's file-menu items (Obsidian 1.6+);
+// if a future release renames the section, items render in their own
+// section instead of throwing.
+//
+const NATIVE_COPY_PATH_SECTION = 'info.copy';
 
 // Curated set of menu-relevant icons offered in the per-format icon picker.
 const ICON_CHOICES: string[] = [
@@ -110,6 +124,9 @@ export default class ShellPathCopyPlugin extends Plugin {
 			if (typeof raw.useSubmenu === 'boolean') {
 				this.settings.useSubmenu = raw.useSubmenu;
 			}
+			if (typeof raw.groupWithNativeCopyPath === 'boolean') {
+				this.settings.groupWithNativeCopyPath = raw.groupWithNativeCopyPath;
+			}
 			if (typeof raw.settingsVersion === 'number') {
 				this.settings.settingsVersion = raw.settingsVersion;
 			}
@@ -163,12 +180,28 @@ export default class ShellPathCopyPlugin extends Plugin {
 
 	// Adds the enabled custom-format items to a context menu. `editor` is passed
 	// from the in-document right-click so the cursor's heading and line resolve.
-	// When useSubmenu is on, items live inside a 'Copy path as' submenu; pinned
-	// items also appear at the root. The menu is rebuilt on every right-click,
-	// so changes here take effect without a reload.
+	// Three layouts, picked by settings:
+	//   - groupWithNativeCopyPath on: assign each format the same section id
+	//     ('info.copy') Obsidian uses for its native "as Obsidian URL" /
+	//     "from vault folder" / "from system root" items. Obsidian collapses
+	//     every item sharing that section into one virtual "Copy path"
+	//     submenu, so the formats render as children of that submenu using
+	//     only public-API setSection.
+	//   - useSubmenu on (default): formats live inside a "Copy path as" submenu;
+	//     formats with pinToRoot also appear at the menu root.
+	//   - both off: every format appears flat at the menu root.
+	// The menu is rebuilt on every right-click, so changes take effect without a
+	// reload.
 	private addPathCopyMenuItems(menu: Menu, file: TAbstractFile, editor?: Editor) {
 		const visible = this.settings.customFormats.filter((fmt) => fmt.enabled && fmt.showInMenu);
 		if (visible.length === 0) {
+			return;
+		}
+
+		if (this.settings.groupWithNativeCopyPath) {
+			for (const fmt of visible) {
+				this.addFormatMenuItem(menu, fmt, file, editor, NATIVE_COPY_PATH_SECTION);
+			}
 			return;
 		}
 
@@ -177,7 +210,7 @@ export default class ShellPathCopyPlugin extends Plugin {
 		const useSubmenu = this.settings.useSubmenu;
 
 		for (const fmt of pickRootFormats(visible, useSubmenu)) {
-			this.addFormatMenuItem(menu, fmt, file, editor, true);
+			this.addFormatMenuItem(menu, fmt, file, editor, 'shell-path-copy');
 		}
 
 		if (useSubmenu) {
@@ -188,17 +221,18 @@ export default class ShellPathCopyPlugin extends Plugin {
 					.setSection('shell-path-copy');
 				const submenu = parent.setSubmenu();
 				for (const fmt of visible) {
-					this.addFormatMenuItem(submenu, fmt, file, editor, false);
+					this.addFormatMenuItem(submenu, fmt, file, editor, null);
 				}
 			});
 		}
 	}
 
-	// Adds a single format as an item on the given menu. `inRootSection` controls
-	// the section assignment: root items use the 'shell-path-copy' section so
-	// they group with other plugin items; submenu items omit the section because
-	// the submenu itself already groups them.
-	private addFormatMenuItem(menu: Menu, fmt: CustomFormat, file: TAbstractFile, editor: Editor | undefined, inRootSection: boolean) {
+	// Adds a single format as an item on the given menu. `section` chooses the
+	// MenuItem.setSection target: a string assigns the named section (root-level
+	// items group with other items in that section, separated by Obsidian's own
+	// dividers); null omits setSection (used for submenu children, where the
+	// submenu itself already does the grouping).
+	private addFormatMenuItem(menu: Menu, fmt: CustomFormat, file: TAbstractFile, editor: Editor | undefined, section: string | null) {
 		const formatId = fmt.id;
 		menu.addItem((item) => {
 			item
@@ -207,8 +241,8 @@ export default class ShellPathCopyPlugin extends Plugin {
 				.onClick(async () => {
 					await this.copyCustomFormat(formatId, file, editor);
 				});
-			if (inRootSection) {
-				item.setSection('shell-path-copy');
+			if (section !== null) {
+				item.setSection(section);
 			}
 		});
 	}
@@ -428,12 +462,25 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Group formats under a submenu')
-			.setDesc('Nest every format inside one right-click submenu. Pin individual formats below to also show them at the root menu.')
+			.setDesc('Nest every format inside one right-click submenu. Pin individual formats below to also show them at the root menu. Ignored when "group with Obsidian\'s copy path" is on.')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.useSubmenu)
+				.setDisabled(this.plugin.settings.groupWithNativeCopyPath)
 				.onChange(async (value) => {
 					this.plugin.settings.useSubmenu = value;
 					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName("Group with Obsidian's copy path")
+			.setDesc("Place every enabled format inside Obsidian's native copy path submenu, alongside built-in entries like 'as Obsidian URL' and 'from vault folder'. The plugin's own 'copy path as' submenu is hidden when this is on.")
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.groupWithNativeCopyPath)
+				.onChange(async (value) => {
+					this.plugin.settings.groupWithNativeCopyPath = value;
+					await this.plugin.saveSettings();
+					// Re-render so the dependent submenu toggle updates its disabled state.
+					this.display();
 				}));
 
 		this.renderCustomFormatsSection(containerEl);

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- "Group with Obsidian's copy path" setting (off by default). When on, every
+  enabled custom format is appended into Obsidian's native **Copy path**
+  submenu alongside built-in entries like *as Obsidian URL* and *from vault
+  folder*, instead of living inside the plugin's own **Copy path as** submenu.
+  Uses the public `MenuItem.setSection` API with section id `info.copy`; no
+  internal Obsidian APIs are touched.
+
 ## [2.2.1] - 2026-05-26
 
 ### Changed
