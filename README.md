@@ -56,7 +56,7 @@ You can copy from three places:
 - **Right-click inside an open note.** The formats act on that note, and the heading-aware formats link to the heading your cursor is in.
 - **Command palette** (`Ctrl/Cmd+P`): type `Copy:` and pick a format. It acts on the active file.
 
-In the right-click menu, the enabled formats sit inside a **Copy path as** submenu to keep the menu tidy. Pick the format you want and the result lands on your clipboard. You can pin individual formats to the root menu, or turn the submenu off entirely, in settings.
+In the right-click menu, the enabled formats sit inside a **Copy path as** submenu to keep the menu tidy. Pick the format you want and the result lands on your clipboard. You can pin individual formats to the root menu, or turn the submenu off entirely, in settings. There is also an option to fold every format into Obsidian's native **Copy path** submenu instead, so all path-copy choices (the built-in ones and yours) live in one place.
 
 Out of the box four formats are enabled: Relative Linux/macOS path, Relative Windows path, Obsidian URL, and Markdown link. Open the settings to enable the others or add your own.
 
@@ -161,6 +161,7 @@ Global options:
 - **Markdown link format**: wiki-style (`[[filename]]`) or standard Markdown (`[filename](path)`). Used by the `<markdown-link>` token.
 - **Notify when a token could not be resolved**: show a notice when a desktop-only or editor-only token is left blank.
 - **Group formats under a submenu**: nest every format inside one **Copy path as** right-click submenu (on by default). Turn it off to put every enabled format directly at the root menu, the way 2.1.x worked.
+- **Group with Obsidian's copy path**: instead of the plugin's own submenu, append every format inside Obsidian's native **Copy path** submenu, alongside the built-in entries like *as Obsidian URL* and *from vault folder*. When this is on, the **Group formats under a submenu** option above is ignored.
 
 Everything else is per format, in the Custom formats list.
 
