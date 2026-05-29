@@ -689,6 +689,11 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 				});
 			});
 
+		// Refreshes the "Show on" control in place. Assigned where the control is
+		// built below; invoked when the template changes so the files/folders choice
+		// tracks whether the current template still supports folders.
+		let refreshShowOn = (): void => {};
+
 		let templateRef: TextAreaComponent;
 		new Setting(editor)
 			.setName('Template')
@@ -700,6 +705,7 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 					.onChange(async (value) => {
 						fmt.template = value;
 						this.renderPreview(previewEl, infoEl, value);
+						refreshShowOn();
 						await this.plugin.saveSettings();
 					});
 				text.inputEl.addClass('shell-path-copy-template-input');
@@ -725,6 +731,7 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 				templateRef.setValue(next);
 				fmt.template = next;
 				this.renderPreview(previewEl, infoEl, next);
+				refreshShowOn();
 				void this.plugin.saveSettings();
 				input.focus();
 				const caret = start + insert.length;
@@ -779,29 +786,35 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 		// (obsidian-url, wikilinks, editor tokens) cannot apply to folders, so the
 		// dropdown is locked to "Files only" and disabled, with the reason in the
 		// description. The stored appliesTo is left untouched so the preference
-		// returns if the template is later edited back to folder-safe.
-		const supportsFolders = templateSupportsFolders(fmt.template);
-		const showOn = new Setting(editor).setName('Show on');
-		if (supportsFolders) {
-			showOn
-				.setDesc('Limit this format to files, folders, or show it on both.')
-				.addDropdown(dropdown => dropdown
-					.addOption('both', 'Files and folders')
-					.addOption('files', 'Files only')
-					.addOption('folders', 'Folders only')
-					.setValue(fmt.appliesTo)
-					.onChange(async (value) => {
-						fmt.appliesTo = value as CustomFormat['appliesTo'];
-						await this.plugin.saveSettings();
-					}));
-		} else {
-			showOn
-				.setDesc('Files only. This format uses file-specific tokens (like <obsidian-url>) that do not apply to folders.')
-				.addDropdown(dropdown => dropdown
-					.addOption('files', 'Files only')
-					.setValue('files')
-					.setDisabled(true));
-		}
+		// returns if the template is later edited back to folder-safe. Built into a
+		// dedicated container and rebuilt by refreshShowOn() on template changes, so
+		// it tracks folder support without a full settings re-render.
+		const showOnContainer = editor.createDiv();
+		refreshShowOn = () => {
+			showOnContainer.empty();
+			const showOn = new Setting(showOnContainer).setName('Show on');
+			if (templateSupportsFolders(fmt.template)) {
+				showOn
+					.setDesc('Limit this format to files, folders, or show it on both.')
+					.addDropdown(dropdown => dropdown
+						.addOption('both', 'Files and folders')
+						.addOption('files', 'Files only')
+						.addOption('folders', 'Folders only')
+						.setValue(fmt.appliesTo)
+						.onChange(async (value) => {
+							fmt.appliesTo = value as CustomFormat['appliesTo'];
+							await this.plugin.saveSettings();
+						}));
+			} else {
+				showOn
+					.setDesc('Files only. This format uses file-specific tokens (like <obsidian-url>) that do not apply to folders.')
+					.addDropdown(dropdown => dropdown
+						.addOption('files', 'Files only')
+						.setValue('files')
+						.setDisabled(true));
+			}
+		};
+		refreshShowOn();
 
 		new Setting(editor)
 			.setName('Show in command palette')

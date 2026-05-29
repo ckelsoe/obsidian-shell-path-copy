@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.1] - 2026-05-29
+
+### Fixed
+- The "Show on" control in a format's settings editor now updates as you edit the
+  template. Previously it read folder support once when the editor opened, so a
+  format edited into a file-only one (for example by adding `<obsidian-url>`) kept
+  showing the full files/folders/both dropdown instead of locking to "Files only".
+  The right-click menu behavior was already correct; this fixes only the stale
+  settings control.
+
 ## [2.4.0] - 2026-05-29
 
 ### Added
