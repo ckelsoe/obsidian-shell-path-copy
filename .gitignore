@@ -22,6 +22,7 @@ data.json
 
 # AI assistant files
 .claude
+.plans/
 CLAUDE.md
 WARP.md
 

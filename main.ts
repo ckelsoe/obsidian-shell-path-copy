@@ -1,6 +1,6 @@
 import { App, Editor, Menu, Notice, Plugin, PluginSettingTab, Setting, TAbstractFile, TFile, TextAreaComponent, Platform, FileSystemAdapter, setIcon } from 'obsidian';
 import { wrapPath, PathWrapping, MarkdownLinkFormat } from './path-utils';
-import { applyTemplate, validateTemplate, listTokens, TokenContext } from './token-engine';
+import { applyTemplate, validateTemplate, listTokens, templateSupportsFolders, TokenContext } from './token-engine';
 import {
 	SETTINGS_VERSION,
 	CustomFormat,
@@ -10,7 +10,7 @@ import {
 	normalizeCustomFormats,
 } from './seed-utils';
 import { resolveBlockTargetLine, findExistingBlockId, generateBlockId } from './block-utils';
-import { pickRootFormats } from './menu-utils';
+import { pickRootFormats, matchesTarget } from './menu-utils';
 
 // Node 'path' is only available on desktop. Load lazily behind a Platform.isDesktop
 // guard so mobile builds do not pull in unavailable Node built-ins. The narrow
@@ -165,14 +165,23 @@ export default class ShellPathCopyPlugin extends Plugin {
 				continue;
 			}
 			const formatId = fmt.id;
+			const command = fmt;
 			this.addCommand({
 				id: `custom-format-${formatId}`,
 				name: `Copy: ${fmt.name}`,
-				callback: () => {
-					const file = this.getActiveOrFocusedFile();
-					if (file) {
+				// The palette only ever acts on the open note (a TFile), so the
+				// folder context is always false here. A folders-only format, or
+				// one whose tokens make it file-only, is hidden when it does not
+				// apply; a missing active file also hides the command.
+				checkCallback: (checking: boolean) => {
+					const file = this.app.workspace.getActiveFile();
+					if (!file || !matchesTarget(command, false)) {
+						return false;
+					}
+					if (!checking) {
 						void this.copyCustomFormat(formatId, file);
 					}
+					return true;
 				}
 			});
 		}
@@ -193,7 +202,9 @@ export default class ShellPathCopyPlugin extends Plugin {
 	// The menu is rebuilt on every right-click, so changes take effect without a
 	// reload.
 	private addPathCopyMenuItems(menu: Menu, file: TAbstractFile, editor?: Editor) {
-		const visible = this.settings.customFormats.filter((fmt) => fmt.enabled && fmt.showInMenu);
+		const isFolder = !(file instanceof TFile);
+		const visible = this.settings.customFormats.filter(
+			(fmt) => fmt.enabled && fmt.showInMenu && matchesTarget(fmt, isFolder));
 		if (visible.length === 0) {
 			return;
 		}
@@ -398,16 +409,6 @@ export default class ShellPathCopyPlugin extends Plugin {
 		}
 	}
 
-	private getActiveOrFocusedFile(): TAbstractFile | null {
-		const file = this.app.workspace.getActiveFile();
-
-		if (!file) {
-			new Notice('No file selected. Open a file or right-click it in the file explorer.');
-		}
-
-		return file;
-	}
-
 }
 
 const RELOAD_NOTICE = 'Please reload Obsidian for command palette changes to take effect';
@@ -538,7 +539,8 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 						enabled: true,
 						showInMenu: true,
 						showInCommands: true,
-						pinToRoot: false
+						pinToRoot: false,
+						appliesTo: 'both'
 					};
 					this.plugin.settings.customFormats.push(created);
 					this.expandedId = created.id;
@@ -771,6 +773,35 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 					fmt.pinToRoot = value;
 					await this.plugin.saveSettings();
 				}));
+
+		// "Show on" preference. A folder-safe template (only path/name tokens) gets
+		// the full files/folders/both choice. A template using file-only tokens
+		// (obsidian-url, wikilinks, editor tokens) cannot apply to folders, so the
+		// dropdown is locked to "Files only" and disabled, with the reason in the
+		// description. The stored appliesTo is left untouched so the preference
+		// returns if the template is later edited back to folder-safe.
+		const supportsFolders = templateSupportsFolders(fmt.template);
+		const showOn = new Setting(editor).setName('Show on');
+		if (supportsFolders) {
+			showOn
+				.setDesc('Limit this format to files, folders, or show it on both.')
+				.addDropdown(dropdown => dropdown
+					.addOption('both', 'Files and folders')
+					.addOption('files', 'Files only')
+					.addOption('folders', 'Folders only')
+					.setValue(fmt.appliesTo)
+					.onChange(async (value) => {
+						fmt.appliesTo = value as CustomFormat['appliesTo'];
+						await this.plugin.saveSettings();
+					}));
+		} else {
+			showOn
+				.setDesc('Files only. This format uses file-specific tokens (like <obsidian-url>) that do not apply to folders.')
+				.addDropdown(dropdown => dropdown
+					.addOption('files', 'Files only')
+					.setValue('files')
+					.setDisabled(true));
+		}
 
 		new Setting(editor)
 			.setName('Show in command palette')

@@ -1,4 +1,4 @@
-import { applyTemplate, validateTemplate, listTokens, TokenContext } from '../token-engine';
+import { applyTemplate, validateTemplate, listTokens, templateSupportsFolders, TokenContext } from '../token-engine';
 
 // Builds a token context from the fixed sample scenario in token-usage.md,
 // overridable per test. Base scenario: vault "assorted", file Notes/My file.md,
@@ -404,5 +404,54 @@ describe('listTokens', () => {
 		expect(lineRange?.tier).toBe('editor');
 		const filename = tokens.find((t) => t.name === 'filename');
 		expect(filename?.tier).toBe('universal');
+	});
+});
+
+// ─── folder capability ─────────────────────────────────────────────────────────
+
+describe('templateSupportsFolders', () => {
+	it('returns true for a literal-only template', () => {
+		expect(templateSupportsFolders('hello world')).toBe(true);
+	});
+
+	it('returns true for an empty template', () => {
+		expect(templateSupportsFolders('')).toBe(true);
+	});
+
+	it('returns true for folder-safe path/name tokens', () => {
+		expect(templateSupportsFolders('<relative-path>')).toBe(true);
+		expect(templateSupportsFolders('<filename> <filename-ext> <absolute-path> <file-url>')).toBe(true);
+		expect(templateSupportsFolders('<vault-name> <date> <time>')).toBe(true);
+	});
+
+	it('returns false for link tokens that do not resolve for folders', () => {
+		expect(templateSupportsFolders('<obsidian-url>')).toBe(false);
+		expect(templateSupportsFolders('<obsidian-url-heading>')).toBe(false);
+		expect(templateSupportsFolders('<obsidian-url-block>')).toBe(false);
+		expect(templateSupportsFolders('<wikilink>')).toBe(false);
+		expect(templateSupportsFolders('<markdown-link>')).toBe(false);
+	});
+
+	it('returns false for editor tokens', () => {
+		expect(templateSupportsFolders('<line-number>')).toBe(false);
+		expect(templateSupportsFolders('<heading>')).toBe(false);
+		expect(templateSupportsFolders('<block-id>')).toBe(false);
+	});
+
+	it('returns false for the extension token (empty for folders)', () => {
+		expect(templateSupportsFolders('<extension>')).toBe(false);
+	});
+
+	it('returns false when any single token in a mix is file-only', () => {
+		expect(templateSupportsFolders('<filename> Line <line-number>')).toBe(false);
+		expect(templateSupportsFolders('<relative-path> -> <obsidian-url>')).toBe(false);
+	});
+
+	it('ignores unknown tokens (they do not constrain folder support)', () => {
+		expect(templateSupportsFolders('<filename> <not-a-token>')).toBe(true);
+	});
+
+	it('ignores escaped angle brackets', () => {
+		expect(templateSupportsFolders('\\<obsidian-url\\>')).toBe(true);
 	});
 });

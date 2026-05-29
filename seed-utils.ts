@@ -9,7 +9,13 @@ import { PathWrapping } from './path-utils';
 //   3: block-aware link seeds added.
 //   4: plain-words line reference example seed added.
 //   5: pinToRoot field added to CustomFormat (defaults to false on read).
-export const SETTINGS_VERSION = 5;
+//   6: appliesTo field added to CustomFormat (defaults to 'both' on read).
+export const SETTINGS_VERSION = 6;
+
+// Which kinds of items a format applies to. This is the user's *preference*; a
+// hard capability gate (templateSupportsFolders) can still keep a format off
+// folders when its template uses file-only tokens, regardless of this value.
+export type FormatTarget = 'files' | 'folders' | 'both';
 
 // A user-defined copy format. Each entry produces its own context-menu item and
 // command-palette command via the token engine. The built-ins ship as seeded
@@ -24,9 +30,11 @@ export interface CustomFormat {
 	showInMenu: boolean;
 	showInCommands: boolean;
 	pinToRoot: boolean;    // also show at the root menu when the submenu is on
+	appliesTo: FormatTarget; // files, folders, or both (subject to token capability)
 }
 
 export const VALID_WRAPPINGS: PathWrapping[] = ['none', 'double-quotes', 'single-quotes', 'backticks'];
+export const VALID_TARGETS: FormatTarget[] = ['files', 'folders', 'both'];
 
 // Specification for a seeded built-in format. `legacyKey` maps to the pre-1.19
 // boolean setting (or 'unix'/'windows' for the menuDisplay-governed paths) so
@@ -113,7 +121,8 @@ function makeSeed(spec: SeedSpec, legacy: Record<string, unknown> | null): Custo
 		enabled,
 		showInMenu: true,
 		showInCommands: true,
-		pinToRoot: false
+		pinToRoot: false,
+		appliesTo: 'both'
 	};
 }
 
@@ -154,7 +163,10 @@ export function normalizeCustomFormats(value: unknown): CustomFormat[] {
 			enabled: item.enabled !== false,
 			showInMenu: item.showInMenu !== false,
 			showInCommands: item.showInCommands !== false,
-			pinToRoot: item.pinToRoot === true
+			pinToRoot: item.pinToRoot === true,
+			appliesTo: VALID_TARGETS.includes(item.appliesTo as FormatTarget)
+				? (item.appliesTo as FormatTarget)
+				: 'both'
 		};
 	});
 }

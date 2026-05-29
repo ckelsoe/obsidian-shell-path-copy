@@ -102,6 +102,7 @@ A custom format is a token template. Build one in settings:
    - **Wrapping**: none, double quotes, single quotes, or backticks, applied around the whole result.
    - **Show in menu** and **Show in command palette**: where the format appears.
    - **Pin to root menu**: also show this format at the top of the right-click menu, not only inside the **Copy path as** submenu. Useful for the one or two formats you reach for most.
+   - **Show on**: limit the format to files, folders, or both. Formats that use file-specific tokens (like `<obsidian-url>`, wiki links, or line/heading tokens) are files-only automatically, since those do not resolve for folders.
 4. Reload Obsidian so the command registers.
 
 The format list is compact and drag-to-reorder; list order is the menu order. Click a format to expand its editor.

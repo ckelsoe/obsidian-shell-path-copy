@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-05-29
+
+### Added
+- Per-format "Show on" preference: limit a format to files, folders, or both. The
+  control appears when expanding a format in settings. Formats whose template uses
+  file-specific tokens (such as `<obsidian-url>`, wiki links, or editor tokens like
+  `<line-number>`) are automatically files-only, since those tokens do not resolve
+  for folders. This mirrors how Obsidian's own menu omits URL copy on folders.
+
+### Changed
+- Custom-format commands now use a conditional callback. A command no longer shows
+  in the command palette when there is no active note, or when the format does not
+  apply to the current target (for example a folders-only format). Previously the
+  command always showed and displayed a "No file selected" notice when run with no
+  active note.
+
 ## [2.3.0] - 2026-05-27
 
 ### Added

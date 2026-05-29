@@ -5,6 +5,7 @@ import {
 	normalizeCustomFormats,
 	CustomFormat,
 } from '../seed-utils';
+import { matchesTarget } from '../menu-utils';
 
 function byName(formats: CustomFormat[], name: string): CustomFormat {
 	const found = formats.find((f) => f.name === name);
@@ -112,12 +113,16 @@ describe('seedFormatsForVersion', () => {
 		expect(formats[0].enabled).toBe(false);
 	});
 
-	it('current version is 5', () => {
-		expect(SETTINGS_VERSION).toBe(5);
+	it('current version is 6', () => {
+		expect(SETTINGS_VERSION).toBe(6);
 	});
 
 	it('returns no new seed formats for version 5 (pinToRoot is a field add, not a seed)', () => {
 		expect(seedFormatsForVersion(5)).toEqual([]);
+	});
+
+	it('returns no new seed formats for version 6 (appliesTo is a field add, not a seed)', () => {
+		expect(seedFormatsForVersion(6)).toEqual([]);
 	});
 });
 
@@ -154,7 +159,7 @@ describe('normalizeCustomFormats', () => {
 
 	it('preserves a valid format', () => {
 		const result = normalizeCustomFormats([
-			{ id: 'x1', name: 'Keep', template: '<filename>', wrapping: 'backticks', icon: 'file', enabled: false, showInMenu: false, showInCommands: true, pinToRoot: true },
+			{ id: 'x1', name: 'Keep', template: '<filename>', wrapping: 'backticks', icon: 'file', enabled: false, showInMenu: false, showInCommands: true, pinToRoot: true, appliesTo: 'folders' },
 		]);
 		expect(result[0]).toEqual({
 			id: 'x1',
@@ -166,6 +171,7 @@ describe('normalizeCustomFormats', () => {
 			showInMenu: false,
 			showInCommands: true,
 			pinToRoot: true,
+			appliesTo: 'folders',
 		});
 	});
 
@@ -183,6 +189,21 @@ describe('normalizeCustomFormats', () => {
 		const result = normalizeCustomFormats([{ name: 'X', pinToRoot: true }]);
 		expect(result[0].pinToRoot).toBe(true);
 	});
+
+	it('defaults appliesTo to both when absent', () => {
+		const result = normalizeCustomFormats([{ name: 'X' }]);
+		expect(result[0].appliesTo).toBe('both');
+	});
+
+	it('defaults appliesTo to both for an invalid value', () => {
+		const result = normalizeCustomFormats([{ name: 'X', appliesTo: 'everywhere' as unknown as 'both' }]);
+		expect(result[0].appliesTo).toBe('both');
+	});
+
+	it('preserves a valid appliesTo', () => {
+		expect(normalizeCustomFormats([{ name: 'X', appliesTo: 'files' }])[0].appliesTo).toBe('files');
+		expect(normalizeCustomFormats([{ name: 'Y', appliesTo: 'folders' }])[0].appliesTo).toBe('folders');
+	});
 });
 
 // ─── seedAllFormats: pinToRoot defaults ──────────────────────────────────────
@@ -196,5 +217,18 @@ describe('seedAllFormats - pinToRoot', () => {
 	it('seeds every built-in with pinToRoot=false on legacy migration', () => {
 		const formats = seedAllFormats({ pathWrapping: 'backticks', showAbsolutePath: true });
 		expect(formats.every((f) => f.pinToRoot === false)).toBe(true);
+	});
+
+	it('seeds every built-in with appliesTo=both', () => {
+		expect(seedAllFormats(null).every((f) => f.appliesTo === 'both')).toBe(true);
+	});
+
+	it('keeps URL/link seeds off folders via the capability gate despite appliesTo=both', () => {
+		// The Obsidian URL seed is appliesTo=both, but its <obsidian-url> token makes
+		// it file-only; matchesTarget must exclude it from folders regardless.
+		const obsidianUrl = seedAllFormats(null).find((f) => f.template === '<obsidian-url>');
+		expect(obsidianUrl?.appliesTo).toBe('both');
+		expect(matchesTarget(obsidianUrl as CustomFormat, true)).toBe(false);
+		expect(matchesTarget(obsidianUrl as CustomFormat, false)).toBe(true);
 	});
 });

@@ -143,4 +143,16 @@ If you hand-build a URL, use the encoded tokens. Example: a vault named `My Vaul
 ## Folders
 
 Folders have no extension. `<extension>` is empty and `<filename>` equals `<filename-ext>`.
-`<obsidian-url>` for a folder produces a link that will not open a note.
+
+Path and name tokens (`<filename>`, `<relative-path>`, `<absolute-path>`,
+`<file-url>`, and similar) work the same for folders as for files. Tokens that
+only make sense for a note do not: `<obsidian-url>` and the other link tokens
+(`<wikilink>`, `<markdown-link>`, and the heading/block variants) do not resolve
+to a folder, and the editor tokens (`<line-number>`, `<heading>`, `<block-id>`,
+and the rest) have no editor to read.
+
+Because of this, a format is offered on folders only when its template uses
+folder-safe tokens. A format whose template contains any file-only token is shown
+on files only, automatically. You can further limit any folder-safe format to
+files, folders, or both with the **Show on** option in its settings editor. This
+mirrors Obsidian's own menu, which omits the URL copy entry on folders.
