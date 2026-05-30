@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.2] - 2026-05-30
+
+### Changed
+- When copying a custom format fails, the error notice now shows the actual error message instead of telling you to open the developer console.
+
 ## [2.4.1] - 2026-05-29
 
 ### Fixed

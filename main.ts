@@ -403,8 +403,9 @@ export default class ShellPathCopyPlugin extends Plugin {
 			if (error instanceof Error && error.message.includes('Clipboard API')) {
 				new Notice('Error: Clipboard API is not available in this environment.');
 			} else {
+				const detail = error instanceof Error ? error.message : String(error);
 				console.error('Shell Path Copy: Failed to copy custom format:', error);
-				new Notice('Failed to copy custom format. See console for details.');
+				new Notice(`Failed to copy custom format: ${detail}`);
 			}
 		}
 	}
