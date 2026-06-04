@@ -29,6 +29,7 @@ export interface CustomFormat {
 	enabled: boolean;
 	showInMenu: boolean;
 	showInCommands: boolean;
+	showInRibbon: boolean; // also add a left-ribbon icon that copies this format
 	pinToRoot: boolean;    // also show at the root menu when the submenu is on
 	appliesTo: FormatTarget; // files, folders, or both (subject to token capability)
 }
@@ -121,6 +122,7 @@ function makeSeed(spec: SeedSpec, legacy: Record<string, unknown> | null): Custo
 		enabled,
 		showInMenu: true,
 		showInCommands: true,
+		showInRibbon: false,
 		pinToRoot: false,
 		appliesTo: 'both'
 	};
@@ -163,6 +165,7 @@ export function normalizeCustomFormats(value: unknown): CustomFormat[] {
 			enabled: item.enabled !== false,
 			showInMenu: item.showInMenu !== false,
 			showInCommands: item.showInCommands !== false,
+			showInRibbon: item.showInRibbon === true,
 			pinToRoot: item.pinToRoot === true,
 			appliesTo: VALID_TARGETS.includes(item.appliesTo as FormatTarget)
 				? (item.appliesTo as FormatTarget)

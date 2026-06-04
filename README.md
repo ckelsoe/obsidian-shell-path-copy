@@ -50,11 +50,12 @@ BRAT installs pre-release builds before they reach the Community Plugins marketp
 
 ## Quick start
 
-You can copy from three places:
+You can copy from four places:
 
 - **Right-click a file or folder** in the file explorer.
 - **Right-click inside an open note.** The formats act on that note, and the heading-aware formats link to the heading your cursor is in.
 - **Command palette** (`Ctrl/Cmd+P`): type `Copy:` and pick a format. It acts on the active file.
+- **Ribbon** (optional): turn on **Show in ribbon** for a format to add a left-ribbon icon that copies it from the active note in one click. Off by default, so the ribbon stays uncluttered until you opt a format in.
 
 In the right-click menu, the enabled formats sit inside a **Copy path as** submenu to keep the menu tidy. Pick the format you want and the result lands on your clipboard. You can pin individual formats to the root menu, or turn the submenu off entirely, in settings. There is also an option to fold every format into Obsidian's native **Copy path** submenu instead, so all path-copy choices (the built-in ones and yours) live in one place.
 
@@ -96,16 +97,16 @@ A custom format is a token template. Build one in settings:
 1. Open Settings → Community plugins → Shell Path Copy → Options.
 2. In **Custom formats**, click **Add custom format**, or click any existing format to expand its editor.
 3. Set the fields:
-   - **Name**: shown in the menu and command palette.
-   - **Icon**: the icon shown next to the format in the menu.
+   - **Name**: shown in the menu, command palette, and ribbon.
+   - **Icon**: the icon shown next to the format in the menu, command palette, and ribbon. Pick a common one from the dropdown, or click **Browse all icons** to search the full set of Obsidian icons and choose any of them.
    - **Template**: the token template. The token palette below the field inserts a token at the cursor. A live preview shows the rendered result, and a Desktop / Mobile row shows where the template works.
    - **Wrapping**: none, double quotes, single quotes, or backticks, applied around the whole result.
-   - **Show in menu** and **Show in command palette**: where the format appears.
+   - **Show in menu**, **Show in command palette**, and **Show in ribbon**: where the format appears. The ribbon adds a left-rail icon that copies the format in one click; it is off by default.
    - **Pin to root menu**: also show this format at the top of the right-click menu, not only inside the **Copy path as** submenu. Useful for the one or two formats you reach for most.
    - **Show on**: limit the format to files, folders, or both. Formats that use file-specific tokens (like `<obsidian-url>`, wiki links, or line/heading tokens) are files-only automatically, since those do not resolve for folders.
-4. Reload Obsidian so the command registers.
+4. Reload Obsidian so the command and ribbon icon register.
 
-The format list is compact and drag-to-reorder; list order is the menu order. Click a format to expand its editor.
+The format list is compact and drag-to-reorder; list order is the menu order, and ribbon icons register in the same order. To place the ribbon group relative to other ribbon icons, drag it within Obsidian's ribbon. Click a format to expand its editor.
 
 ### Tokens
 

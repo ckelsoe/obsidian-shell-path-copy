@@ -11,6 +11,7 @@ import {
 } from './seed-utils';
 import { resolveBlockTargetLine, findExistingBlockId, generateBlockId } from './block-utils';
 import { pickRootFormats, matchesTarget } from './menu-utils';
+import { SelectIconModal } from './select-icon-modal';
 
 // Node 'path' is only available on desktop. Load lazily behind a Platform.isDesktop
 // guard so mobile builds do not pull in unavailable Node built-ins. The narrow
@@ -98,6 +99,9 @@ export default class ShellPathCopyPlugin extends Plugin {
 		// Register command palette commands
 		this.registerCommands();
 
+		// Add a left-ribbon icon for each format opted into the ribbon
+		this.registerRibbonIcons();
+
 		// Add settings tab
 		this.addSettingTab(new ShellPathCopySettingTab(this.app, this));
 	}
@@ -183,6 +187,29 @@ export default class ShellPathCopyPlugin extends Plugin {
 					}
 					return true;
 				}
+			});
+		}
+	}
+
+	private registerRibbonIcons() {
+		// One ribbon icon per enabled format opted into the ribbon. Like commands,
+		// these register once at onload; toggling needs an Obsidian reload.
+		for (const fmt of this.settings.customFormats) {
+			if (!fmt.enabled || !fmt.showInRibbon) {
+				continue;
+			}
+			const formatId = fmt.id;
+			const command = fmt;
+			// The ribbon only ever acts on the open note (a TFile). A folders-only
+			// format, or a missing active file, has nothing to act on, so warn
+			// instead of copying.
+			this.addRibbonIcon(fmt.icon, `Copy: ${fmt.name}`, () => {
+				const file = this.app.workspace.getActiveFile();
+				if (!file || !matchesTarget(command, false)) {
+					new Notice('Open a note this format applies to first.');
+					return;
+				}
+				void this.copyCustomFormat(formatId, file);
 			});
 		}
 	}
@@ -412,7 +439,7 @@ export default class ShellPathCopyPlugin extends Plugin {
 
 }
 
-const RELOAD_NOTICE = 'Please reload Obsidian for command palette changes to take effect';
+const RELOAD_NOTICE = 'Please reload Obsidian for command palette and ribbon changes to take effect';
 
 class ShellPathCopySettingTab extends PluginSettingTab {
 	plugin: ShellPathCopyPlugin;
@@ -540,6 +567,7 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 						enabled: true,
 						showInMenu: true,
 						showInCommands: true,
+						showInRibbon: false,
 						pinToRoot: false,
 						appliesTo: 'both'
 					};
@@ -677,7 +705,7 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 
 		new Setting(editor)
 			.setName('Icon')
-			.setDesc('Icon shown next to this format in the menu')
+			.setDesc('Icon shown next to this format in the menu, command palette, and ribbon. Pick a common one or browse the full set.')
 			.addDropdown(dropdown => {
 				for (const icon of ICON_CHOICES) {
 					dropdown.addOption(icon, icon);
@@ -688,7 +716,19 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 					setIcon(iconEl, value);
 					await this.plugin.saveSettings();
 				});
-			});
+			})
+			.addButton(button => button
+				.setButtonText('Browse all icons')
+				.onClick(() => {
+					new SelectIconModal(this.app, fmt.icon, (chosen) => {
+						fmt.icon = chosen;
+						setIcon(iconEl, chosen);
+						void this.plugin.saveSettings();
+						// Re-render so the dropdown reflects the new icon (or shows the
+						// curated default when the chosen icon is outside ICON_CHOICES).
+						this.display();
+					}).open();
+				}));
 
 		// Refreshes the "Show on" control in place. Assigned where the control is
 		// built below; invoked when the template changes so the files/folders choice
@@ -824,6 +864,17 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 				.setValue(fmt.showInCommands)
 				.onChange(async (value) => {
 					fmt.showInCommands = value;
+					await this.plugin.saveSettings();
+					new Notice(RELOAD_NOTICE);
+				}));
+
+		new Setting(editor)
+			.setName('Show in ribbon')
+			.setDesc('Add a left-ribbon icon that copies this format')
+			.addToggle(toggle => toggle
+				.setValue(fmt.showInRibbon)
+				.onChange(async (value) => {
+					fmt.showInRibbon = value;
 					await this.plugin.saveSettings();
 					new Notice(RELOAD_NOTICE);
 				}));

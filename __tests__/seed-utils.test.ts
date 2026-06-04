@@ -159,7 +159,7 @@ describe('normalizeCustomFormats', () => {
 
 	it('preserves a valid format', () => {
 		const result = normalizeCustomFormats([
-			{ id: 'x1', name: 'Keep', template: '<filename>', wrapping: 'backticks', icon: 'file', enabled: false, showInMenu: false, showInCommands: true, pinToRoot: true, appliesTo: 'folders' },
+			{ id: 'x1', name: 'Keep', template: '<filename>', wrapping: 'backticks', icon: 'file', enabled: false, showInMenu: false, showInCommands: true, showInRibbon: true, pinToRoot: true, appliesTo: 'folders' },
 		]);
 		expect(result[0]).toEqual({
 			id: 'x1',
@@ -170,6 +170,7 @@ describe('normalizeCustomFormats', () => {
 			enabled: false,
 			showInMenu: false,
 			showInCommands: true,
+			showInRibbon: true,
 			pinToRoot: true,
 			appliesTo: 'folders',
 		});

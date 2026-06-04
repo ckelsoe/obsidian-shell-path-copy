@@ -14,6 +14,7 @@ function makeFormat(overrides: Partial<CustomFormat>): CustomFormat {
 		enabled: true,
 		showInMenu: true,
 		showInCommands: true,
+		showInRibbon: false,
 		pinToRoot: false,
 		appliesTo: 'both',
 		...overrides,

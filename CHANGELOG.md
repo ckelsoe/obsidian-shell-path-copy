@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-06-04
+
+### Added
+- Per-format ribbon icons. Each custom format has a "Show in ribbon" toggle in its settings editor; when on, it adds a left-ribbon icon that copies that format from the active note in one click. Off by default. Ribbon icons register in the same order as the format list.
+- "Browse all icons" button in the format icon picker. The existing dropdown still offers common icons; the button opens a searchable grid of every Obsidian icon so a format can use any icon for its menu, command, and ribbon entries.
+
 ## [2.4.2] - 2026-05-30
 
 ### Changed
