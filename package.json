@@ -1,6 +1,6 @@
 {
 	"name": "shell-path-copy",
-	"version": "2.5.0",
+	"version": "2.6.0",
 	"description": "Copy file and folder paths with shell-friendly formatting for Linux and Windows",
 	"main": "main.js",
 	"scripts": {
@@ -24,7 +24,7 @@
 		"eslint-plugin-obsidianmd": "^0.3.0",
 		"globals": "^17.1.0",
 		"jest": "^30.2.0",
-		"obsidian": "latest",
+		"obsidian": "^1.13.0",
 		"ts-jest": "^29.4.6",
 		"tslib": "^2.8.1",
 		"typescript": "^5.8.3"

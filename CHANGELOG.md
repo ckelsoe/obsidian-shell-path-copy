@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.6.0] - 2026-06-04
+
+### Changed
+- Requires Obsidian 1.13.0 or later. Obsidian keeps serving 2.5.0 to vaults on older versions, so nothing breaks for them.
+- Settings migrated to Obsidian's declarative settings API. The global options are now indexed in Obsidian's settings search, and each custom format opens its own settings sub-page with an add/reorder/delete list. A format's enabled toggle now lives on its sub-page.
+- Cleared the Obsidian 1.13.0 API deprecations (`PluginSettingTab.display`, `setWarning`).
+
 ## [2.5.0] - 2026-06-04
 
 ### Added

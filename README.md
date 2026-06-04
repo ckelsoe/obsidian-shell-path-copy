@@ -1,6 +1,6 @@
 # Shell Path Copy for Obsidian
 
-[![CI](https://img.shields.io/github/actions/workflow/status/ckelsoe/obsidian-shell-path-copy/ci.yml?branch=main&label=CI&logo=github)](https://github.com/ckelsoe/obsidian-shell-path-copy/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/actions/workflow/status/ckelsoe/obsidian-shell-path-copy/release.yml?label=Release&logo=github)](https://github.com/ckelsoe/obsidian-shell-path-copy/actions/workflows/release.yml) [![GitHub Downloads](https://img.shields.io/github/downloads/ckelsoe/obsidian-shell-path-copy/total?logo=github&label=Downloads)](https://github.com/ckelsoe/obsidian-shell-path-copy/releases) [![GitHub Stars](https://img.shields.io/github/stars/ckelsoe/obsidian-shell-path-copy?style=flat&logo=github&label=Stars)](https://github.com/ckelsoe/obsidian-shell-path-copy) [![Obsidian](https://img.shields.io/badge/Obsidian-v1.6.0%2B-7C3AED?logo=obsidian&logoColor=white)](https://obsidian.md) [![License](https://img.shields.io/github/license/ckelsoe/obsidian-shell-path-copy)](https://github.com/ckelsoe/obsidian-shell-path-copy/blob/main/LICENSE) [![Latest Release](https://img.shields.io/github/v/release/ckelsoe/obsidian-shell-path-copy?label=Latest)](https://github.com/ckelsoe/obsidian-shell-path-copy/releases/latest)
+[![CI](https://img.shields.io/github/actions/workflow/status/ckelsoe/obsidian-shell-path-copy/ci.yml?branch=main&label=CI&logo=github)](https://github.com/ckelsoe/obsidian-shell-path-copy/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/actions/workflow/status/ckelsoe/obsidian-shell-path-copy/release.yml?label=Release&logo=github)](https://github.com/ckelsoe/obsidian-shell-path-copy/actions/workflows/release.yml) [![GitHub Downloads](https://img.shields.io/github/downloads/ckelsoe/obsidian-shell-path-copy/total?logo=github&label=Downloads)](https://github.com/ckelsoe/obsidian-shell-path-copy/releases) [![GitHub Stars](https://img.shields.io/github/stars/ckelsoe/obsidian-shell-path-copy?style=flat&logo=github&label=Stars)](https://github.com/ckelsoe/obsidian-shell-path-copy) [![Obsidian](https://img.shields.io/badge/Obsidian-v1.13.0%2B-7C3AED?logo=obsidian&logoColor=white)](https://obsidian.md) [![License](https://img.shields.io/github/license/ckelsoe/obsidian-shell-path-copy)](https://github.com/ckelsoe/obsidian-shell-path-copy/blob/main/LICENSE) [![Latest Release](https://img.shields.io/github/v/release/ckelsoe/obsidian-shell-path-copy?label=Latest)](https://github.com/ckelsoe/obsidian-shell-path-copy/releases/latest)
 
 Copy a file or folder path out of your Obsidian vault. Right-click, pick a format, paste.
 
@@ -95,8 +95,9 @@ The "to heading" and "to block" formats link to the heading or block your cursor
 A custom format is a token template. Build one in settings:
 
 1. Open Settings → Community plugins → Shell Path Copy → Options.
-2. In **Custom formats**, click **Add custom format**, or click any existing format to expand its editor.
+2. In **Custom formats**, click **+** to add a format, or click any existing format to open its settings page.
 3. Set the fields:
+   - **Enabled**: turn the format on or off everywhere (menu, command palette, ribbon).
    - **Name**: shown in the menu, command palette, and ribbon.
    - **Icon**: the icon shown next to the format in the menu, command palette, and ribbon. Pick a common one from the dropdown, or click **Browse all icons** to search the full set of Obsidian icons and choose any of them.
    - **Template**: the token template. The token palette below the field inserts a token at the cursor. A live preview shows the rendered result, and a Desktop / Mobile row shows where the template works.
@@ -106,7 +107,7 @@ A custom format is a token template. Build one in settings:
    - **Show on**: limit the format to files, folders, or both. Formats that use file-specific tokens (like `<obsidian-url>`, wiki links, or line/heading tokens) are files-only automatically, since those do not resolve for folders.
 4. Reload Obsidian so the command and ribbon icon register.
 
-The format list is compact and drag-to-reorder; list order is the menu order, and ribbon icons register in the same order. To place the ribbon group relative to other ribbon icons, drag it within Obsidian's ribbon. Click a format to expand its editor.
+The format list is drag-to-reorder; list order is the menu order, and ribbon icons register in the same order. To place the ribbon group relative to other ribbon icons, drag it within Obsidian's ribbon. Each global option is searchable from Obsidian's settings search, and each format opens its own settings page.
 
 ### Tokens
 

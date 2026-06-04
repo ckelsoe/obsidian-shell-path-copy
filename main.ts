@@ -1,4 +1,4 @@
-import { App, Editor, Menu, Notice, Plugin, PluginSettingTab, Setting, TAbstractFile, TFile, TextAreaComponent, Platform, FileSystemAdapter, setIcon } from 'obsidian';
+import { App, Editor, Menu, Notice, Plugin, PluginSettingTab, Setting, SettingPage, SettingDefinitionItem, TAbstractFile, TFile, TextAreaComponent, Platform, FileSystemAdapter, setIcon } from 'obsidian';
 import { wrapPath, PathWrapping, MarkdownLinkFormat } from './path-utils';
 import { applyTemplate, validateTemplate, listTokens, templateSupportsFolders, TokenContext } from './token-engine';
 import {
@@ -443,90 +443,131 @@ const RELOAD_NOTICE = 'Please reload Obsidian for command palette and ribbon cha
 
 class ShellPathCopySettingTab extends PluginSettingTab {
 	plugin: ShellPathCopyPlugin;
-	// Id of the format whose editor is currently expanded, or null.
-	private expandedId: string | null = null;
-	// Index of the row being dragged during a reorder, or null.
-	private dragIndex: number | null = null;
 
 	constructor(app: App, plugin: ShellPathCopyPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
 
-	display(): void {
-		const { containerEl } = this;
-		containerEl.empty();
+	getSettingDefinitions(): SettingDefinitionItem[] {
+		return [
+			{
+				name: 'Show notifications',
+				desc: 'Display a notification when something is copied',
+				control: { type: 'toggle', key: 'showNotifications' }
+			},
+			{
+				name: 'Markdown link format',
+				desc: 'Format used by the <markdown-link> token',
+				control: {
+					type: 'dropdown',
+					key: 'markdownLinkFormat',
+					options: {
+						'wiki-style': 'Wiki-style - [[filename]]',
+						'standard-markdown': 'Standard Markdown - [filename](path)'
+					}
+				}
+			},
+			{
+				name: 'Notify when a token could not be resolved',
+				desc: 'Show a notice when a desktop-only or editor-only token is left blank',
+				control: { type: 'toggle', key: 'warnOnUnresolvedTokens' }
+			},
+			{
+				name: 'Group formats under a submenu',
+				desc: 'Nest every format inside one right-click submenu. Pin individual formats below to also show them at the root menu. Ignored when "group with Obsidian\'s copy path" is on.',
+				control: {
+					type: 'toggle',
+					key: 'useSubmenu',
+					disabled: () => this.plugin.settings.groupWithNativeCopyPath
+				}
+			},
+			{
+				name: "Group with Obsidian's copy path",
+				desc: "Place every enabled format inside Obsidian's native copy path submenu, alongside built-in entries like 'as Obsidian URL' and 'from vault folder'. The plugin's own 'copy path as' submenu is hidden when this is on.",
+				control: { type: 'toggle', key: 'groupWithNativeCopyPath' }
+			},
+			{
+				type: 'list',
+				heading: 'Custom formats',
+				emptyState: 'No custom formats yet. Add one to create a copy action.',
+				onReorder: (oldIndex: number, newIndex: number) => {
+					this.moveFormat(oldIndex, newIndex);
+					void this.plugin.saveSettings();
+					new Notice(RELOAD_NOTICE);
+					this.update();
+				},
+				onDelete: (index: number) => {
+					this.plugin.settings.customFormats.splice(index, 1);
+					void this.plugin.saveSettings();
+					new Notice(RELOAD_NOTICE);
+					this.update();
+				},
+				addItem: {
+					name: 'Add custom format',
+					action: () => {
+						const created: CustomFormat = {
+							id: generateFormatId(),
+							name: 'New format',
+							template: '',
+							wrapping: 'none',
+							icon: 'clipboard-copy',
+							enabled: true,
+							showInMenu: true,
+							showInCommands: true,
+							showInRibbon: false,
+							pinToRoot: false,
+							appliesTo: 'both'
+						};
+						this.plugin.settings.customFormats.push(created);
+						void this.plugin.saveSettings();
+						new Notice(RELOAD_NOTICE);
+						this.update();
+					}
+				},
+				items: this.plugin.settings.customFormats.map((fmt) => ({
+					type: 'page' as const,
+					name: fmt.name || 'Untitled format',
+					desc: fmt.enabled
+						? (fmt.template || '(empty template)')
+						: `(disabled) ${fmt.template || '(empty template)'}`,
+					page: () => new FormatEditorPage(this, fmt)
+				}))
+			},
+			{
+				name: '',
+				searchable: false,
+				render: (setting: Setting) => { this.renderFooter(setting); }
+			}
+		];
+	}
 
-		new Setting(containerEl)
-			.setName('Show notifications')
-			.setDesc('Display a notification when something is copied')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.showNotifications)
-				.onChange(async (value) => {
-					this.plugin.settings.showNotifications = value;
-					await this.plugin.saveSettings();
-				}));
+	// Binds declarative control definitions to the plugin's own settings store,
+	// so a change persists through saveSettings() and stays consistent with the
+	// live settings the menu, command palette, and ribbon read.
+	getControlValue(key: string): unknown {
+		return (this.plugin.settings as unknown as Record<string, unknown>)[key];
+	}
 
-		new Setting(containerEl)
-			.setName('Markdown link format')
-			.setDesc('Format used by the <markdown-link> token')
-			.addDropdown(dropdown => dropdown
-				.addOption('wiki-style', 'Wiki-style - [[filename]]')
-				.addOption('standard-markdown', 'Standard Markdown - [filename](path)')
-				.setValue(this.plugin.settings.markdownLinkFormat)
-				.onChange(async (value) => {
-					this.plugin.settings.markdownLinkFormat = value as MarkdownLinkFormat;
-					await this.plugin.saveSettings();
-				}));
+	async setControlValue(key: string, value: unknown): Promise<void> {
+		(this.plugin.settings as unknown as Record<string, unknown>)[key] = value;
+		await this.plugin.saveSettings();
+		// Re-evaluate disabled predicates in place (the submenu toggle greys out
+		// when "group with Obsidian's copy path" is on).
+		this.refreshDomState();
+	}
 
-		new Setting(containerEl)
-			.setName('Notify when a token could not be resolved')
-			.setDesc('Show a notice when a desktop-only or editor-only token is left blank')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.warnOnUnresolvedTokens)
-				.onChange(async (value) => {
-					this.plugin.settings.warnOnUnresolvedTokens = value;
-					await this.plugin.saveSettings();
-				}));
-
-		new Setting(containerEl)
-			.setName('Group formats under a submenu')
-			.setDesc('Nest every format inside one right-click submenu. Pin individual formats below to also show them at the root menu. Ignored when "group with Obsidian\'s copy path" is on.')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.useSubmenu)
-				.setDisabled(this.plugin.settings.groupWithNativeCopyPath)
-				.onChange(async (value) => {
-					this.plugin.settings.useSubmenu = value;
-					await this.plugin.saveSettings();
-				}));
-
-		new Setting(containerEl)
-			.setName("Group with Obsidian's copy path")
-			.setDesc("Place every enabled format inside Obsidian's native copy path submenu, alongside built-in entries like 'as Obsidian URL' and 'from vault folder'. The plugin's own 'copy path as' submenu is hidden when this is on.")
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.groupWithNativeCopyPath)
-				.onChange(async (value) => {
-					this.plugin.settings.groupWithNativeCopyPath = value;
-					await this.plugin.saveSettings();
-					// Re-render so the dependent submenu toggle updates its disabled state.
-					this.display();
-				}));
-
-		this.renderCustomFormatsSection(containerEl);
-
-		// Support links at the bottom
-		containerEl.createEl('br');
-		containerEl.createEl('br');
-
-		const footerDiv = containerEl.createDiv({
-			cls: 'setting-item-description shell-path-copy-footer'
-		});
+	// Renders the version + links footer into a trailing settings row.
+	private renderFooter(setting: Setting): void {
+		const el = setting.settingEl;
+		el.empty();
+		el.addClass('shell-path-copy-footer');
 
 		const manifestVersion = this.plugin.manifest.version || '1.0.0';
-		footerDiv.createSpan({ text: `Version ${manifestVersion} | ` });
+		el.createSpan({ text: `Version ${manifestVersion} | ` });
 
 		const createExternalLink = (text: string, url: string) => {
-			return footerDiv.createEl('a', {
+			return el.createEl('a', {
 				text: text,
 				href: url,
 				attr: { target: '_blank', rel: 'noopener' }
@@ -534,140 +575,8 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 		};
 
 		createExternalLink('GitHub', 'https://github.com/ckelsoe/obsidian-shell-path-copy');
-		footerDiv.createSpan({ text: ' | ' });
+		el.createSpan({ text: ' | ' });
 		createExternalLink('Report Issues', 'https://github.com/ckelsoe/obsidian-shell-path-copy/issues');
-	}
-
-	// Renders the "Custom formats" section: a compact draggable list, with the
-	// one expanded format showing its full editor.
-	private renderCustomFormatsSection(containerEl: HTMLElement): void {
-		new Setting(containerEl).setName('Custom formats').setHeading();
-
-		containerEl.createDiv({
-			cls: 'setting-item-description',
-			text: 'Each format is a token template that becomes a context-menu item and a command. Drag to reorder; the order is the menu order.'
-		});
-
-		const listEl = containerEl.createDiv({ cls: 'shell-path-copy-format-list' });
-		this.plugin.settings.customFormats.forEach((fmt, index) => {
-			this.renderFormatRow(listEl, fmt, index);
-		});
-
-		new Setting(containerEl)
-			.addButton(button => button
-				.setButtonText('Add custom format')
-				.setCta()
-				.onClick(async () => {
-					const created: CustomFormat = {
-						id: generateFormatId(),
-						name: 'New format',
-						template: '',
-						wrapping: 'none',
-						icon: 'clipboard-copy',
-						enabled: true,
-						showInMenu: true,
-						showInCommands: true,
-						showInRibbon: false,
-						pinToRoot: false,
-						appliesTo: 'both'
-					};
-					this.plugin.settings.customFormats.push(created);
-					this.expandedId = created.id;
-					await this.plugin.saveSettings();
-					new Notice(RELOAD_NOTICE);
-					this.display();
-				}));
-	}
-
-	// Renders one compact list row, plus the full editor panel when expanded.
-	private renderFormatRow(listEl: HTMLElement, fmt: CustomFormat, index: number): void {
-		const expanded = this.expandedId === fmt.id;
-
-		const total = this.plugin.settings.customFormats.length;
-		const row = listEl.createDiv({ cls: 'shell-path-copy-format-row' });
-
-		// Reorder a format and re-render. List order is the menu order.
-		const reorder = (from: number, to: number) => {
-			this.moveFormat(from, to);
-			void this.plugin.saveSettings();
-			new Notice(RELOAD_NOTICE);
-			this.display();
-		};
-
-		if (Platform.isMobile) {
-			// HTML5 drag-and-drop does not work on touch, so use move buttons.
-			const up = row.createEl('button', {
-				cls: 'shell-path-copy-move-button',
-				attr: { 'aria-label': 'Move up' }
-			});
-			setIcon(up, 'chevron-up');
-			up.disabled = index === 0;
-			up.addEventListener('click', () => reorder(index, index - 1));
-
-			const down = row.createEl('button', {
-				cls: 'shell-path-copy-move-button',
-				attr: { 'aria-label': 'Move down' }
-			});
-			setIcon(down, 'chevron-down');
-			down.disabled = index === total - 1;
-			down.addEventListener('click', () => reorder(index, index + 1));
-		} else {
-			row.draggable = true;
-			row.addEventListener('dragstart', () => {
-				this.dragIndex = index;
-				row.addClass('is-dragging');
-			});
-			row.addEventListener('dragend', () => {
-				this.dragIndex = null;
-				row.removeClass('is-dragging');
-			});
-			row.addEventListener('dragover', (event) => {
-				event.preventDefault();
-				row.addClass('is-dragover');
-			});
-			row.addEventListener('dragleave', () => {
-				row.removeClass('is-dragover');
-			});
-			row.addEventListener('drop', (event) => {
-				event.preventDefault();
-				row.removeClass('is-dragover');
-				if (this.dragIndex !== null && this.dragIndex !== index) {
-					reorder(this.dragIndex, index);
-				}
-			});
-
-			const handle = row.createSpan({ cls: 'shell-path-copy-drag-handle' });
-			setIcon(handle, 'grip-vertical');
-		}
-
-		const iconEl = row.createSpan({ cls: 'shell-path-copy-format-icon' });
-		setIcon(iconEl, fmt.icon);
-
-		const nameSpan = row.createSpan({ cls: 'shell-path-copy-format-name', text: fmt.name });
-
-		const stateButton = row.createEl('button', {
-			cls: 'shell-path-copy-state-button',
-			text: fmt.enabled ? 'On' : 'Off'
-		});
-		if (!fmt.enabled) {
-			stateButton.addClass('is-off');
-		}
-		stateButton.addEventListener('click', () => {
-			fmt.enabled = !fmt.enabled;
-			void this.plugin.saveSettings();
-			new Notice(RELOAD_NOTICE);
-			this.display();
-		});
-
-		const editButton = row.createEl('button', { text: expanded ? 'Close' : 'Edit' });
-		editButton.addEventListener('click', () => {
-			this.expandedId = expanded ? null : fmt.id;
-			this.display();
-		});
-
-		if (expanded) {
-			this.renderFormatEditor(listEl, fmt, index, nameSpan, iconEl);
-		}
 	}
 
 	// Moves a format within the list (drag-drop reorder).
@@ -680,18 +589,44 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 		list.splice(to, 0, moved);
 	}
 
-	// Renders the expanded editor panel for one format.
-	private renderFormatEditor(
-		listEl: HTMLElement,
-		fmt: CustomFormat,
-		index: number,
-		nameSpan: HTMLElement,
-		iconEl: HTMLElement
-	): void {
-		const editor = listEl.createDiv({ cls: 'shell-path-copy-format-editor' });
+}
+
+// A navigable settings sub-page for editing one custom format. SettingPage.display()
+// (unlike the deprecated PluginSettingTab.display()) is the supported way to render an
+// imperative sub-page; Obsidian opens this when the user taps a format in the
+// declarative custom-formats list.
+class FormatEditorPage extends SettingPage {
+	private tab: ShellPathCopySettingTab;
+	private fmt: CustomFormat;
+
+	constructor(tab: ShellPathCopySettingTab, fmt: CustomFormat) {
+		super();
+		this.tab = tab;
+		this.fmt = fmt;
+		this.title = fmt.name || 'Untitled format';
+	}
+
+	private get plugin(): ShellPathCopyPlugin {
+		return this.tab.plugin;
+	}
+
+	display(): void {
+		const fmt = this.fmt;
+		const editor = this.containerEl;
+		editor.empty();
 		let previewEl: HTMLElement;
 		let infoEl: HTMLElement;
-		let pendingDelete = false;
+
+		new Setting(editor)
+			.setName('Enabled')
+			.setDesc('Turn this format on or off everywhere (menu, command palette, ribbon)')
+			.addToggle(toggle => toggle
+				.setValue(fmt.enabled)
+				.onChange(async (value) => {
+					fmt.enabled = value;
+					await this.plugin.saveSettings();
+					new Notice(RELOAD_NOTICE);
+				}));
 
 		new Setting(editor)
 			.setName('Name')
@@ -699,7 +634,9 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 				.setValue(fmt.name)
 				.onChange(async (value) => {
 					fmt.name = value;
-					nameSpan.setText(value);
+					// Keep the page title in sync; the list entry relabels on the
+					// next tab render (when the user navigates back).
+					this.title = value || 'Untitled format';
 					await this.plugin.saveSettings();
 				}));
 
@@ -713,18 +650,16 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 				dropdown.setValue(ICON_CHOICES.includes(fmt.icon) ? fmt.icon : 'clipboard-copy');
 				dropdown.onChange(async (value) => {
 					fmt.icon = value;
-					setIcon(iconEl, value);
 					await this.plugin.saveSettings();
 				});
 			})
 			.addButton(button => button
 				.setButtonText('Browse all icons')
 				.onClick(() => {
-					new SelectIconModal(this.app, fmt.icon, (chosen) => {
+					new SelectIconModal(this.tab.app, fmt.icon, (chosen) => {
 						fmt.icon = chosen;
-						setIcon(iconEl, chosen);
 						void this.plugin.saveSettings();
-						// Re-render so the dropdown reflects the new icon (or shows the
+						// Rebuild so the dropdown reflects the new icon (or shows the
 						// curated default when the chosen icon is outside ICON_CHOICES).
 						this.display();
 					}).open();
@@ -807,7 +742,7 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					fmt.showInMenu = value;
 					await this.plugin.saveSettings();
-					// Re-render so the pin toggle below updates its disabled state.
+					// Rebuild so the pin toggle below updates its disabled state.
 					this.display();
 				}));
 
@@ -827,9 +762,7 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 		// (obsidian-url, wikilinks, editor tokens) cannot apply to folders, so the
 		// dropdown is locked to "Files only" and disabled, with the reason in the
 		// description. The stored appliesTo is left untouched so the preference
-		// returns if the template is later edited back to folder-safe. Built into a
-		// dedicated container and rebuilt by refreshShowOn() on template changes, so
-		// it tracks folder support without a full settings re-render.
+		// returns if the template is later edited back to folder-safe.
 		const showOnContainer = editor.createDiv();
 		refreshShowOn = () => {
 			showOnContainer.empty();
@@ -877,24 +810,6 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 					fmt.showInRibbon = value;
 					await this.plugin.saveSettings();
 					new Notice(RELOAD_NOTICE);
-				}));
-
-		new Setting(editor)
-			.setName('Delete this format')
-			.addButton(button => button
-				.setButtonText('Delete')
-				.setWarning()
-				.onClick(async () => {
-					if (!pendingDelete) {
-						pendingDelete = true;
-						button.setButtonText('Click again to confirm');
-						return;
-					}
-					this.plugin.settings.customFormats.splice(index, 1);
-					this.expandedId = null;
-					await this.plugin.saveSettings();
-					new Notice(RELOAD_NOTICE);
-					this.display();
 				}));
 	}
 
