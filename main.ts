@@ -452,40 +452,52 @@ class ShellPathCopySettingTab extends PluginSettingTab {
 	getSettingDefinitions(): SettingDefinitionItem[] {
 		return [
 			{
-				name: 'Show notifications',
-				desc: 'Display a notification when something is copied',
-				control: { type: 'toggle', key: 'showNotifications' }
-			},
-			{
-				name: 'Markdown link format',
-				desc: 'Format used by the <markdown-link> token',
-				control: {
-					type: 'dropdown',
-					key: 'markdownLinkFormat',
-					options: {
-						'wiki-style': 'Wiki-style - [[filename]]',
-						'standard-markdown': 'Standard Markdown - [filename](path)'
+				type: 'group',
+				heading: 'Output',
+				items: [
+					{
+						name: 'Show notifications',
+						desc: 'Display a notification when something is copied',
+						control: { type: 'toggle', key: 'showNotifications' }
+					},
+					{
+						name: 'Markdown link format',
+						desc: 'Format used by the <markdown-link> token',
+						control: {
+							type: 'dropdown',
+							key: 'markdownLinkFormat',
+							options: {
+								'wiki-style': 'Wiki-style - [[filename]]',
+								'standard-markdown': 'Standard Markdown - [filename](path)'
+							}
+						}
+					},
+					{
+						name: 'Notify when a token could not be resolved',
+						desc: 'Show a notice when a desktop-only or editor-only token is left blank',
+						control: { type: 'toggle', key: 'warnOnUnresolvedTokens' }
 					}
-				}
+				]
 			},
 			{
-				name: 'Notify when a token could not be resolved',
-				desc: 'Show a notice when a desktop-only or editor-only token is left blank',
-				control: { type: 'toggle', key: 'warnOnUnresolvedTokens' }
-			},
-			{
-				name: 'Group formats under a submenu',
-				desc: 'Nest every format inside one right-click submenu. Pin individual formats below to also show them at the root menu. Ignored when "group with Obsidian\'s copy path" is on.',
-				control: {
-					type: 'toggle',
-					key: 'useSubmenu',
-					disabled: () => this.plugin.settings.groupWithNativeCopyPath
-				}
-			},
-			{
-				name: "Group with Obsidian's copy path",
-				desc: "Place every enabled format inside Obsidian's native copy path submenu, alongside built-in entries like 'as Obsidian URL' and 'from vault folder'. The plugin's own 'copy path as' submenu is hidden when this is on.",
-				control: { type: 'toggle', key: 'groupWithNativeCopyPath' }
+				type: 'group',
+				heading: 'Menu behavior',
+				items: [
+					{
+						name: 'Group formats under a submenu',
+						desc: 'Nest every format inside one right-click submenu. Pin individual formats below to also show them at the root menu. Ignored when "group with Obsidian\'s copy path" is on.',
+						control: {
+							type: 'toggle',
+							key: 'useSubmenu',
+							disabled: () => this.plugin.settings.groupWithNativeCopyPath
+						}
+					},
+					{
+						name: "Group with Obsidian's copy path",
+						desc: "Place every enabled format inside Obsidian's native copy path submenu, alongside built-in entries like 'as Obsidian URL' and 'from vault folder'. The plugin's own 'copy path as' submenu is hidden when this is on.",
+						control: { type: 'toggle', key: 'groupWithNativeCopyPath' }
+					}
+				]
 			},
 			{
 				type: 'list',

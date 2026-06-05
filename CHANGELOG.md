@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-06-05
+
+### Changed
+- Settings reorganized into grouped sections. The global options are now split into an "Output" group (notifications, Markdown link format, unresolved-token notice) and a "Menu behavior" group (submenu grouping, group with Obsidian's copy path). The custom formats list is unchanged. Grouping only; no setting moved store or changed behavior.
+
 ## [2.6.0] - 2026-06-04
 
 ### Changed
