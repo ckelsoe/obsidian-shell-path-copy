@@ -78,9 +78,30 @@ describe('generateBlockId', () => {
 		expect(id).toMatch(/^[a-z0-9]{6}$/);
 	});
 
-	it('returns an id not present in the used set', () => {
-		const id = generateBlockId({});
-		expect(id in {}).toBe(false);
-		expect(typeof id).toBe('string');
+	it('returns an id not present in a growing used set', () => {
+		const used: Record<string, unknown> = {};
+		for (let i = 0; i < 200; i++) {
+			const id = generateBlockId(used);
+			expect(id in used).toBe(false);
+			used[id] = true;
+		}
+	});
+
+	it('retries when the random id collides with the used set', () => {
+		// Rig the RNG: first draw produces an id already in the used set,
+		// second draw produces a fresh one. The generator must skip the
+		// collision and return the second id.
+		const idFor = (seed: number) => seed.toString(36).slice(2, 8);
+		const seedA = 0.123456789;
+		const seedB = 0.987654321;
+		expect(idFor(seedA)).toHaveLength(6);
+		expect(idFor(seedB)).toHaveLength(6);
+		const spy = jest
+			.spyOn(Math, 'random')
+			.mockReturnValueOnce(seedA)
+			.mockReturnValueOnce(seedB);
+		const id = generateBlockId({ [idFor(seedA)]: true });
+		expect(id).toBe(idFor(seedB));
+		spy.mockRestore();
 	});
 });

@@ -67,8 +67,5 @@ export function buildMarkdownLink(fileName: string, filePath: string, format: Ma
 		return `[[${fileNameWithoutExt}]]`;
 	}
 
-	const relativePath = filePath
-		? (filePath.startsWith('./') ? filePath : './' + filePath)
-		: './';
-	return `[${fileName}](${relativePath})`;
+	return `[${fileName}](${formatRelativePath(filePath, 'unix')})`;
 }

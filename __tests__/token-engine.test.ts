@@ -326,6 +326,9 @@ describe('applyTemplate - heading tokens', () => {
 	it('the section tokens always resolve (universal tier)', () => {
 		const result = applyTemplate('<obsidian-url-heading> <wikilink-heading>', noHeading);
 		expect(result.usedEditorTokenWithoutEditor).toBe(false);
+		expect(result.text).toBe(
+			'obsidian://open?vault=assorted&file=Notes%2FMy%20file [[My file]]',
+		);
 	});
 });
 
