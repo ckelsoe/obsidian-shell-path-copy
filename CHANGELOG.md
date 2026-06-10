@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.7.1] - 2026-06-10
+
+### Changed
+- Internal restructuring, no behavior change:
+  - The settings tab and format editor page moved from `main.ts` to a new `settings-tab.ts`. `main.ts` drops from 822 to 391 lines and now holds only the plugin lifecycle, menus, commands, ribbon, and copy flow.
+  - `buildMarkdownLink` reuses `formatRelativePath` instead of re-implementing the `./` prefix logic.
+  - tsconfig `lib` extended to ES2017/ES2018 to match the code and the esbuild target; `include` lists `**/*.d.ts` explicitly.
+- Test quality: replaced a tautological block-id collision assertion (`id in {}`) with a growing used-set check plus a rigged-RNG retry test, and the universal-tier section-token test now asserts the rendered text, not only the metadata flag.
+
 ## [2.7.0] - 2026-06-05
 
 ### Changed
