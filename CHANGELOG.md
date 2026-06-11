@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.8.0] - 2026-06-11
+
+### Added
+- New `<absolute-folder>` token: the containing folder as a full filesystem path (desktop only). For a file it resolves to the folder the file sits in; for a folder, to its parent, like `dirname`. Requested in discussion #17.
+
+### Changed
+- The unresolved-token notice now reads "Desktop-only tokens (absolute path, folder, file URL) are unavailable here and were left blank." so it covers the new token.
+
 ## [2.7.1] - 2026-06-10
 
 ### Changed
