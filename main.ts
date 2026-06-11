@@ -409,7 +409,7 @@ export default class ShellPathCopyPlugin extends Plugin {
 			// Surface tokens that could not resolve, if the user wants the warning.
 			if (this.settings.warnOnUnresolvedTokens) {
 				if (applied.usedDesktopTokenOnMobile) {
-					new Notice('Absolute path / file URL tokens are unavailable here and were left blank.');
+					new Notice('Desktop-only tokens (absolute path, folder, file URL) are unavailable here and were left blank.');
 				} else if (applied.usedEditorTokenWithoutEditor) {
 					new Notice('The line number was unavailable (file not open in the editor) and was left blank.');
 				}

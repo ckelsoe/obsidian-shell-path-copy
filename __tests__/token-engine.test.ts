@@ -65,6 +65,28 @@ describe('applyTemplate - individual tokens', () => {
 		expect(applyTemplate('<absolute-path>', win).text).toBe('C:\\Users\\name\\assorted\\Notes\\My file.md');
 	});
 
+	it('<absolute-folder> strips the filename on a unix host', () => {
+		expect(applyTemplate('<absolute-folder>', ctx).text).toBe('/home/name/assorted/Notes');
+	});
+
+	it('<absolute-folder> strips the filename on a windows host', () => {
+		const win = makeContext({ isWindows: true, absolutePath: 'C:\\Users\\name\\assorted\\Notes\\My file.md' });
+		expect(applyTemplate('<absolute-folder>', win).text).toBe('C:\\Users\\name\\assorted\\Notes');
+	});
+
+	it('<absolute-folder> on a folder yields its parent folder', () => {
+		const folder = makeContext({
+			fileName: 'Notes',
+			filePath: 'Notes',
+			isFolder: true,
+			absolutePath: '/home/name/assorted/Notes',
+			lineNumber: null,
+			selectionStartLine: null,
+			selectionEndLine: null,
+		});
+		expect(applyTemplate('<absolute-folder>', folder).text).toBe('/home/name/assorted');
+	});
+
 	it('<file-url> encodes spaces on a unix host', () => {
 		expect(applyTemplate('<file-url>', ctx).text).toBe('file:///home/name/assorted/Notes/My%20file.md');
 	});
@@ -219,6 +241,12 @@ describe('applyTemplate - desktop tokens on mobile', () => {
 
 	it('blanks <absolute-path> and flags it', () => {
 		const result = applyTemplate('<absolute-path>', mobile);
+		expect(result.text).toBe('');
+		expect(result.usedDesktopTokenOnMobile).toBe(true);
+	});
+
+	it('blanks <absolute-folder> and flags it', () => {
+		const result = applyTemplate('<absolute-folder>', mobile);
 		expect(result.text).toBe('');
 		expect(result.usedDesktopTokenOnMobile).toBe(true);
 	});
@@ -398,9 +426,12 @@ describe('validateTemplate', () => {
 describe('listTokens', () => {
 	it('returns the full token set with tiers', () => {
 		const tokens = listTokens();
-		expect(tokens.length).toBe(26);
+		expect(tokens.length).toBe(27);
 		const absolutePath = tokens.find((t) => t.name === 'absolute-path');
 		expect(absolutePath?.tier).toBe('desktop');
+		const absoluteFolder = tokens.find((t) => t.name === 'absolute-folder');
+		expect(absoluteFolder?.tier).toBe('desktop');
+		expect(absoluteFolder?.folderSafe).toBe(true);
 		const lineNumber = tokens.find((t) => t.name === 'line-number');
 		expect(lineNumber?.tier).toBe('editor');
 		const lineRange = tokens.find((t) => t.name === 'line-range');

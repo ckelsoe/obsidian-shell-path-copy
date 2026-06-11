@@ -5,6 +5,7 @@ import {
 	buildObsidianUrl,
 	buildMarkdownLink,
 	extractFilename,
+	extractParentPath,
 } from '../path-utils';
 
 // ─── wrapPath ────────────────────────────────────────────────────────────────
@@ -209,6 +210,38 @@ describe('extractFilename', () => {
 
 	it('handles dotfiles', () => {
 		expect(extractFilename('.gitignore', false)).toBe('.gitignore');
+	});
+});
+
+// ─── extractParentPath ────────────────────────────────────────────────────────
+
+describe('extractParentPath', () => {
+	it('strips the filename from a unix path', () => {
+		expect(extractParentPath('/home/name/assorted/Notes/My file.md')).toBe('/home/name/assorted/Notes');
+	});
+
+	it('strips the filename from a windows path', () => {
+		expect(extractParentPath('C:\\Users\\name\\assorted\\Notes\\My file.md')).toBe('C:\\Users\\name\\assorted\\Notes');
+	});
+
+	it('strips the last segment from a folder path', () => {
+		expect(extractParentPath('/home/name/assorted/Notes')).toBe('/home/name/assorted');
+	});
+
+	it('keeps the unix root slash', () => {
+		expect(extractParentPath('/file.md')).toBe('/');
+	});
+
+	it('keeps the windows drive root backslash', () => {
+		expect(extractParentPath('C:\\file.md')).toBe('C:\\');
+	});
+
+	it('keeps a UNC share root', () => {
+		expect(extractParentPath('\\\\server\\share\\file.md')).toBe('\\\\server\\share');
+	});
+
+	it('returns a separator-free string unchanged', () => {
+		expect(extractParentPath('file.md')).toBe('file.md');
 	});
 });
 

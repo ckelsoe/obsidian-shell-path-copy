@@ -60,6 +60,24 @@ export function extractFilename(fileName: string, includeExtension: boolean): st
 	return fileName;
 }
 
+export function extractParentPath(absolutePath: string): string {
+	const lastSep = Math.max(absolutePath.lastIndexOf('/'), absolutePath.lastIndexOf('\\'));
+	if (lastSep < 0) {
+		return absolutePath;
+	}
+	const parent = absolutePath.substring(0, lastSep);
+	if (parent === '') {
+		// Unix root: "/file.md" parents to "/", not "".
+		return '/';
+	}
+	if (/^[a-zA-Z]:$/.test(parent)) {
+		// Windows drive root: "C:\file.md" parents to "C:\". A bare "C:" means
+		// "current directory on C:" to a shell, which is not the intent.
+		return parent + '\\';
+	}
+	return parent;
+}
+
 export function buildMarkdownLink(fileName: string, filePath: string, format: MarkdownLinkFormat): string {
 	const fileNameWithoutExt = extractFilename(fileName, false);
 

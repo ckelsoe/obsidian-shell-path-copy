@@ -28,6 +28,7 @@ Every output on this page is computed against this fixed scenario:
 | `<relative-path-unix>` | Vault-relative path, Linux/macOS style | universal | `./Notes/My file.md` |
 | `<relative-path-windows>` | Vault-relative path, Windows style | universal | `.\Notes\My file.md` |
 | `<absolute-path>` | Full filesystem path, host-OS style | desktop only | `C:\Users\name\assorted\Notes\My file.md` |
+| `<absolute-folder>` | Containing folder, full filesystem path | desktop only | `C:\Users\name\assorted\Notes` |
 | `<file-url>` | `file://` URL, per-segment URL-encoded | desktop only | `file:///C:/Users/name/assorted/Notes/My%20file.md` |
 | `<obsidian-url>` | `obsidian://open` deep link, URL-encoded | universal | `obsidian://open?vault=assorted&file=Notes%2FMy%20file` |
 | `<vault-name>` | Vault name, raw / unencoded | universal | `assorted` |
@@ -107,6 +108,7 @@ To output a literal `<` or `>` or `\`, escape it with a backslash.
 
 - **Raw text** (no encoding): `<filename>`, `<filename-ext>`, `<extension>`,
   `<relative-path>`, `<relative-path-unix>`, `<relative-path-windows>`, `<absolute-path>`,
+  `<absolute-folder>`,
   `<vault-name>`, `<date>`, `<time>`, `<line-number>`, `<line-start>`, `<line-end>`,
   `<line-range>`, `<heading>`, `<block-id>`, `<wikilink>`, `<wikilink-heading>`,
   `<wikilink-block>`.
@@ -119,7 +121,7 @@ If you hand-build a URL, use the encoded tokens. Example: a vault named `My Vaul
 
 ## Fallback behavior
 
-- On mobile, `<absolute-path>` and `<file-url>` resolve to an empty string.
+- On mobile, `<absolute-path>`, `<absolute-folder>`, and `<file-url>` resolve to an empty string.
 - `<line-number>`, `<line-start>`, `<line-end>`, `<line-range>`, and `<heading>` resolve to
   an empty string when no note is open, or when the file you copied is not the file
   currently open in the editor.
@@ -145,7 +147,9 @@ If you hand-build a URL, use the encoded tokens. Example: a vault named `My Vaul
 Folders have no extension. `<extension>` is empty and `<filename>` equals `<filename-ext>`.
 
 Path and name tokens (`<filename>`, `<relative-path>`, `<absolute-path>`,
-`<file-url>`, and similar) work the same for folders as for files. Tokens that
+`<file-url>`, and similar) work the same for folders as for files.
+`<absolute-folder>` is the containing folder: for a file it is the folder the
+file sits in, and for a folder it is that folder's parent, like `dirname`. Tokens that
 only make sense for a note do not: `<obsidian-url>` and the other link tokens
 (`<wikilink>`, `<markdown-link>`, and the heading/block variants) do not resolve
 to a folder, and the editor tokens (`<line-number>`, `<heading>`, `<block-id>`,

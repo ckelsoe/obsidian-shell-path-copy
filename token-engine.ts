@@ -4,6 +4,7 @@ import {
 	buildObsidianUrl,
 	buildMarkdownLink,
 	extractFilename,
+	extractParentPath,
 	MarkdownLinkFormat,
 } from './path-utils';
 
@@ -152,6 +153,13 @@ export const TOKENS: readonly TokenDef[] = [
 		folderSafe: true,
 		description: 'Full filesystem path, host OS style (desktop only)',
 		resolve: (ctx) => ctx.absolutePath ?? '',
+	},
+	{
+		name: 'absolute-folder',
+		tier: 'desktop',
+		folderSafe: true,
+		description: 'Containing folder, full filesystem path (desktop only)',
+		resolve: (ctx) => (ctx.absolutePath ? extractParentPath(ctx.absolutePath) : ''),
 	},
 	{
 		name: 'file-url',
