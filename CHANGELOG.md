@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.9.0] - 2026-07-31
+
+### Added
+- Custom formats moved onto their own settings pages. **Custom formats → Manage formats** lists every format split into Enabled and Disabled groups, each row opening that format's page, and the entry row carries a live count such as "9 of 14 enabled". Enabled and disabled rows are marked with a state icon.
+- New **Custom formats → Format order** page. Drag the rows to set the order enabled formats appear in; that one order drives the right-click menu, the ribbon, and the command palette.
+- The format editor renders the selected icon next to the icon picker, so the control shows the icon itself and not only its name.
+- Discord community link in the settings footer and the README.
+
+### Changed
+- **Menu placement is now additive.** "Group formats under a submenu" and "Group with Obsidian's copy path" are independent: with both on, a format appears in both submenus, and a format set to "Show in root menu" appears at the top level on top of whichever submenu it lands in. Previously, grouping with Obsidian's copy path suppressed both the plugin's own submenu and root placement entirely. If you use Obsidian's copy path grouping and have formats pinned to the root, those formats now also appear at the top level of the menu.
+- "Show in menu" is now "Show in right-click menu" and "Pin to root menu" is now "Show in root menu". Both descriptions name the destination for the layout currently selected, instead of describing a submenu that may not be in use.
+- Minimum Obsidian version raised to 1.13.1, which is where the settings API gained the value display used by the custom-formats entry rows.
+
+### Fixed
+- The icon dropdown in the format editor reported "clipboard-copy" for any format whose icon came from **Browse all icons**, because the curated list had no entry for it. The stored icon is now seeded into the list, so the control always shows the real value.
+- Footer links rendered as "GitHub|Report issues" with the separator spacing collapsed. The footer row is a flex container and dropped the whitespace at each item's edges; spacing is now a layout gap.
+
 ## [2.8.0] - 2026-06-11
 
 ### Added
