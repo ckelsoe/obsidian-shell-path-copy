@@ -189,6 +189,22 @@ export class ShellPathCopySettingTab extends PluginSettingTab {
 		return indexes;
 	}
 
+	// Shared by both reorder surfaces: the grouped list on "manage formats" and
+	// the drag list on "format order". Both are filtered views, so the indices
+	// they report are positions within a group, not the real array.
+	private reorderFormats(enabled: boolean, oldIndex: number, newIndex: number): void {
+		const group = this.formatIndexes(enabled);
+		const from = group[oldIndex];
+		const to = group[newIndex];
+		if (from === undefined || to === undefined) {
+			return;
+		}
+		this.moveFormat(from, to);
+		void this.plugin.saveSettings();
+		new Notice(RELOAD_NOTICE);
+		this.update();
+	}
+
 	// One list per enablement state, so active formats read at a glance instead
 	// of being interleaved with parked ones. The disabled list hides itself when
 	// empty rather than showing a bare heading.
@@ -199,18 +215,7 @@ export class ShellPathCopySettingTab extends PluginSettingTab {
 			heading: enabled ? 'Enabled' : 'Disabled',
 			cls: enabled ? 'shell-path-copy-formats-enabled' : 'shell-path-copy-formats-disabled',
 			visible: () => enabled || this.formatIndexes(false).length > 0,
-			onReorder: (oldIndex: number, newIndex: number) => {
-				const group = this.formatIndexes(enabled);
-				const from = group[oldIndex];
-				const to = group[newIndex];
-				if (from === undefined || to === undefined) {
-					return;
-				}
-				this.moveFormat(from, to);
-				void this.plugin.saveSettings();
-				new Notice(RELOAD_NOTICE);
-				this.update();
-			},
+			onReorder: (oldIndex: number, newIndex: number) => this.reorderFormats(enabled, oldIndex, newIndex),
 			onDelete: (index: number) => {
 				const target = this.formatIndexes(enabled)[index];
 				if (target === undefined) {
@@ -271,18 +276,7 @@ export class ShellPathCopySettingTab extends PluginSettingTab {
 			type: 'list',
 			cls: 'shell-path-copy-formats-order',
 			emptyState: 'No enabled formats to order. Enable one under "manage formats" first.',
-			onReorder: (oldIndex: number, newIndex: number) => {
-				const group = this.formatIndexes(true);
-				const from = group[oldIndex];
-				const to = group[newIndex];
-				if (from === undefined || to === undefined) {
-					return;
-				}
-				this.moveFormat(from, to);
-				void this.plugin.saveSettings();
-				new Notice(RELOAD_NOTICE);
-				this.update();
-			},
+			onReorder: (oldIndex: number, newIndex: number) => this.reorderFormats(true, oldIndex, newIndex),
 			items: this.formatIndexes(true).map((index) => {
 				const fmt = formats[index];
 				return {

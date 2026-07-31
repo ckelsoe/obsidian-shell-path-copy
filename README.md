@@ -57,7 +57,7 @@ You can copy from four places:
 - **Command palette** (`Ctrl/Cmd+P`): type `Copy:` and pick a format. It acts on the active file.
 - **Ribbon** (optional): turn on **Show in ribbon** for a format to add a left-ribbon icon that copies it from the active note in one click. Off by default, so the ribbon stays uncluttered until you opt a format in.
 
-In the right-click menu, the enabled formats sit inside a **Copy path as** submenu to keep the menu tidy. Pick the format you want and the result lands on your clipboard. You can pin individual formats to the root menu, or turn the submenu off entirely, in settings. There is also an option to fold every format into Obsidian's native **Copy path** submenu instead, so all path-copy choices (the built-in ones and yours) live in one place.
+In the right-click menu, the enabled formats sit inside a **Copy path as** submenu to keep the menu tidy. Pick the format you want and the result lands on your clipboard. In settings you can turn that submenu off, show individual formats at the menu root as well, and fold every format into Obsidian's native **Copy path** submenu so all path-copy choices (the built-in ones and yours) live in one place. Those options are independent, so a format can appear in more than one of those places at once.
 
 Out of the box four formats are enabled: Relative Linux/macOS path, Relative Windows path, Obsidian URL, and Markdown link. Open the settings to enable the others or add your own.
 
