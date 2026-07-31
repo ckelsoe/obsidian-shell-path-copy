@@ -3,8 +3,20 @@ Shell Path Copy Plugin Styles
 */
 
 .shell-path-copy-footer {
-	text-align: center;
+	justify-content: center;
 	opacity: 0.8;
+}
+
+.shell-path-copy-footer-inner {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
+	gap: var(--size-4-2);
+}
+
+.shell-path-copy-footer-separator {
+	color: var(--text-faint);
 }
 
 /* Custom formats settings section */
@@ -248,4 +260,62 @@ Shell Path Copy Plugin Styles
 .shell-path-copy-vlist-row {
 	box-sizing: border-box;
 	width: 100%;
+}
+
+/* Custom formats sub-page: each row is marked with its enablement state, so the
+   state is readable without reading the group heading it sits under. Scoped to
+   .setting-items so the group headings themselves stay unmarked. */
+.shell-path-copy-formats-enabled .setting-items .setting-item-name::before,
+.shell-path-copy-formats-disabled .setting-items .setting-item-name::before {
+	content: "";
+	display: inline-block;
+	width: 1em;
+	height: 1em;
+	margin-right: var(--size-4-2);
+	vertical-align: -0.15em;
+	mask-size: contain;
+	mask-repeat: no-repeat;
+	-webkit-mask-size: contain;
+	-webkit-mask-repeat: no-repeat;
+}
+
+.shell-path-copy-formats-enabled .setting-items .setting-item-name::before {
+	--shell-path-copy-state-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='m9 12 2 2 4-4'/%3E%3C/svg%3E");
+	background-color: var(--text-accent);
+	mask-image: var(--shell-path-copy-state-icon);
+	-webkit-mask-image: var(--shell-path-copy-state-icon);
+}
+
+/* Disabled rows also mute the label, so the enabled group is what the eye
+   lands on first. */
+.shell-path-copy-formats-disabled .setting-items .setting-item-name {
+	color: var(--text-muted);
+}
+
+.shell-path-copy-formats-disabled .setting-items .setting-item-name::before {
+	--shell-path-copy-state-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='m4.9 4.9 14.2 14.2'/%3E%3C/svg%3E");
+	background-color: currentColor;
+	mask-image: var(--shell-path-copy-state-icon);
+	-webkit-mask-image: var(--shell-path-copy-state-icon);
+}
+
+/* Format editor: the stored icon rendered beside its name, so the control shows
+   what actually lands in the menu and not just a lucide id. Deliberately not
+   named -icon-preview: that class belongs to the icon browser's grid cells. */
+.shell-path-copy-format-icon-preview {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--text-normal);
+}
+
+.shell-path-copy-format-icon-preview .svg-icon {
+	width: var(--icon-m);
+	height: var(--icon-m);
+}
+
+/* A description-only row inside a settings group. settingEl is a flex row, so
+   the note needs to claim the full width to read as a paragraph. */
+.shell-path-copy-note-row {
+	display: block;
 }
