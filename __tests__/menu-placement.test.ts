@@ -22,36 +22,55 @@ function makeFormat(overrides: Partial<CustomFormat>): CustomFormat {
 }
 
 describe('pickRootFormats', () => {
-	it('returns every visible format when useSubmenu is false (flat fallback)', () => {
+	it('returns every visible format when neither container is on (flat fallback)', () => {
 		const formats = [
 			makeFormat({ name: 'A', pinToRoot: false }),
 			makeFormat({ name: 'B', pinToRoot: true }),
 			makeFormat({ name: 'C', pinToRoot: false }),
 		];
-		expect(pickRootFormats(formats, false)).toEqual(formats);
+		expect(pickRootFormats(formats, false, false)).toEqual(formats);
 	});
 
-	it('returns an empty array when useSubmenu is true and nothing is pinned', () => {
+	it('returns an empty array when the submenu is on and nothing is pinned', () => {
 		const formats = [
 			makeFormat({ name: 'A', pinToRoot: false }),
 			makeFormat({ name: 'B', pinToRoot: false }),
 		];
-		expect(pickRootFormats(formats, true)).toEqual([]);
+		expect(pickRootFormats(formats, true, false)).toEqual([]);
 	});
 
-	it('returns only pinned formats when useSubmenu is true, preserving input order', () => {
+	it('returns only pinned formats when the submenu is on, preserving input order', () => {
 		const a = makeFormat({ name: 'A', pinToRoot: true });
 		const b = makeFormat({ name: 'B', pinToRoot: false });
 		const c = makeFormat({ name: 'C', pinToRoot: true });
-		expect(pickRootFormats([a, b, c], true)).toEqual([a, c]);
+		expect(pickRootFormats([a, b, c], true, false)).toEqual([a, c]);
+	});
+
+	// Native grouping no longer swallows root placement: a pinned format shows at
+	// the root as well as inside Obsidian's copy path submenu.
+	it('returns pinned formats when only native grouping is on', () => {
+		const a = makeFormat({ name: 'A', pinToRoot: true });
+		const b = makeFormat({ name: 'B', pinToRoot: false });
+		expect(pickRootFormats([a, b], false, true)).toEqual([a]);
+	});
+
+	it('returns an empty array when only native grouping is on and nothing is pinned', () => {
+		const formats = [makeFormat({ name: 'A' }), makeFormat({ name: 'B' })];
+		expect(pickRootFormats(formats, false, true)).toEqual([]);
+	});
+
+	it('returns pinned formats when both containers are on', () => {
+		const a = makeFormat({ name: 'A', pinToRoot: false });
+		const b = makeFormat({ name: 'B', pinToRoot: true });
+		expect(pickRootFormats([a, b], true, true)).toEqual([b]);
 	});
 
 	it('returns an empty array for an empty input (submenu on)', () => {
-		expect(pickRootFormats([], true)).toEqual([]);
+		expect(pickRootFormats([], true, false)).toEqual([]);
 	});
 
-	it('returns an empty array for an empty input (submenu off)', () => {
-		expect(pickRootFormats([], false)).toEqual([]);
+	it('returns an empty array for an empty input (nothing on)', () => {
+		expect(pickRootFormats([], false, false)).toEqual([]);
 	});
 });
 
