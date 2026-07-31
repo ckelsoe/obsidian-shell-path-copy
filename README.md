@@ -1,6 +1,6 @@
 # Shell Path Copy for Obsidian
 
-[![CI](https://img.shields.io/github/actions/workflow/status/ckelsoe/obsidian-shell-path-copy/ci.yml?branch=main&label=CI&logo=github)](https://github.com/ckelsoe/obsidian-shell-path-copy/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/actions/workflow/status/ckelsoe/obsidian-shell-path-copy/release.yml?label=Release&logo=github)](https://github.com/ckelsoe/obsidian-shell-path-copy/actions/workflows/release.yml) [![GitHub Downloads](https://img.shields.io/github/downloads/ckelsoe/obsidian-shell-path-copy/total?logo=github&label=Downloads)](https://github.com/ckelsoe/obsidian-shell-path-copy/releases) [![GitHub Stars](https://img.shields.io/github/stars/ckelsoe/obsidian-shell-path-copy?style=flat&logo=github&label=Stars)](https://github.com/ckelsoe/obsidian-shell-path-copy) [![Obsidian](https://img.shields.io/badge/Obsidian-v1.13.0%2B-7C3AED?logo=obsidian&logoColor=white)](https://obsidian.md) [![License](https://img.shields.io/github/license/ckelsoe/obsidian-shell-path-copy)](https://github.com/ckelsoe/obsidian-shell-path-copy/blob/main/LICENSE) [![Latest Release](https://img.shields.io/github/v/release/ckelsoe/obsidian-shell-path-copy?label=Latest)](https://github.com/ckelsoe/obsidian-shell-path-copy/releases/latest)
+[![CI](https://img.shields.io/github/actions/workflow/status/ckelsoe/obsidian-shell-path-copy/ci.yml?branch=main&label=CI&logo=github)](https://github.com/ckelsoe/obsidian-shell-path-copy/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/actions/workflow/status/ckelsoe/obsidian-shell-path-copy/release.yml?label=Release&logo=github)](https://github.com/ckelsoe/obsidian-shell-path-copy/actions/workflows/release.yml) [![GitHub Downloads](https://img.shields.io/github/downloads/ckelsoe/obsidian-shell-path-copy/total?logo=github&label=Downloads)](https://github.com/ckelsoe/obsidian-shell-path-copy/releases) [![GitHub Stars](https://img.shields.io/github/stars/ckelsoe/obsidian-shell-path-copy?style=flat&logo=github&label=Stars)](https://github.com/ckelsoe/obsidian-shell-path-copy) [![Obsidian](https://img.shields.io/badge/Obsidian-v1.13.1%2B-7C3AED?logo=obsidian&logoColor=white)](https://obsidian.md) [![License](https://img.shields.io/github/license/ckelsoe/obsidian-shell-path-copy)](https://github.com/ckelsoe/obsidian-shell-path-copy/blob/main/LICENSE) [![Latest Release](https://img.shields.io/github/v/release/ckelsoe/obsidian-shell-path-copy?label=Latest)](https://github.com/ckelsoe/obsidian-shell-path-copy/releases/latest)
 
 Copy a file or folder path out of your Obsidian vault. Right-click, pick a format, paste.
 
@@ -57,7 +57,7 @@ You can copy from four places:
 - **Command palette** (`Ctrl/Cmd+P`): type `Copy:` and pick a format. It acts on the active file.
 - **Ribbon** (optional): turn on **Show in ribbon** for a format to add a left-ribbon icon that copies it from the active note in one click. Off by default, so the ribbon stays uncluttered until you opt a format in.
 
-In the right-click menu, the enabled formats sit inside a **Copy path as** submenu to keep the menu tidy. Pick the format you want and the result lands on your clipboard. You can pin individual formats to the root menu, or turn the submenu off entirely, in settings. There is also an option to fold every format into Obsidian's native **Copy path** submenu instead, so all path-copy choices (the built-in ones and yours) live in one place.
+In the right-click menu, the enabled formats sit inside a **Copy path as** submenu to keep the menu tidy. Pick the format you want and the result lands on your clipboard. In settings you can turn that submenu off, show individual formats at the menu root as well, and fold every format into Obsidian's native **Copy path** submenu so all path-copy choices (the built-in ones and yours) live in one place. Those options are independent, so a format can appear in more than one of those places at once.
 
 Out of the box four formats are enabled: Relative Linux/macOS path, Relative Windows path, Obsidian URL, and Markdown link. Open the settings to enable the others or add your own.
 
@@ -95,19 +95,19 @@ The "to heading" and "to block" formats link to the heading or block your cursor
 A custom format is a token template. Build one in settings:
 
 1. Open Settings → Community plugins → Shell Path Copy → Options.
-2. In **Custom formats**, click **+** to add a format, or click any existing format to open its settings page.
+2. Open **Custom formats → Manage formats**. Click **+** to add a format, or click any existing format to open its own page.
 3. Set the fields:
    - **Enabled**: turn the format on or off everywhere (menu, command palette, ribbon).
    - **Name**: shown in the menu, command palette, and ribbon.
-   - **Icon**: the icon shown next to the format in the menu, command palette, and ribbon. Pick a common one from the dropdown, or click **Browse all icons** to search the full set of Obsidian icons and choose any of them.
+   - **Icon**: the icon shown next to the format in the menu, command palette, and ribbon. The icon itself is displayed beside the picker. Choose a common one from the dropdown, or click **Browse all icons** to search the full set of Obsidian icons.
    - **Template**: the token template. The token palette below the field inserts a token at the cursor. A live preview shows the rendered result, and a Desktop / Mobile row shows where the template works.
    - **Wrapping**: none, double quotes, single quotes, or backticks, applied around the whole result.
-   - **Show in menu**, **Show in command palette**, and **Show in ribbon**: where the format appears. The ribbon adds a left-rail icon that copies the format in one click; it is off by default.
-   - **Pin to root menu**: also show this format at the top of the right-click menu, not only inside the **Copy path as** submenu. Useful for the one or two formats you reach for most.
+   - **Show in right-click menu**, **Show in command palette**, and **Show in ribbon**: where the format appears. These are independent, so a format can live on the ribbon without appearing in any menu. The ribbon adds a left-rail icon that copies the format in one click; it is off by default.
+   - **Show in root menu**: also show this format at the top level of the right-click menu, on top of the submenu it appears in. Useful for the one or two formats you reach for most.
    - **Show on**: limit the format to files, folders, or both. Formats that use file-specific tokens (like `<obsidian-url>`, wiki links, or line/heading tokens) are files-only automatically, since those do not resolve for folders.
 4. Reload Obsidian so the command and ribbon icon register.
 
-The format list is drag-to-reorder; list order is the menu order, and ribbon icons register in the same order. To place the ribbon group relative to other ribbon icons, drag it within Obsidian's ribbon. Each global option is searchable from Obsidian's settings search, and each format opens its own settings page.
+Formats are listed under Enabled and Disabled headings, so what is live is readable at a glance. To change the order they appear in, open **Custom formats → Format order** and drag the rows. That one order drives the right-click menu, the ribbon, and the command palette. To place the ribbon group relative to other ribbon icons, drag it within Obsidian's ribbon. Global options are searchable from Obsidian's settings search.
 
 ### Tokens
 
@@ -163,10 +163,26 @@ Global options:
 - **Show notifications**: show a notice when something is copied.
 - **Markdown link format**: wiki-style (`[[filename]]`) or standard Markdown (`[filename](path)`). Used by the `<markdown-link>` token.
 - **Notify when a token could not be resolved**: show a notice when a desktop-only or editor-only token is left blank.
-- **Group formats under a submenu**: nest every format inside one **Copy path as** right-click submenu (on by default). Turn it off to put every enabled format directly at the root menu, the way 2.1.x worked.
-- **Group with Obsidian's copy path**: instead of the plugin's own submenu, append every format inside Obsidian's native **Copy path** submenu, alongside the built-in entries like *as Obsidian URL* and *from vault folder*. When this is on, the **Group formats under a submenu** option above is ignored.
+- **Group formats under a submenu**: show every format inside the plugin's own **Copy path as** right-click submenu (on by default).
+- **Group with Obsidian's copy path**: show every format inside Obsidian's native **Copy path** submenu, alongside the built-in entries like *as Obsidian URL* and *from vault folder* (off by default).
 
-Everything else is per format, in the Custom formats list.
+The two grouping options are independent, and menu placement is additive:
+
+| Group under a submenu | Group with Obsidian's copy path | Where formats appear |
+|---|---|---|
+| on | off | Inside **Copy path as** |
+| off | on | Inside Obsidian's **Copy path** |
+| on | on | Inside both submenus |
+| off | off | At the top level of the right-click menu |
+
+A format set to **Show in root menu** also appears at the top level, on top of whichever submenu it lands in.
+
+The **Custom formats** section holds two pages:
+
+- **Manage formats**: every format, split into Enabled and Disabled groups, with the enabled count on the row. Open a format to edit it, add one with **+**, or remove one by selecting its row and pressing Delete.
+- **Format order**: drag to set the order enabled formats appear in. One order drives the right-click menu, the ribbon, and the command palette.
+
+Everything else is per format, on that format's own page.
 
 ## Using a custom file explorer
 
@@ -179,6 +195,10 @@ Shell Path Copy's right-click items appear in Obsidian's native file explorer. I
 **AI assistant line reference.** Enable the Line reference example format. With a note open at the line you care about, run it to copy `My-Project-Plan.md#L42`, ready to drop into a prompt for Claude Code or Gemini CLI.
 
 **Cross-app links.** Use the Obsidian URL format to create links that open a note directly in Obsidian from a task manager, a wiki, or an automation tool.
+
+## Community
+
+Questions, ideas, and general discussion happen on [Discord](https://discord.gg/gd6tKJDPj4). For anything that needs tracking, a GitHub issue is still the better home.
 
 ## Contributing
 
@@ -205,3 +225,4 @@ If you find this plugin helpful, consider:
 
 - Starring the repository on GitHub.
 - Reporting bugs or suggesting features via [GitHub Issues](https://github.com/ckelsoe/obsidian-shell-path-copy/issues).
+- Joining the [Discord](https://discord.gg/gd6tKJDPj4) to share how you use it.

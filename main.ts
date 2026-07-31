@@ -208,16 +208,21 @@ export default class ShellPathCopyPlugin extends Plugin {
 
 	// Adds the enabled custom-format items to a context menu. `editor` is passed
 	// from the in-document right-click so the cursor's heading and line resolve.
-	// Three layouts, picked by settings:
+	// Placement is additive: each switched-on destination gets every visible
+	// format, and the destinations do not cancel each other out.
 	//   - groupWithNativeCopyPath on: assign each format the same section id
 	//     ('info.copy') Obsidian uses for its native "as Obsidian URL" /
 	//     "from vault folder" / "from system root" items. Obsidian collapses
 	//     every item sharing that section into one virtual "Copy path"
 	//     submenu, so the formats render as children of that submenu using
 	//     only public-API setSection.
-	//   - useSubmenu on (default): formats live inside a "Copy path as" submenu;
-	//     formats with pinToRoot also appear at the menu root.
-	//   - both off: every format appears flat at the menu root.
+	//   - useSubmenu on: formats also live inside the plugin's own "Copy path as"
+	//     submenu. Both containers can be on at once; a format then appears in
+	//     each of them.
+	//   - pinToRoot: that format additionally appears at the menu root, whichever
+	//     containers are on.
+	//   - neither container on: every format appears flat at the menu root, and
+	//     pinToRoot is redundant.
 	// The menu is rebuilt on every right-click, so changes take effect without a
 	// reload.
 	private addPathCopyMenuItems(menu: Menu, file: TAbstractFile, editor?: Editor) {
@@ -228,18 +233,25 @@ export default class ShellPathCopyPlugin extends Plugin {
 			return;
 		}
 
-		if (this.settings.groupWithNativeCopyPath) {
+		const useNativeSection = this.settings.groupWithNativeCopyPath;
+		const useSubmenu = this.settings.useSubmenu;
+
+		if (useNativeSection) {
 			for (const fmt of visible) {
 				this.addFormatMenuItem(menu, fmt, file, editor, NATIVE_COPY_PATH_SECTION);
 			}
+		}
+
+		const rootFormats = pickRootFormats(visible, useSubmenu, useNativeSection);
+		if (rootFormats.length === 0 && !useSubmenu) {
+			// Everything went into Obsidian's own copy path submenu; adding a
+			// separator here would leave a stray divider with nothing under it.
 			return;
 		}
 
 		menu.addSeparator();
 
-		const useSubmenu = this.settings.useSubmenu;
-
-		for (const fmt of pickRootFormats(visible, useSubmenu)) {
+		for (const fmt of rootFormats) {
 			this.addFormatMenuItem(menu, fmt, file, editor, 'shell-path-copy');
 		}
 

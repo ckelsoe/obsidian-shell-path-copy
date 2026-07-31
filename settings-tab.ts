@@ -1,4 +1,4 @@
-import { App, Notice, PluginSettingTab, Setting, SettingPage, SettingDefinitionItem, TextAreaComponent, Platform, setIcon } from 'obsidian';
+import { App, Notice, PluginSettingTab, Setting, SettingPage, SettingDefinitionItem, SettingDefinitionList, TextAreaComponent, Platform, setIcon } from 'obsidian';
 import { PathWrapping } from './path-utils';
 import { applyTemplate, validateTemplate, listTokens, templateSupportsFolders, TokenContext } from './token-engine';
 import { CustomFormat, generateFormatId } from './seed-utils';
@@ -6,6 +6,12 @@ import { SelectIconModal } from './select-icon-modal';
 import type ShellPathCopyPlugin from './main';
 
 const RELOAD_NOTICE = 'Please reload Obsidian for command palette and ribbon changes to take effect';
+
+// Community discussion for this plugin. This must stay a never-expiring
+// discord.gg invite. A discord.com/channels/... deep link only resolves for
+// accounts already in the server, so it cannot get anyone in, and a default
+// invite expires after 7 days and would rot in a shipped release.
+const DISCORD_URL = 'https://discord.gg/gd6tKJDPj4';
 
 // Curated set of menu-relevant icons offered in the per-format icon picker.
 const ICON_CHOICES: string[] = [
@@ -58,66 +64,64 @@ export class ShellPathCopySettingTab extends PluginSettingTab {
 				items: [
 					{
 						name: 'Group formats under a submenu',
-						desc: 'Nest every format inside one right-click submenu. Pin individual formats below to also show them at the root menu. Ignored when "group with Obsidian\'s copy path" is on.',
-						control: {
-							type: 'toggle',
-							key: 'useSubmenu',
-							disabled: () => this.plugin.settings.groupWithNativeCopyPath
-						}
+						desc: "Show every format inside the plugin's own 'copy path as' submenu. Works alongside the setting below: with both on, a format appears in both submenus.",
+						control: { type: 'toggle', key: 'useSubmenu' }
 					},
 					{
 						name: "Group with Obsidian's copy path",
-						desc: "Place every enabled format inside Obsidian's native copy path submenu, alongside built-in entries like 'as Obsidian URL' and 'from vault folder'. The plugin's own 'copy path as' submenu is hidden when this is on.",
+						desc: "Show every format inside Obsidian's native copy path submenu, alongside built-in entries like 'as Obsidian URL' and 'from vault folder'.",
 						control: { type: 'toggle', key: 'groupWithNativeCopyPath' }
+					},
+					{
+						// Rendered, not a bare name/desc pair: Obsidian drops a
+						// definition that has no control, action, or render, so a
+						// description-only row never reaches the DOM.
+						name: '',
+						searchable: false,
+						render: (setting: Setting) => {
+							const el = setting.settingEl;
+							el.empty();
+							el.addClass('shell-path-copy-note-row');
+							el.createDiv({
+								cls: 'shell-path-copy-info-note',
+								text: 'With both off, every format sits at the top level of the right-click menu. Individual formats can also be pinned to the root from their own page, whichever grouping is on.'
+							});
+						}
 					}
 				]
 			},
 			{
-				type: 'list',
+				// Formats get their own section rather than sitting under "menu
+				// behavior": a format feeds the right-click menu, the command palette,
+				// and the ribbon, so it is not a menu setting.
+				type: 'group',
 				heading: 'Custom formats',
-				emptyState: 'No custom formats yet. Add one to create a copy action.',
-				onReorder: (oldIndex: number, newIndex: number) => {
-					this.moveFormat(oldIndex, newIndex);
-					void this.plugin.saveSettings();
-					new Notice(RELOAD_NOTICE);
-					this.update();
-				},
-				onDelete: (index: number) => {
-					this.plugin.settings.customFormats.splice(index, 1);
-					void this.plugin.saveSettings();
-					new Notice(RELOAD_NOTICE);
-					this.update();
-				},
-				addItem: {
-					name: 'Add custom format',
-					action: () => {
-						const created: CustomFormat = {
-							id: generateFormatId(),
-							name: 'New format',
-							template: '',
-							wrapping: 'none',
-							icon: 'clipboard-copy',
-							enabled: true,
-							showInMenu: true,
-							showInCommands: true,
-							showInRibbon: false,
-							pinToRoot: false,
-							appliesTo: 'both'
-						};
-						this.plugin.settings.customFormats.push(created);
-						void this.plugin.saveSettings();
-						new Notice(RELOAD_NOTICE);
-						this.update();
+				items: [
+					{
+						// A navigable entry rather than an inline list: the formats live
+						// one level down, and the entry carries a live count so the state
+						// is readable without opening the page.
+						type: 'page',
+						name: 'Manage formats',
+						desc: 'Templates that turn a file into a copyable path, link, or command. Each one can appear in the right-click menu, the command palette, and the ribbon.',
+						displayValue: () => this.describeFormatCount(),
+						items: [
+							this.buildFormatList(true),
+							this.buildFormatList(false)
+						]
+					},
+					{
+						// Ordering lives on its own page because these rows are plain
+						// name/desc definitions, not navigable ones, which is what makes
+						// Obsidian give them a real drag handle. A row that navigates
+						// into a sub-page gets a chevron instead and cannot have both.
+						type: 'page',
+						name: 'Format order',
+						desc: 'Set the order enabled formats appear in the right-click menu, the ribbon, and the command palette.',
+						displayValue: () => this.describeOrderCount(),
+						items: [this.buildOrderList()]
 					}
-				},
-				items: this.plugin.settings.customFormats.map((fmt) => ({
-					type: 'page' as const,
-					name: fmt.name || 'Untitled format',
-					desc: fmt.enabled
-						? (fmt.template || '(empty template)')
-						: `(disabled) ${fmt.template || '(empty template)'}`,
-					page: () => new FormatEditorPage(this, fmt)
-				}))
+				]
 			},
 			{
 				name: '',
@@ -137,8 +141,9 @@ export class ShellPathCopySettingTab extends PluginSettingTab {
 	async setControlValue(key: string, value: unknown): Promise<void> {
 		(this.plugin.settings as unknown as Record<string, unknown>)[key] = value;
 		await this.plugin.saveSettings();
-		// Re-evaluate disabled predicates in place (the submenu toggle greys out
-		// when "group with Obsidian's copy path" is on).
+		// Re-evaluate visible and disabled predicates in place. The grouping
+		// toggles are independent of each other now, but a format page's root
+		// placement still reads them, so keep the DOM state in step.
 		this.refreshDomState();
 	}
 
@@ -148,11 +153,18 @@ export class ShellPathCopySettingTab extends PluginSettingTab {
 		el.empty();
 		el.addClass('shell-path-copy-footer');
 
+		// Everything goes in one inner container. settingEl is a flex row, and a
+		// flex item drops the whitespace at its own edges, which is what collapsed
+		// the separators into "GitHub|Report issues". Spacing is a gap now, so it
+		// no longer depends on text nodes surviving layout.
+		const inner = el.createDiv({ cls: 'shell-path-copy-footer-inner' });
+
 		const manifestVersion = this.plugin.manifest.version || '1.0.0';
-		el.createSpan({ text: `Version ${manifestVersion} | ` });
+		inner.createSpan({ text: `Version ${manifestVersion}` });
 
 		const createExternalLink = (text: string, url: string) => {
-			return el.createEl('a', {
+			inner.createSpan({ cls: 'shell-path-copy-footer-separator', text: '|' });
+			return inner.createEl('a', {
 				text: text,
 				href: url,
 				attr: { target: '_blank', rel: 'noopener' }
@@ -160,8 +172,138 @@ export class ShellPathCopySettingTab extends PluginSettingTab {
 		};
 
 		createExternalLink('GitHub', 'https://github.com/ckelsoe/obsidian-shell-path-copy');
-		el.createSpan({ text: ' | ' });
-		createExternalLink('Report Issues', 'https://github.com/ckelsoe/obsidian-shell-path-copy/issues');
+		createExternalLink('Discord', DISCORD_URL);
+		createExternalLink('Report issues', 'https://github.com/ckelsoe/obsidian-shell-path-copy/issues');
+	}
+
+	// Positions within customFormats of the formats in one enablement group,
+	// in array order. The lists below are filtered views, so every index the
+	// list hands back has to be mapped through this before touching the array.
+	private formatIndexes(enabled: boolean): number[] {
+		const indexes: number[] = [];
+		this.plugin.settings.customFormats.forEach((fmt, index) => {
+			if (Boolean(fmt.enabled) === enabled) {
+				indexes.push(index);
+			}
+		});
+		return indexes;
+	}
+
+	// Shared by both reorder surfaces: the grouped list on "manage formats" and
+	// the drag list on "format order". Both are filtered views, so the indices
+	// they report are positions within a group, not the real array.
+	private reorderFormats(enabled: boolean, oldIndex: number, newIndex: number): void {
+		const group = this.formatIndexes(enabled);
+		const from = group[oldIndex];
+		const to = group[newIndex];
+		if (from === undefined || to === undefined) {
+			return;
+		}
+		this.moveFormat(from, to);
+		void this.plugin.saveSettings();
+		new Notice(RELOAD_NOTICE);
+		this.update();
+	}
+
+	// One list per enablement state, so active formats read at a glance instead
+	// of being interleaved with parked ones. The disabled list hides itself when
+	// empty rather than showing a bare heading.
+	private buildFormatList(enabled: boolean): SettingDefinitionList {
+		const formats = this.plugin.settings.customFormats;
+		const list: SettingDefinitionList = {
+			type: 'list',
+			heading: enabled ? 'Enabled' : 'Disabled',
+			cls: enabled ? 'shell-path-copy-formats-enabled' : 'shell-path-copy-formats-disabled',
+			visible: () => enabled || this.formatIndexes(false).length > 0,
+			onReorder: (oldIndex: number, newIndex: number) => this.reorderFormats(enabled, oldIndex, newIndex),
+			onDelete: (index: number) => {
+				const target = this.formatIndexes(enabled)[index];
+				if (target === undefined) {
+					return;
+				}
+				formats.splice(target, 1);
+				void this.plugin.saveSettings();
+				new Notice(RELOAD_NOTICE);
+				this.update();
+			},
+			items: this.formatIndexes(enabled).map((index) => {
+				const fmt = formats[index];
+				return {
+					type: 'page' as const,
+					name: fmt.name || 'Untitled format',
+					desc: fmt.template || '(empty template)',
+					page: () => new FormatEditorPage(this, fmt)
+				};
+			})
+		};
+
+		if (enabled) {
+			list.emptyState = 'No custom formats yet. Add one to create a copy action.';
+			list.addItem = {
+				name: 'Add custom format',
+				action: () => {
+					const created: CustomFormat = {
+						id: generateFormatId(),
+						name: 'New format',
+						template: '',
+						wrapping: 'none',
+						icon: 'clipboard-copy',
+						enabled: true,
+						showInMenu: true,
+						showInCommands: true,
+						showInRibbon: false,
+						pinToRoot: false,
+						appliesTo: 'both'
+					};
+					formats.push(created);
+					void this.plugin.saveSettings();
+					new Notice(RELOAD_NOTICE);
+					this.update();
+				}
+			};
+		}
+
+		return list;
+	}
+
+	// The drag-to-reorder list. Rows carry name and description only: an item
+	// with no control, action, or render is exactly the case Obsidian decorates
+	// with a drag handle when the list declares onReorder. Disabled formats are
+	// left out because order only matters for the surfaces they appear on.
+	private buildOrderList(): SettingDefinitionList {
+		const formats = this.plugin.settings.customFormats;
+		return {
+			type: 'list',
+			cls: 'shell-path-copy-formats-order',
+			emptyState: 'No enabled formats to order. Enable one under "manage formats" first.',
+			onReorder: (oldIndex: number, newIndex: number) => this.reorderFormats(true, oldIndex, newIndex),
+			items: this.formatIndexes(true).map((index) => {
+				const fmt = formats[index];
+				return {
+					name: fmt.name || 'Untitled format',
+					desc: fmt.template || '(empty template)'
+				};
+			})
+		};
+	}
+
+	// Summary shown on the "format order" entry.
+	private describeOrderCount(): string {
+		const enabled = this.formatIndexes(true).length;
+		return enabled === 1 ? '1 format' : `${enabled} formats`;
+	}
+
+	// Summary shown on the "custom formats" entry, so the count is readable
+	// without opening the page. Re-evaluated on every update().
+	private describeFormatCount(): string {
+		const formats = this.plugin.settings.customFormats;
+		if (formats.length === 0) {
+			return 'None';
+		}
+		const enabled = formats.filter((fmt) => fmt.enabled).length;
+		return enabled === formats.length
+			? `${enabled} enabled`
+			: `${enabled} of ${formats.length} enabled`;
 	}
 
 	// Moves a format within the list (drag-drop reorder).
@@ -195,6 +337,16 @@ class FormatEditorPage extends SettingPage {
 		return this.tab.plugin;
 	}
 
+	// Edits here change the parent list, not just this page: enablement decides
+	// which group the format sits in and feeds both summary counts, and the name
+	// and template are the row's own text. Rebuild the tab's definitions on the
+	// way out. closePage() calls hide() before re-displaying the parent, so the
+	// parent renders from the refreshed tree rather than a stale snapshot.
+	hide(): void {
+		super.hide();
+		this.tab.update();
+	}
+
 	display(): void {
 		const fmt = this.fmt;
 		const editor = this.containerEl;
@@ -225,16 +377,34 @@ class FormatEditorPage extends SettingPage {
 					await this.plugin.saveSettings();
 				}));
 
-		new Setting(editor)
+		const iconSetting = new Setting(editor)
 			.setName('Icon')
-			.setDesc('Icon shown next to this format in the menu, command palette, and ribbon. Pick a common one or browse the full set.')
+			.setDesc('Icon shown next to this format in the menu, command palette, and ribbon. Pick a common one or browse the full set.');
+
+		// Render the icon itself next to its name. The name alone says nothing
+		// about what lands in the menu, and an icon picked from the full browser
+		// is not in the curated dropdown at all.
+		const iconPreview = iconSetting.controlEl.createDiv({ cls: 'shell-path-copy-format-icon-preview' });
+		const paintIconPreview = () => {
+			iconPreview.empty();
+			setIcon(iconPreview, fmt.icon);
+			iconPreview.setAttr('aria-label', fmt.icon);
+		};
+		paintIconPreview();
+
+		iconSetting
 			.addDropdown(dropdown => {
-				for (const icon of ICON_CHOICES) {
+				// A format can carry any icon from the full browser, so seed the list
+				// with the stored one when it falls outside the curated set. Without
+				// this the dropdown silently reads "clipboard-copy" for those formats.
+				const choices = ICON_CHOICES.includes(fmt.icon) ? ICON_CHOICES : [fmt.icon, ...ICON_CHOICES];
+				for (const icon of choices) {
 					dropdown.addOption(icon, icon);
 				}
-				dropdown.setValue(ICON_CHOICES.includes(fmt.icon) ? fmt.icon : 'clipboard-copy');
+				dropdown.setValue(fmt.icon);
 				dropdown.onChange(async (value) => {
 					fmt.icon = value;
+					paintIconPreview();
 					await this.plugin.saveSettings();
 				});
 			})
@@ -244,8 +414,8 @@ class FormatEditorPage extends SettingPage {
 					new SelectIconModal(this.tab.app, fmt.icon, (chosen) => {
 						fmt.icon = chosen;
 						void this.plugin.saveSettings();
-						// Rebuild so the dropdown reflects the new icon (or shows the
-						// curated default when the chosen icon is outside ICON_CHOICES).
+						// Rebuild so the dropdown and the preview both pick up the
+						// choice, including an icon from outside the curated set.
 						this.display();
 					}).open();
 				}));
@@ -320,23 +490,23 @@ class FormatEditorPage extends SettingPage {
 				}));
 
 		new Setting(editor)
-			.setName('Show in menu')
-			.setDesc('Display this format in the file explorer right-click menu')
+			.setName('Show in right-click menu')
+			.setDesc(this.describeMenuPlacement())
 			.addToggle(toggle => toggle
 				.setValue(fmt.showInMenu)
 				.onChange(async (value) => {
 					fmt.showInMenu = value;
 					await this.plugin.saveSettings();
-					// Rebuild so the pin toggle below updates its disabled state.
+					// Rebuild so the root-menu toggle below updates its state.
 					this.display();
 				}));
 
 		new Setting(editor)
-			.setName('Pin to root menu')
-			.setDesc('Also show this format at the top of the right-click menu, not only inside the submenu.')
+			.setName('Show in root menu')
+			.setDesc(this.describeRootPlacement(fmt))
 			.addToggle(toggle => toggle
 				.setValue(fmt.pinToRoot)
-				.setDisabled(!fmt.showInMenu)
+				.setDisabled(!fmt.showInMenu || !this.rootPlacementApplies())
 				.onChange(async (value) => {
 					fmt.pinToRoot = value;
 					await this.plugin.saveSettings();
@@ -400,6 +570,42 @@ class FormatEditorPage extends SettingPage {
 
 	// A fixed sample file used to render the live template preview. Reflects the
 	// host platform so the preview matches what the user will actually get.
+	// Where a menu-enabled format lands depends on two workspace-level settings,
+	// and the destinations are additive, so the description names every place it
+	// will actually appear. Turning this off removes the format from every
+	// right-click menu; it does not move it into Obsidian's copy path submenu.
+	private describeMenuPlacement(): string {
+		const settings = this.plugin.settings;
+		const tail = 'Off leaves it in the command palette and ribbon only.';
+		if (settings.groupWithNativeCopyPath && settings.useSubmenu) {
+			return `Show this format in the right-click menu, inside both Obsidian's copy path submenu and the plugin's 'copy path as' submenu. ${tail}`;
+		}
+		if (settings.groupWithNativeCopyPath) {
+			return `Show this format in the right-click menu, inside Obsidian's own copy path submenu. ${tail}`;
+		}
+		if (settings.useSubmenu) {
+			return `Show this format in the right-click menu, inside the plugin's 'copy path as' submenu. ${tail}`;
+		}
+		return `Show this format in the right-click menu, at the top level. ${tail}`;
+	}
+
+	// Root placement is additive on top of whichever submenu the format lands in.
+	// It only stops meaning anything when neither grouping is on, because then
+	// every format is already at the root.
+	private rootPlacementApplies(): boolean {
+		return this.plugin.settings.groupWithNativeCopyPath || this.plugin.settings.useSubmenu;
+	}
+
+	private describeRootPlacement(fmt: CustomFormat): string {
+		if (!fmt.showInMenu) {
+			return 'Turn on "show in right-click menu" first.';
+		}
+		if (!this.rootPlacementApplies()) {
+			return 'Every format already sits at the menu root, because neither grouping option is on.';
+		}
+		return 'Also show this format at the top level of the right-click menu, on top of the submenu it appears in.';
+	}
+
 	private sampleContext(): TokenContext {
 		const isWindows = Platform.isWin;
 		return {
