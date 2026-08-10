@@ -1,4 +1,13 @@
-import { Editor, Menu, Notice, Plugin, TAbstractFile, TFile, Platform, FileSystemAdapter } from 'obsidian';
+import {
+	Editor,
+	Menu,
+	Notice,
+	Plugin,
+	TAbstractFile,
+	TFile,
+	Platform,
+	FileSystemAdapter,
+} from 'obsidian';
 import { wrapPath, MarkdownLinkFormat } from './path-utils';
 import { applyTemplate, TokenContext } from './token-engine';
 import {
@@ -8,7 +17,11 @@ import {
 	seedFormatsForVersion,
 	normalizeCustomFormats,
 } from './seed-utils';
-import { resolveBlockTargetLine, findExistingBlockId, generateBlockId } from './block-utils';
+import {
+	resolveBlockTargetLine,
+	findExistingBlockId,
+	generateBlockId,
+} from './block-utils';
 import { pickRootFormats, matchesTarget } from './menu-utils';
 import { ShellPathCopySettingTab } from './settings-tab';
 
@@ -22,7 +35,7 @@ function getNodePath(): NodePathLike {
 	if (!Platform.isDesktop) {
 		throw new Error('Node path module is not available on this platform.');
 	}
-	// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-return, import/no-nodejs-modules -- Obsidian docs require a Platform.isDesktop-guarded require() for Node built-ins so mobile builds don't pull them in; the require, the any return, and the node-module import are unavoidable consequences of that guidance.
+	// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-return -- Obsidian docs require a Platform.isDesktop-guarded require() for Node built-ins so mobile builds don't pull them in; the require and the any return are unavoidable consequences of that guidance.
 	return require('path');
 }
 
@@ -43,8 +56,8 @@ const DEFAULT_SETTINGS: PathCopySettings = {
 	useSubmenu: true,
 	groupWithNativeCopyPath: false,
 	customFormats: [],
-	settingsVersion: 0
-}
+	settingsVersion: 0,
+};
 
 // Obsidian's section id for items that render inside the native "Copy path"
 // virtual submenu (alongside "as Obsidian URL", "from vault folder",
@@ -73,9 +86,12 @@ export default class ShellPathCopyPlugin extends Plugin {
 
 		// File explorer right-click: act on the clicked file or folder.
 		this.registerEvent(
-			this.app.workspace.on('file-menu', (menu: Menu, file: TAbstractFile) => {
-				this.addPathCopyMenuItems(menu, file);
-			})
+			this.app.workspace.on(
+				'file-menu',
+				(menu: Menu, file: TAbstractFile) => {
+					this.addPathCopyMenuItems(menu, file);
+				},
+			),
 		);
 
 		// In-document right-click: act on the open file, with the editor's
@@ -85,7 +101,7 @@ export default class ShellPathCopyPlugin extends Plugin {
 				if (info.file) {
 					this.addPathCopyMenuItems(menu, info.file, editor);
 				}
-			})
+			}),
 		);
 
 		// Register command palette commands
@@ -111,22 +127,29 @@ export default class ShellPathCopyPlugin extends Plugin {
 			if (typeof raw.showNotifications === 'boolean') {
 				this.settings.showNotifications = raw.showNotifications;
 			}
-			if (raw.markdownLinkFormat === 'wiki-style' || raw.markdownLinkFormat === 'standard-markdown') {
+			if (
+				raw.markdownLinkFormat === 'wiki-style' ||
+				raw.markdownLinkFormat === 'standard-markdown'
+			) {
 				this.settings.markdownLinkFormat = raw.markdownLinkFormat;
 			}
 			if (typeof raw.warnOnUnresolvedTokens === 'boolean') {
-				this.settings.warnOnUnresolvedTokens = raw.warnOnUnresolvedTokens;
+				this.settings.warnOnUnresolvedTokens =
+					raw.warnOnUnresolvedTokens;
 			}
 			if (typeof raw.useSubmenu === 'boolean') {
 				this.settings.useSubmenu = raw.useSubmenu;
 			}
 			if (typeof raw.groupWithNativeCopyPath === 'boolean') {
-				this.settings.groupWithNativeCopyPath = raw.groupWithNativeCopyPath;
+				this.settings.groupWithNativeCopyPath =
+					raw.groupWithNativeCopyPath;
 			}
 			if (typeof raw.settingsVersion === 'number') {
 				this.settings.settingsVersion = raw.settingsVersion;
 			}
-			this.settings.customFormats = normalizeCustomFormats(raw.customFormats);
+			this.settings.customFormats = normalizeCustomFormats(
+				raw.customFormats,
+			);
 		}
 
 		const fromVersion = this.settings.settingsVersion;
@@ -141,7 +164,9 @@ export default class ShellPathCopyPlugin extends Plugin {
 				// Incremental: append the seeds introduced in each newer version,
 				// leaving the user's existing formats untouched.
 				for (let v = fromVersion + 1; v <= SETTINGS_VERSION; v++) {
-					this.settings.customFormats.push(...seedFormatsForVersion(v));
+					this.settings.customFormats.push(
+						...seedFormatsForVersion(v),
+					);
 				}
 			}
 			this.settings.settingsVersion = SETTINGS_VERSION;
@@ -178,7 +203,7 @@ export default class ShellPathCopyPlugin extends Plugin {
 						void this.copyCustomFormat(formatId, file);
 					}
 					return true;
-				}
+				},
 			});
 		}
 	}
@@ -225,10 +250,16 @@ export default class ShellPathCopyPlugin extends Plugin {
 	//     pinToRoot is redundant.
 	// The menu is rebuilt on every right-click, so changes take effect without a
 	// reload.
-	private addPathCopyMenuItems(menu: Menu, file: TAbstractFile, editor?: Editor) {
+	private addPathCopyMenuItems(
+		menu: Menu,
+		file: TAbstractFile,
+		editor?: Editor,
+	) {
 		const isFolder = !(file instanceof TFile);
 		const visible = this.settings.customFormats.filter(
-			(fmt) => fmt.enabled && fmt.showInMenu && matchesTarget(fmt, isFolder));
+			(fmt) =>
+				fmt.enabled && fmt.showInMenu && matchesTarget(fmt, isFolder),
+		);
 		if (visible.length === 0) {
 			return;
 		}
@@ -238,11 +269,21 @@ export default class ShellPathCopyPlugin extends Plugin {
 
 		if (useNativeSection) {
 			for (const fmt of visible) {
-				this.addFormatMenuItem(menu, fmt, file, editor, NATIVE_COPY_PATH_SECTION);
+				this.addFormatMenuItem(
+					menu,
+					fmt,
+					file,
+					editor,
+					NATIVE_COPY_PATH_SECTION,
+				);
 			}
 		}
 
-		const rootFormats = pickRootFormats(visible, useSubmenu, useNativeSection);
+		const rootFormats = pickRootFormats(
+			visible,
+			useSubmenu,
+			useNativeSection,
+		);
 		if (rootFormats.length === 0 && !useSubmenu) {
 			// Everything went into Obsidian's own copy path submenu; adding a
 			// separator here would leave a stray divider with nothing under it.
@@ -274,11 +315,16 @@ export default class ShellPathCopyPlugin extends Plugin {
 	// items group with other items in that section, separated by Obsidian's own
 	// dividers); null omits setSection (used for submenu children, where the
 	// submenu itself already does the grouping).
-	private addFormatMenuItem(menu: Menu, fmt: CustomFormat, file: TAbstractFile, editor: Editor | undefined, section: string | null) {
+	private addFormatMenuItem(
+		menu: Menu,
+		fmt: CustomFormat,
+		file: TAbstractFile,
+		editor: Editor | undefined,
+		section: string | null,
+	) {
 		const formatId = fmt.id;
 		menu.addItem((item) => {
-			item
-				.setTitle(fmt.name)
+			item.setTitle(fmt.name)
 				.setIcon(fmt.icon)
 				.onClick(async () => {
 					await this.copyCustomFormat(formatId, file, editor);
@@ -295,12 +341,19 @@ export default class ShellPathCopyPlugin extends Plugin {
 	// editor is used when it is showing the file being copied. When
 	// `ensureBlockId` is set and the cursor is on a block, a block id is read or
 	// created (which writes into the note).
-	private buildTokenContext(file: TAbstractFile, editor?: Editor, ensureBlockId = false): TokenContext {
+	private buildTokenContext(
+		file: TAbstractFile,
+		editor?: Editor,
+		ensureBlockId = false,
+	): TokenContext {
 		let absolutePath: string | null = null;
 		if (!Platform.isMobile) {
 			const adapter = this.app.vault.adapter;
 			if (adapter instanceof FileSystemAdapter) {
-				absolutePath = getNodePath().join(adapter.getBasePath(), file.path);
+				absolutePath = getNodePath().join(
+					adapter.getBasePath(),
+					file.path,
+				);
 			}
 		}
 
@@ -309,7 +362,11 @@ export default class ShellPathCopyPlugin extends Plugin {
 		let sourceEditor: Editor | null = editor ?? null;
 		if (!sourceEditor) {
 			const activeEditor = this.app.workspace.activeEditor;
-			if (activeEditor?.editor && activeEditor.file && activeEditor.file.path === file.path) {
+			if (
+				activeEditor?.editor &&
+				activeEditor.file &&
+				activeEditor.file.path === file.path
+			) {
 				sourceEditor = activeEditor.editor;
 			}
 		}
@@ -329,11 +386,13 @@ export default class ShellPathCopyPlugin extends Plugin {
 			// above, so trim that trailing line off a multi-line selection.
 			const from = sourceEditor.getCursor('from');
 			const to = sourceEditor.getCursor('to');
-			const endLine = to.ch === 0 && to.line > from.line ? to.line - 1 : to.line;
+			const endLine =
+				to.ch === 0 && to.line > from.line ? to.line - 1 : to.line;
 			selectionStartLine = from.line + 1;
 			selectionEndLine = endLine + 1;
 			// The cursor's heading is the last heading at or above the cursor.
-			const headings = this.app.metadataCache.getFileCache(file)?.headings;
+			const headings =
+				this.app.metadataCache.getFileCache(file)?.headings;
 			if (headings) {
 				for (const entry of headings) {
 					if (entry.position.start.line <= cursorLine) {
@@ -361,7 +420,7 @@ export default class ShellPathCopyPlugin extends Plugin {
 			currentHeading,
 			blockId,
 			markdownLinkFormat: this.settings.markdownLinkFormat,
-			now: new Date()
+			now: new Date(),
 		};
 	}
 
@@ -369,12 +428,16 @@ export default class ShellPathCopyPlugin extends Plugin {
 	// into the note when the block has none. Returns null when the cursor is not
 	// on a paragraph or list item (headings, tables, code blocks, etc. are not
 	// supported and the caller falls back to a file link).
-	private resolveBlockId(file: TFile, editor: Editor, cursorLine: number): string | null {
+	private resolveBlockId(
+		file: TFile,
+		editor: Editor,
+		cursorLine: number,
+	): string | null {
 		const cache = this.app.metadataCache.getFileCache(file);
 		const targetLine = resolveBlockTargetLine(
 			cache?.sections ?? [],
 			cache?.listItems ?? [],
-			cursorLine
+			cursorLine,
 		);
 		if (targetLine === null) {
 			return null;
@@ -393,15 +456,23 @@ export default class ShellPathCopyPlugin extends Plugin {
 		return id;
 	}
 
-	async copyCustomFormat(formatId: string, file: TAbstractFile, editor?: Editor) {
+	async copyCustomFormat(
+		formatId: string,
+		file: TAbstractFile,
+		editor?: Editor,
+	) {
 		try {
 			if (!navigator.clipboard) {
 				throw new Error('Clipboard API not available.');
 			}
 
-			const fmt = this.settings.customFormats.find((f) => f.id === formatId);
+			const fmt = this.settings.customFormats.find(
+				(f) => f.id === formatId,
+			);
 			if (!fmt) {
-				new Notice('Custom format not found. It may have been deleted.');
+				new Notice(
+					'Custom format not found. It may have been deleted.',
+				);
 				return;
 			}
 
@@ -412,7 +483,11 @@ export default class ShellPathCopyPlugin extends Plugin {
 
 			const applied = applyTemplate(
 				fmt.template,
-				this.buildTokenContext(file, editor, templateUsesBlockToken(fmt.template))
+				this.buildTokenContext(
+					file,
+					editor,
+					templateUsesBlockToken(fmt.template),
+				),
 			);
 			const result = wrapPath(applied.text, fmt.wrapping);
 
@@ -421,9 +496,13 @@ export default class ShellPathCopyPlugin extends Plugin {
 			// Surface tokens that could not resolve, if the user wants the warning.
 			if (this.settings.warnOnUnresolvedTokens) {
 				if (applied.usedDesktopTokenOnMobile) {
-					new Notice('Desktop-only tokens (absolute path, folder, file URL) are unavailable here and were left blank.');
+					new Notice(
+						'Desktop-only tokens (absolute path, folder, file URL) are unavailable here and were left blank.',
+					);
 				} else if (applied.usedEditorTokenWithoutEditor) {
-					new Notice('The line number was unavailable (file not open in the editor) and was left blank.');
+					new Notice(
+						'The line number was unavailable (file not open in the editor) and was left blank.',
+					);
 				}
 			}
 
@@ -431,14 +510,22 @@ export default class ShellPathCopyPlugin extends Plugin {
 				new Notice(`${fmt.name} copied!`);
 			}
 		} catch (error) {
-			if (error instanceof Error && error.message.includes('Clipboard API')) {
-				new Notice('Error: Clipboard API is not available in this environment.');
+			if (
+				error instanceof Error &&
+				error.message.includes('Clipboard API')
+			) {
+				new Notice(
+					'Error: Clipboard API is not available in this environment.',
+				);
 			} else {
-				const detail = error instanceof Error ? error.message : String(error);
-				console.error('Shell Path Copy: Failed to copy custom format:', error);
+				const detail =
+					error instanceof Error ? error.message : String(error);
+				console.error(
+					'Shell Path Copy: Failed to copy custom format:',
+					error,
+				);
 				new Notice(`Failed to copy custom format: ${detail}`);
 			}
 		}
 	}
-
 }

@@ -29,7 +29,9 @@ export interface VirtualListOptions {
 	overscan?: number;
 }
 
-export function createVirtualList(opts: VirtualListOptions): VirtualListController {
+export function createVirtualList(
+	opts: VirtualListOptions,
+): VirtualListController {
 	const { scrollEl, rowHeight, renderRow } = opts;
 	const overscan = opts.overscan ?? 4;
 
@@ -54,7 +56,9 @@ export function createVirtualList(opts: VirtualListOptions): VirtualListControll
 		rowsEl.empty();
 
 		for (let i = win.firstRow; i <= win.lastRow; i++) {
-			const rowEl = rowsEl.createDiv({ cls: 'shell-path-copy-vlist-row' });
+			const rowEl = rowsEl.createDiv({
+				cls: 'shell-path-copy-vlist-row',
+			});
 			rowEl.style.height = `${rowHeight}px`;
 			renderRow(i, rowEl);
 		}

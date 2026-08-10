@@ -23,19 +23,27 @@ describe('resolveBlockTargetLine', () => {
 	});
 
 	it('returns null for a heading', () => {
-		expect(resolveBlockTargetLine([section('heading', 0, 0)], [], 0)).toBeNull();
+		expect(
+			resolveBlockTargetLine([section('heading', 0, 0)], [], 0),
+		).toBeNull();
 	});
 
 	it('returns null for a code block', () => {
-		expect(resolveBlockTargetLine([section('code', 1, 5)], [], 3)).toBeNull();
+		expect(
+			resolveBlockTargetLine([section('code', 1, 5)], [], 3),
+		).toBeNull();
 	});
 
 	it('returns null for frontmatter', () => {
-		expect(resolveBlockTargetLine([section('yaml', 0, 3)], [], 1)).toBeNull();
+		expect(
+			resolveBlockTargetLine([section('yaml', 0, 3)], [], 1),
+		).toBeNull();
 	});
 
 	it('returns null when the cursor is on no block', () => {
-		expect(resolveBlockTargetLine([section('paragraph', 2, 4)], [], 99)).toBeNull();
+		expect(
+			resolveBlockTargetLine([section('paragraph', 2, 4)], [], 99),
+		).toBeNull();
 	});
 
 	it('targets the list item, not the whole list section', () => {

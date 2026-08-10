@@ -16,19 +16,27 @@ describe('wrapPath', () => {
 	});
 
 	it('wraps in double quotes', () => {
-		expect(wrapPath('/vault/file.md', 'double-quotes')).toBe('"/vault/file.md"');
+		expect(wrapPath('/vault/file.md', 'double-quotes')).toBe(
+			'"/vault/file.md"',
+		);
 	});
 
 	it('wraps in single quotes', () => {
-		expect(wrapPath('/vault/file.md', 'single-quotes')).toBe("'/vault/file.md'");
+		expect(wrapPath('/vault/file.md', 'single-quotes')).toBe(
+			"'/vault/file.md'",
+		);
 	});
 
 	it('wraps in backticks', () => {
-		expect(wrapPath('/vault/file.md', 'backticks')).toBe('`/vault/file.md`');
+		expect(wrapPath('/vault/file.md', 'backticks')).toBe(
+			'`/vault/file.md`',
+		);
 	});
 
 	it('handles paths with spaces', () => {
-		expect(wrapPath('/my vault/my file.md', 'double-quotes')).toBe('"/my vault/my file.md"');
+		expect(wrapPath('/my vault/my file.md', 'double-quotes')).toBe(
+			'"/my vault/my file.md"',
+		);
 	});
 
 	it('handles empty string', () => {
@@ -41,15 +49,21 @@ describe('wrapPath', () => {
 describe('formatRelativePath', () => {
 	describe('unix format', () => {
 		it('adds ./ prefix to a plain path', () => {
-			expect(formatRelativePath('folder/file.md', 'unix')).toBe('./folder/file.md');
+			expect(formatRelativePath('folder/file.md', 'unix')).toBe(
+				'./folder/file.md',
+			);
 		});
 
 		it('does not double-add ./ prefix', () => {
-			expect(formatRelativePath('./folder/file.md', 'unix')).toBe('./folder/file.md');
+			expect(formatRelativePath('./folder/file.md', 'unix')).toBe(
+				'./folder/file.md',
+			);
 		});
 
 		it('handles nested paths', () => {
-			expect(formatRelativePath('a/b/c/file.md', 'unix')).toBe('./a/b/c/file.md');
+			expect(formatRelativePath('a/b/c/file.md', 'unix')).toBe(
+				'./a/b/c/file.md',
+			);
 		});
 
 		it('handles empty path as vault root', () => {
@@ -63,7 +77,9 @@ describe('formatRelativePath', () => {
 
 	describe('windows format', () => {
 		it('converts forward slashes to backslashes', () => {
-			expect(formatRelativePath('folder/file.md', 'windows')).toBe('.\\folder\\file.md');
+			expect(formatRelativePath('folder/file.md', 'windows')).toBe(
+				'.\\folder\\file.md',
+			);
 		});
 
 		it('adds .\\ prefix', () => {
@@ -71,11 +87,15 @@ describe('formatRelativePath', () => {
 		});
 
 		it('does not double-add .\\ prefix', () => {
-			expect(formatRelativePath('.\\file.md', 'windows')).toBe('.\\file.md');
+			expect(formatRelativePath('.\\file.md', 'windows')).toBe(
+				'.\\file.md',
+			);
 		});
 
 		it('handles nested paths', () => {
-			expect(formatRelativePath('a/b/c/file.md', 'windows')).toBe('.\\a\\b\\c\\file.md');
+			expect(formatRelativePath('a/b/c/file.md', 'windows')).toBe(
+				'.\\a\\b\\c\\file.md',
+			);
 		});
 
 		it('handles empty path as vault root', () => {
@@ -89,18 +109,20 @@ describe('formatRelativePath', () => {
 describe('buildFileUrl', () => {
 	describe('unix paths', () => {
 		it('builds a file URL for a unix absolute path', () => {
-			expect(buildFileUrl('/home/user/vault/file.md')).toBe('file:///home/user/vault/file.md');
+			expect(buildFileUrl('/home/user/vault/file.md')).toBe(
+				'file:///home/user/vault/file.md',
+			);
 		});
 
 		it('encodes spaces in path segments', () => {
 			expect(buildFileUrl('/home/user/my vault/my file.md')).toBe(
-				'file:///home/user/my%20vault/my%20file.md'
+				'file:///home/user/my%20vault/my%20file.md',
 			);
 		});
 
 		it('encodes special characters in segments', () => {
 			expect(buildFileUrl('/vault/file [draft].md')).toBe(
-				'file:///vault/file%20%5Bdraft%5D.md'
+				'file:///vault/file%20%5Bdraft%5D.md',
 			);
 		});
 
@@ -114,17 +136,19 @@ describe('buildFileUrl', () => {
 	describe('windows paths', () => {
 		it('builds a file URL for a windows absolute path', () => {
 			expect(buildFileUrl('C:\\Users\\name\\vault\\file.md')).toBe(
-				'file:///C:/Users/name/vault/file.md'
+				'file:///C:/Users/name/vault/file.md',
 			);
 		});
 
 		it('handles lowercase drive letter', () => {
-			expect(buildFileUrl('c:\\vault\\file.md')).toBe('file:///c:/vault/file.md');
+			expect(buildFileUrl('c:\\vault\\file.md')).toBe(
+				'file:///c:/vault/file.md',
+			);
 		});
 
 		it('encodes spaces in windows path segments', () => {
 			expect(buildFileUrl('C:\\Users\\My Vault\\file.md')).toBe(
-				'file:///C:/Users/My%20Vault/file.md'
+				'file:///C:/Users/My%20Vault/file.md',
 			);
 		});
 	});
@@ -135,7 +159,7 @@ describe('buildFileUrl', () => {
 describe('buildObsidianUrl', () => {
 	it('builds a basic obsidian URL', () => {
 		expect(buildObsidianUrl('MyVault', 'folder/file.md')).toBe(
-			'obsidian://open?vault=MyVault&file=folder%2Ffile'
+			'obsidian://open?vault=MyVault&file=folder%2Ffile',
 		);
 	});
 
@@ -151,36 +175,38 @@ describe('buildObsidianUrl', () => {
 	});
 
 	it('encodes spaces in vault name', () => {
-		expect(buildObsidianUrl('My Vault', 'file.md')).toContain('vault=My%20Vault');
+		expect(buildObsidianUrl('My Vault', 'file.md')).toContain(
+			'vault=My%20Vault',
+		);
 	});
 
 	it('encodes spaces in file path', () => {
 		expect(buildObsidianUrl('Vault', 'my notes/file.md')).toContain(
-			'file=my%20notes%2Ffile'
+			'file=my%20notes%2Ffile',
 		);
 	});
 
 	it('handles a top-level file', () => {
 		expect(buildObsidianUrl('Vault', 'file.md')).toBe(
-			'obsidian://open?vault=Vault&file=file'
+			'obsidian://open?vault=Vault&file=file',
 		);
 	});
 
 	it('appends a heading to the file value as encoded #heading', () => {
 		expect(buildObsidianUrl('Vault', 'folder/note.md', 'My Heading')).toBe(
-			'obsidian://open?vault=Vault&file=folder%2Fnote%23My%20Heading'
+			'obsidian://open?vault=Vault&file=folder%2Fnote%23My%20Heading',
 		);
 	});
 
 	it('appends a block anchor as encoded #^id', () => {
 		expect(buildObsidianUrl('Vault', 'note.md', '^a1b2c3')).toBe(
-			'obsidian://open?vault=Vault&file=note%23%5Ea1b2c3'
+			'obsidian://open?vault=Vault&file=note%23%5Ea1b2c3',
 		);
 	});
 
 	it('ignores an empty heading', () => {
 		expect(buildObsidianUrl('Vault', 'note.md', '')).toBe(
-			'obsidian://open?vault=Vault&file=note'
+			'obsidian://open?vault=Vault&file=note',
 		);
 	});
 });
@@ -217,15 +243,21 @@ describe('extractFilename', () => {
 
 describe('extractParentPath', () => {
 	it('strips the filename from a unix path', () => {
-		expect(extractParentPath('/home/name/assorted/Notes/My file.md')).toBe('/home/name/assorted/Notes');
+		expect(extractParentPath('/home/name/assorted/Notes/My file.md')).toBe(
+			'/home/name/assorted/Notes',
+		);
 	});
 
 	it('strips the filename from a windows path', () => {
-		expect(extractParentPath('C:\\Users\\name\\assorted\\Notes\\My file.md')).toBe('C:\\Users\\name\\assorted\\Notes');
+		expect(
+			extractParentPath('C:\\Users\\name\\assorted\\Notes\\My file.md'),
+		).toBe('C:\\Users\\name\\assorted\\Notes');
 	});
 
 	it('strips the last segment from a folder path', () => {
-		expect(extractParentPath('/home/name/assorted/Notes')).toBe('/home/name/assorted');
+		expect(extractParentPath('/home/name/assorted/Notes')).toBe(
+			'/home/name/assorted',
+		);
 	});
 
 	it('keeps the unix root slash', () => {
@@ -237,7 +269,9 @@ describe('extractParentPath', () => {
 	});
 
 	it('keeps a UNC share root', () => {
-		expect(extractParentPath('\\\\server\\share\\file.md')).toBe('\\\\server\\share');
+		expect(extractParentPath('\\\\server\\share\\file.md')).toBe(
+			'\\\\server\\share',
+		);
 	});
 
 	it('returns a separator-free string unchanged', () => {
@@ -250,44 +284,68 @@ describe('extractParentPath', () => {
 describe('buildMarkdownLink', () => {
 	describe('wiki-style', () => {
 		it('builds a wiki-style link', () => {
-			expect(buildMarkdownLink('file.md', 'folder/file.md', 'wiki-style')).toBe('[[file]]');
+			expect(
+				buildMarkdownLink('file.md', 'folder/file.md', 'wiki-style'),
+			).toBe('[[file]]');
 		});
 
 		it('strips the file extension', () => {
-			expect(buildMarkdownLink('meeting notes.md', 'folder/meeting notes.md', 'wiki-style')).toBe(
-				'[[meeting notes]]'
-			);
+			expect(
+				buildMarkdownLink(
+					'meeting notes.md',
+					'folder/meeting notes.md',
+					'wiki-style',
+				),
+			).toBe('[[meeting notes]]');
 		});
 
 		it('handles a file with no extension', () => {
-			expect(buildMarkdownLink('README', 'README', 'wiki-style')).toBe('[[README]]');
+			expect(buildMarkdownLink('README', 'README', 'wiki-style')).toBe(
+				'[[README]]',
+			);
 		});
 	});
 
 	describe('standard markdown', () => {
 		it('builds a standard markdown link', () => {
-			expect(buildMarkdownLink('file.md', 'folder/file.md', 'standard-markdown')).toBe(
-				'[file.md](./folder/file.md)'
-			);
+			expect(
+				buildMarkdownLink(
+					'file.md',
+					'folder/file.md',
+					'standard-markdown',
+				),
+			).toBe('[file.md](./folder/file.md)');
 		});
 
 		it('adds ./ prefix to path', () => {
-			const link = buildMarkdownLink('file.md', 'file.md', 'standard-markdown');
+			const link = buildMarkdownLink(
+				'file.md',
+				'file.md',
+				'standard-markdown',
+			);
 			expect(link).toBe('[file.md](./file.md)');
 		});
 
 		it('does not double-add ./ prefix', () => {
-			const link = buildMarkdownLink('file.md', './file.md', 'standard-markdown');
+			const link = buildMarkdownLink(
+				'file.md',
+				'./file.md',
+				'standard-markdown',
+			);
 			expect(link).toBe('[file.md](./file.md)');
 		});
 
 		it('handles empty file path as vault root', () => {
 			const link = buildMarkdownLink('', '', 'standard-markdown');
-			expect(link).toBe('[](./)')
+			expect(link).toBe('[](./)');
 		});
 
 		it('uses the full fileName (with extension) as link text', () => {
-			const link = buildMarkdownLink('report.md', 'reports/report.md', 'standard-markdown');
+			const link = buildMarkdownLink(
+				'report.md',
+				'reports/report.md',
+				'standard-markdown',
+			);
 			expect(link).toMatch(/^\[report\.md\]/);
 		});
 	});

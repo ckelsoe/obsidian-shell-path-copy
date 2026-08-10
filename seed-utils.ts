@@ -15,27 +15,32 @@ export const SETTINGS_VERSION = 6;
 // Which kinds of items a format applies to. This is the user's *preference*; a
 // hard capability gate (templateSupportsFolders) can still keep a format off
 // folders when its template uses file-only tokens, regardless of this value.
-export type FormatTarget = 'files' | 'folders' | 'both';
+type FormatTarget = 'files' | 'folders' | 'both';
 
 // A user-defined copy format. Each entry produces its own context-menu item and
 // command-palette command via the token engine. The built-ins ship as seeded
 // CustomFormat entries; there is no separate built-in code path.
 export interface CustomFormat {
-	id: string;            // stable unique id, used for command ids
+	id: string; // stable unique id, used for command ids
 	name: string;
 	template: string;
 	wrapping: PathWrapping; // applied around the rendered result
-	icon: string;          // Lucide icon name shown in the menu
+	icon: string; // Lucide icon name shown in the menu
 	enabled: boolean;
 	showInMenu: boolean;
 	showInCommands: boolean;
 	showInRibbon: boolean; // also add a left-ribbon icon that copies this format
-	pinToRoot: boolean;    // also show at the root menu when the submenu is on
+	pinToRoot: boolean; // also show at the root menu when the submenu is on
 	appliesTo: FormatTarget; // files, folders, or both (subject to token capability)
 }
 
-export const VALID_WRAPPINGS: PathWrapping[] = ['none', 'double-quotes', 'single-quotes', 'backticks'];
-export const VALID_TARGETS: FormatTarget[] = ['files', 'folders', 'both'];
+const VALID_WRAPPINGS: PathWrapping[] = [
+	'none',
+	'double-quotes',
+	'single-quotes',
+	'backticks',
+];
+const VALID_TARGETS: FormatTarget[] = ['files', 'folders', 'both'];
 
 // Specification for a seeded built-in format. `legacyKey` maps to the pre-1.19
 // boolean setting (or 'unix'/'windows' for the menuDisplay-governed paths) so
@@ -46,37 +51,160 @@ interface SeedSpec {
 	template: string;
 	icon: string;
 	wrapMode: 'path' | 'filename' | 'plain';
-	core: boolean;        // enabled by default on a fresh install
+	core: boolean; // enabled by default on a fresh install
 	legacyKey: string;
 	sinceVersion: number;
 }
 
 const BUILTIN_SEEDS: SeedSpec[] = [
-	{ name: 'Relative Linux/macOS path', template: '<relative-path-unix>', icon: 'terminal', wrapMode: 'path', core: true, legacyKey: 'unix', sinceVersion: 1 },
-	{ name: 'Relative Windows path', template: '<relative-path-windows>', icon: 'folder-closed', wrapMode: 'path', core: true, legacyKey: 'windows', sinceVersion: 1 },
-	{ name: 'Absolute path', template: '<absolute-path>', icon: 'folder-closed', wrapMode: 'path', core: false, legacyKey: 'showAbsolutePath', sinceVersion: 1 },
-	{ name: 'file:// URL', template: '<file-url>', icon: 'globe', wrapMode: 'plain', core: false, legacyKey: 'showFileUrl', sinceVersion: 1 },
-	{ name: 'Obsidian URL', template: '<obsidian-url>', icon: 'link-2', wrapMode: 'plain', core: true, legacyKey: 'showObsidianUrl', sinceVersion: 1 },
-	{ name: 'Markdown link', template: '<markdown-link>', icon: 'link', wrapMode: 'plain', core: true, legacyKey: 'showMarkdownLink', sinceVersion: 1 },
-	{ name: 'Filename', template: '<filename>', icon: 'file-text', wrapMode: 'filename', core: false, legacyKey: 'showFilename', sinceVersion: 1 },
-	{ name: 'Filename with extension', template: '<filename-ext>', icon: 'file', wrapMode: 'filename', core: false, legacyKey: 'showFilenameWithExt', sinceVersion: 1 },
+	{
+		name: 'Relative Linux/macOS path',
+		template: '<relative-path-unix>',
+		icon: 'terminal',
+		wrapMode: 'path',
+		core: true,
+		legacyKey: 'unix',
+		sinceVersion: 1,
+	},
+	{
+		name: 'Relative Windows path',
+		template: '<relative-path-windows>',
+		icon: 'folder-closed',
+		wrapMode: 'path',
+		core: true,
+		legacyKey: 'windows',
+		sinceVersion: 1,
+	},
+	{
+		name: 'Absolute path',
+		template: '<absolute-path>',
+		icon: 'folder-closed',
+		wrapMode: 'path',
+		core: false,
+		legacyKey: 'showAbsolutePath',
+		sinceVersion: 1,
+	},
+	{
+		name: 'file:// URL',
+		template: '<file-url>',
+		icon: 'globe',
+		wrapMode: 'plain',
+		core: false,
+		legacyKey: 'showFileUrl',
+		sinceVersion: 1,
+	},
+	{
+		name: 'Obsidian URL',
+		template: '<obsidian-url>',
+		icon: 'link-2',
+		wrapMode: 'plain',
+		core: true,
+		legacyKey: 'showObsidianUrl',
+		sinceVersion: 1,
+	},
+	{
+		name: 'Markdown link',
+		template: '<markdown-link>',
+		icon: 'link',
+		wrapMode: 'plain',
+		core: true,
+		legacyKey: 'showMarkdownLink',
+		sinceVersion: 1,
+	},
+	{
+		name: 'Filename',
+		template: '<filename>',
+		icon: 'file-text',
+		wrapMode: 'filename',
+		core: false,
+		legacyKey: 'showFilename',
+		sinceVersion: 1,
+	},
+	{
+		name: 'Filename with extension',
+		template: '<filename-ext>',
+		icon: 'file',
+		wrapMode: 'filename',
+		core: false,
+		legacyKey: 'showFilenameWithExt',
+		sinceVersion: 1,
+	},
 	// Example formats from issue 13. Seeded disabled as starting points.
-	{ name: 'Example: name and Obsidian URL', template: '<filename> -> <obsidian-url>', icon: 'link-2', wrapMode: 'plain', core: false, legacyKey: '', sinceVersion: 1 },
-	{ name: 'Example: line reference', template: '<filename-ext>#L<line-number>', icon: 'hash', wrapMode: 'plain', core: false, legacyKey: '', sinceVersion: 1 },
-	{ name: 'Example: name and line number', template: '<filename-ext> Line <line-number>', icon: 'hash', wrapMode: 'plain', core: false, legacyKey: '', sinceVersion: 4 },
+	{
+		name: 'Example: name and Obsidian URL',
+		template: '<filename> -> <obsidian-url>',
+		icon: 'link-2',
+		wrapMode: 'plain',
+		core: false,
+		legacyKey: '',
+		sinceVersion: 1,
+	},
+	{
+		name: 'Example: line reference',
+		template: '<filename-ext>#L<line-number>',
+		icon: 'hash',
+		wrapMode: 'plain',
+		core: false,
+		legacyKey: '',
+		sinceVersion: 1,
+	},
+	{
+		name: 'Example: name and line number',
+		template: '<filename-ext> Line <line-number>',
+		icon: 'hash',
+		wrapMode: 'plain',
+		core: false,
+		legacyKey: '',
+		sinceVersion: 4,
+	},
 	// Heading-aware links: jump to the cursor's heading, or the file if none.
-	{ name: 'Obsidian URL (to heading)', template: '<obsidian-url-heading>', icon: 'link-2', wrapMode: 'plain', core: false, legacyKey: '', sinceVersion: 2 },
-	{ name: 'Wiki link (to heading)', template: '<wikilink-heading>', icon: 'hash', wrapMode: 'plain', core: false, legacyKey: '', sinceVersion: 2 },
+	{
+		name: 'Obsidian URL (to heading)',
+		template: '<obsidian-url-heading>',
+		icon: 'link-2',
+		wrapMode: 'plain',
+		core: false,
+		legacyKey: '',
+		sinceVersion: 2,
+	},
+	{
+		name: 'Wiki link (to heading)',
+		template: '<wikilink-heading>',
+		icon: 'hash',
+		wrapMode: 'plain',
+		core: false,
+		legacyKey: '',
+		sinceVersion: 2,
+	},
 	// Block-aware links: jump to the cursor's block, creating a block id if needed.
-	{ name: 'Obsidian URL (to block)', template: '<obsidian-url-block>', icon: 'link-2', wrapMode: 'plain', core: false, legacyKey: '', sinceVersion: 3 },
-	{ name: 'Wiki link (to block)', template: '<wikilink-block>', icon: 'hash', wrapMode: 'plain', core: false, legacyKey: '', sinceVersion: 3 }
+	{
+		name: 'Obsidian URL (to block)',
+		template: '<obsidian-url-block>',
+		icon: 'link-2',
+		wrapMode: 'plain',
+		core: false,
+		legacyKey: '',
+		sinceVersion: 3,
+	},
+	{
+		name: 'Wiki link (to block)',
+		template: '<wikilink-block>',
+		icon: 'hash',
+		wrapMode: 'plain',
+		core: false,
+		legacyKey: '',
+		sinceVersion: 3,
+	},
 ];
 
 // Generates a stable id for a custom format. Prefers crypto.randomUUID (available
 // in Obsidian's Electron and modern mobile runtimes); falls back to a timestamp +
 // random suffix where it is not.
 export function generateFormatId(): string {
-	if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+	if (
+		typeof crypto !== 'undefined' &&
+		typeof crypto.randomUUID === 'function'
+	) {
 		return crypto.randomUUID();
 	}
 	return `fmt-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e9).toString(36)}`;
@@ -86,10 +214,14 @@ export function generateFormatId(): string {
 // the core set is enabled with default wrapping. With legacy data, enabled state
 // and wrapping are migrated from the pre-1.19 boolean settings so existing users
 // keep exactly what they had.
-function makeSeed(spec: SeedSpec, legacy: Record<string, unknown> | null): CustomFormat {
-	const oldWrap: PathWrapping = legacy && VALID_WRAPPINGS.includes(legacy.pathWrapping as PathWrapping)
-		? (legacy.pathWrapping as PathWrapping)
-		: 'backticks';
+function makeSeed(
+	spec: SeedSpec,
+	legacy: Record<string, unknown> | null,
+): CustomFormat {
+	const oldWrap: PathWrapping =
+		legacy && VALID_WRAPPINGS.includes(legacy.pathWrapping as PathWrapping)
+			? (legacy.pathWrapping as PathWrapping)
+			: 'backticks';
 	const menuDisplay = legacy ? legacy.menuDisplay : undefined;
 	const filenameWrap = legacy ? legacy.filenameUseWrapping === true : false;
 
@@ -124,19 +256,23 @@ function makeSeed(spec: SeedSpec, legacy: Record<string, unknown> | null): Custo
 		showInCommands: true,
 		showInRibbon: false,
 		pinToRoot: false,
-		appliesTo: 'both'
+		appliesTo: 'both',
 	};
 }
 
 // All seeded formats, for a fresh install or a pre-1.19 upgrade.
-export function seedAllFormats(legacy: Record<string, unknown> | null): CustomFormat[] {
+export function seedAllFormats(
+	legacy: Record<string, unknown> | null,
+): CustomFormat[] {
 	return BUILTIN_SEEDS.map((spec) => makeSeed(spec, legacy));
 }
 
 // Seeds introduced in a specific settings version, for incremental migration.
 // These are always new (no legacy mapping), so they use fresh-install defaults.
 export function seedFormatsForVersion(version: number): CustomFormat[] {
-	return BUILTIN_SEEDS.filter((spec) => spec.sinceVersion === version).map((spec) => makeSeed(spec, null));
+	return BUILTIN_SEEDS.filter((spec) => spec.sinceVersion === version).map(
+		(spec) => makeSeed(spec, null),
+	);
 }
 
 // Coerces possibly-corrupt or hand-edited persisted data into a valid CustomFormat
@@ -146,12 +282,15 @@ export function normalizeCustomFormats(value: unknown): CustomFormat[] {
 		return [];
 	}
 	const seenIds = new Set<string>();
-	return value.map((raw): CustomFormat => {
+	return value.map((raw: unknown): CustomFormat => {
 		const item = (raw ?? {}) as Partial<CustomFormat>;
 		const wrapping = VALID_WRAPPINGS.includes(item.wrapping as PathWrapping)
 			? (item.wrapping as PathWrapping)
 			: 'none';
-		let id = typeof item.id === 'string' && item.id ? item.id : generateFormatId();
+		let id =
+			typeof item.id === 'string' && item.id
+				? item.id
+				: generateFormatId();
 		while (seenIds.has(id)) {
 			id = generateFormatId();
 		}
@@ -161,7 +300,10 @@ export function normalizeCustomFormats(value: unknown): CustomFormat[] {
 			name: typeof item.name === 'string' ? item.name : 'Custom format',
 			template: typeof item.template === 'string' ? item.template : '',
 			wrapping,
-			icon: typeof item.icon === 'string' && item.icon ? item.icon : 'clipboard-copy',
+			icon:
+				typeof item.icon === 'string' && item.icon
+					? item.icon
+					: 'clipboard-copy',
 			enabled: item.enabled !== false,
 			showInMenu: item.showInMenu !== false,
 			showInCommands: item.showInCommands !== false,
@@ -169,7 +311,7 @@ export function normalizeCustomFormats(value: unknown): CustomFormat[] {
 			pinToRoot: item.pinToRoot === true,
 			appliesTo: VALID_TARGETS.includes(item.appliesTo as FormatTarget)
 				? (item.appliesTo as FormatTarget)
-				: 'both'
+				: 'both',
 		};
 	});
 }

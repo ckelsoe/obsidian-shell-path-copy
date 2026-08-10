@@ -1,4 +1,10 @@
-import { applyTemplate, validateTemplate, listTokens, templateSupportsFolders, TokenContext } from '../token-engine';
+import {
+	applyTemplate,
+	validateTemplate,
+	listTokens,
+	templateSupportsFolders,
+	TokenContext,
+} from '../token-engine';
 
 // Builds a token context from the fixed sample scenario in token-usage.md,
 // overridable per test. Base scenario: vault "assorted", file Notes/My file.md,
@@ -40,38 +46,60 @@ describe('applyTemplate - individual tokens', () => {
 	});
 
 	it('<relative-path> uses unix slashes on a unix host', () => {
-		expect(applyTemplate('<relative-path>', ctx).text).toBe('./Notes/My file.md');
+		expect(applyTemplate('<relative-path>', ctx).text).toBe(
+			'./Notes/My file.md',
+		);
 	});
 
 	it('<relative-path> uses windows slashes on a windows host', () => {
 		const win = makeContext({ isWindows: true });
-		expect(applyTemplate('<relative-path>', win).text).toBe('.\\Notes\\My file.md');
+		expect(applyTemplate('<relative-path>', win).text).toBe(
+			'.\\Notes\\My file.md',
+		);
 	});
 
 	it('<relative-path-unix> is always unix style', () => {
-		expect(applyTemplate('<relative-path-unix>', ctx).text).toBe('./Notes/My file.md');
+		expect(applyTemplate('<relative-path-unix>', ctx).text).toBe(
+			'./Notes/My file.md',
+		);
 	});
 
 	it('<relative-path-windows> is always windows style', () => {
-		expect(applyTemplate('<relative-path-windows>', ctx).text).toBe('.\\Notes\\My file.md');
+		expect(applyTemplate('<relative-path-windows>', ctx).text).toBe(
+			'.\\Notes\\My file.md',
+		);
 	});
 
 	it('<absolute-path> on a unix host', () => {
-		expect(applyTemplate('<absolute-path>', ctx).text).toBe('/home/name/assorted/Notes/My file.md');
+		expect(applyTemplate('<absolute-path>', ctx).text).toBe(
+			'/home/name/assorted/Notes/My file.md',
+		);
 	});
 
 	it('<absolute-path> on a windows host', () => {
-		const win = makeContext({ isWindows: true, absolutePath: 'C:\\Users\\name\\assorted\\Notes\\My file.md' });
-		expect(applyTemplate('<absolute-path>', win).text).toBe('C:\\Users\\name\\assorted\\Notes\\My file.md');
+		const win = makeContext({
+			isWindows: true,
+			absolutePath: 'C:\\Users\\name\\assorted\\Notes\\My file.md',
+		});
+		expect(applyTemplate('<absolute-path>', win).text).toBe(
+			'C:\\Users\\name\\assorted\\Notes\\My file.md',
+		);
 	});
 
 	it('<absolute-folder> strips the filename on a unix host', () => {
-		expect(applyTemplate('<absolute-folder>', ctx).text).toBe('/home/name/assorted/Notes');
+		expect(applyTemplate('<absolute-folder>', ctx).text).toBe(
+			'/home/name/assorted/Notes',
+		);
 	});
 
 	it('<absolute-folder> strips the filename on a windows host', () => {
-		const win = makeContext({ isWindows: true, absolutePath: 'C:\\Users\\name\\assorted\\Notes\\My file.md' });
-		expect(applyTemplate('<absolute-folder>', win).text).toBe('C:\\Users\\name\\assorted\\Notes');
+		const win = makeContext({
+			isWindows: true,
+			absolutePath: 'C:\\Users\\name\\assorted\\Notes\\My file.md',
+		});
+		expect(applyTemplate('<absolute-folder>', win).text).toBe(
+			'C:\\Users\\name\\assorted\\Notes',
+		);
 	});
 
 	it('<absolute-folder> on a folder yields its parent folder', () => {
@@ -84,20 +112,31 @@ describe('applyTemplate - individual tokens', () => {
 			selectionStartLine: null,
 			selectionEndLine: null,
 		});
-		expect(applyTemplate('<absolute-folder>', folder).text).toBe('/home/name/assorted');
+		expect(applyTemplate('<absolute-folder>', folder).text).toBe(
+			'/home/name/assorted',
+		);
 	});
 
 	it('<file-url> encodes spaces on a unix host', () => {
-		expect(applyTemplate('<file-url>', ctx).text).toBe('file:///home/name/assorted/Notes/My%20file.md');
+		expect(applyTemplate('<file-url>', ctx).text).toBe(
+			'file:///home/name/assorted/Notes/My%20file.md',
+		);
 	});
 
 	it('<file-url> keeps the drive letter and encodes spaces on a windows host', () => {
-		const win = makeContext({ isWindows: true, absolutePath: 'C:\\Users\\name\\assorted\\Notes\\My file.md' });
-		expect(applyTemplate('<file-url>', win).text).toBe('file:///C:/Users/name/assorted/Notes/My%20file.md');
+		const win = makeContext({
+			isWindows: true,
+			absolutePath: 'C:\\Users\\name\\assorted\\Notes\\My file.md',
+		});
+		expect(applyTemplate('<file-url>', win).text).toBe(
+			'file:///C:/Users/name/assorted/Notes/My%20file.md',
+		);
 	});
 
 	it('<obsidian-url> strips .md and encodes the path', () => {
-		expect(applyTemplate('<obsidian-url>', ctx).text).toBe('obsidian://open?vault=assorted&file=Notes%2FMy%20file');
+		expect(applyTemplate('<obsidian-url>', ctx).text).toBe(
+			'obsidian://open?vault=assorted&file=Notes%2FMy%20file',
+		);
 	});
 
 	it('<vault-name> is raw', () => {
@@ -107,13 +146,19 @@ describe('applyTemplate - individual tokens', () => {
 	it('<vault-name-encoded> URL-encodes spaces', () => {
 		const spaced = makeContext({ vaultName: 'My Vault' });
 		expect(applyTemplate('<vault-name>', spaced).text).toBe('My Vault');
-		expect(applyTemplate('<vault-name-encoded>', spaced).text).toBe('My%20Vault');
+		expect(applyTemplate('<vault-name-encoded>', spaced).text).toBe(
+			'My%20Vault',
+		);
 	});
 
 	it('<markdown-link> follows the configured format', () => {
 		expect(applyTemplate('<markdown-link>', ctx).text).toBe('[[My file]]');
-		const standard = makeContext({ markdownLinkFormat: 'standard-markdown' });
-		expect(applyTemplate('<markdown-link>', standard).text).toBe('[My file.md](./Notes/My file.md)');
+		const standard = makeContext({
+			markdownLinkFormat: 'standard-markdown',
+		});
+		expect(applyTemplate('<markdown-link>', standard).text).toBe(
+			'[My file.md](./Notes/My file.md)',
+		);
 	});
 
 	it('<wikilink> is always wiki-style', () => {
@@ -145,7 +190,10 @@ describe('applyTemplate - individual tokens', () => {
 	});
 
 	it('<line-range> is a single number when nothing is selected', () => {
-		const single = makeContext({ selectionStartLine: 42, selectionEndLine: 42 });
+		const single = makeContext({
+			selectionStartLine: 42,
+			selectionEndLine: 42,
+		});
 		expect(applyTemplate('<line-range>', single).text).toBe('42');
 	});
 
@@ -160,17 +208,21 @@ describe('applyTemplate - composition', () => {
 	const ctx = makeContext();
 
 	it('renders the issue 13 example', () => {
-		expect(applyTemplate('<filename> -> <obsidian-url>', ctx).text)
-			.toBe('My file -> obsidian://open?vault=assorted&file=Notes%2FMy%20file');
+		expect(applyTemplate('<filename> -> <obsidian-url>', ctx).text).toBe(
+			'My file -> obsidian://open?vault=assorted&file=Notes%2FMy%20file',
+		);
 	});
 
 	it('renders an LLM-CLI line reference', () => {
-		expect(applyTemplate('<filename-ext>#L<line-number>', ctx).text).toBe('My file.md#L42');
+		expect(applyTemplate('<filename-ext>#L<line-number>', ctx).text).toBe(
+			'My file.md#L42',
+		);
 	});
 
 	it('renders an absolute-path line range for an AI agent', () => {
-		expect(applyTemplate('<absolute-path>#L<line-range>', ctx).text)
-			.toBe('/home/name/assorted/Notes/My file.md#L42-58');
+		expect(applyTemplate('<absolute-path>#L<line-range>', ctx).text).toBe(
+			'/home/name/assorted/Notes/My file.md#L42-58',
+		);
 	});
 
 	it('passes literal text through unchanged', () => {
@@ -178,7 +230,9 @@ describe('applyTemplate - composition', () => {
 	});
 
 	it('substitutes a repeated token every time', () => {
-		expect(applyTemplate('<filename> <filename>', ctx).text).toBe('My file My file');
+		expect(applyTemplate('<filename> <filename>', ctx).text).toBe(
+			'My file My file',
+		);
 	});
 
 	it('does not re-scan token output (no recursion)', () => {
@@ -201,7 +255,9 @@ describe('applyTemplate - escaping', () => {
 	});
 
 	it('mixes a real token with an escaped one', () => {
-		expect(applyTemplate('<filename> \\<tag\\>', ctx).text).toBe('My file <tag>');
+		expect(applyTemplate('<filename> \\<tag\\>', ctx).text).toBe(
+			'My file <tag>',
+		);
 	});
 });
 
@@ -287,7 +343,11 @@ describe('applyTemplate - editor token without an editor', () => {
 // ─── folders ──────────────────────────────────────────────────────────────────
 
 describe('applyTemplate - folder context', () => {
-	const folder = makeContext({ fileName: 'My folder', filePath: 'Projects/My folder', isFolder: true });
+	const folder = makeContext({
+		fileName: 'My folder',
+		filePath: 'Projects/My folder',
+		isFolder: true,
+	});
 
 	it('<filename> equals <filename-ext> for a folder', () => {
 		expect(applyTemplate('<filename>', folder).text).toBe('My folder');
@@ -312,8 +372,9 @@ describe('applyTemplate - encoding edges', () => {
 	});
 
 	it('<obsidian-url> URL-encodes special characters', () => {
-		expect(applyTemplate('<obsidian-url>', special).text)
-			.toBe('obsidian://open?vault=assorted&file=a%20%5Bb%5D%20%23c%20%26d');
+		expect(applyTemplate('<obsidian-url>', special).text).toBe(
+			'obsidian://open?vault=assorted&file=a%20%5Bb%5D%20%23c%20%26d',
+		);
 	});
 });
 
@@ -334,25 +395,34 @@ describe('applyTemplate - heading tokens', () => {
 	it('<obsidian-url-heading> anchors to the heading when there is one', () => {
 		// The heading goes into the file value as "#heading" (encoded %23);
 		// obsidian://open has no separate heading parameter.
-		expect(applyTemplate('<obsidian-url-heading>', withHeading).text)
-			.toBe('obsidian://open?vault=assorted&file=Notes%2FMy%20file%23My%20heading');
+		expect(applyTemplate('<obsidian-url-heading>', withHeading).text).toBe(
+			'obsidian://open?vault=assorted&file=Notes%2FMy%20file%23My%20heading',
+		);
 	});
 
 	it('<obsidian-url-heading> falls back to the file URL with no heading', () => {
-		expect(applyTemplate('<obsidian-url-heading>', noHeading).text)
-			.toBe('obsidian://open?vault=assorted&file=Notes%2FMy%20file');
+		expect(applyTemplate('<obsidian-url-heading>', noHeading).text).toBe(
+			'obsidian://open?vault=assorted&file=Notes%2FMy%20file',
+		);
 	});
 
 	it('<wikilink-heading> anchors to the heading when there is one', () => {
-		expect(applyTemplate('<wikilink-heading>', withHeading).text).toBe('[[My file#My heading]]');
+		expect(applyTemplate('<wikilink-heading>', withHeading).text).toBe(
+			'[[My file#My heading]]',
+		);
 	});
 
 	it('<wikilink-heading> falls back to the file link with no heading', () => {
-		expect(applyTemplate('<wikilink-heading>', noHeading).text).toBe('[[My file]]');
+		expect(applyTemplate('<wikilink-heading>', noHeading).text).toBe(
+			'[[My file]]',
+		);
 	});
 
 	it('the section tokens always resolve (universal tier)', () => {
-		const result = applyTemplate('<obsidian-url-heading> <wikilink-heading>', noHeading);
+		const result = applyTemplate(
+			'<obsidian-url-heading> <wikilink-heading>',
+			noHeading,
+		);
 		expect(result.usedEditorTokenWithoutEditor).toBe(false);
 		expect(result.text).toBe(
 			'obsidian://open?vault=assorted&file=Notes%2FMy%20file [[My file]]',
@@ -375,21 +445,27 @@ describe('applyTemplate - block tokens', () => {
 	});
 
 	it('<obsidian-url-block> anchors to the block with #^id (encoded %23%5E)', () => {
-		expect(applyTemplate('<obsidian-url-block>', withBlock).text)
-			.toBe('obsidian://open?vault=assorted&file=Notes%2FMy%20file%23%5Ea1b2c3');
+		expect(applyTemplate('<obsidian-url-block>', withBlock).text).toBe(
+			'obsidian://open?vault=assorted&file=Notes%2FMy%20file%23%5Ea1b2c3',
+		);
 	});
 
 	it('<obsidian-url-block> falls back to the file URL with no block', () => {
-		expect(applyTemplate('<obsidian-url-block>', noBlock).text)
-			.toBe('obsidian://open?vault=assorted&file=Notes%2FMy%20file');
+		expect(applyTemplate('<obsidian-url-block>', noBlock).text).toBe(
+			'obsidian://open?vault=assorted&file=Notes%2FMy%20file',
+		);
 	});
 
 	it('<wikilink-block> anchors to the block with #^id', () => {
-		expect(applyTemplate('<wikilink-block>', withBlock).text).toBe('[[My file#^a1b2c3]]');
+		expect(applyTemplate('<wikilink-block>', withBlock).text).toBe(
+			'[[My file#^a1b2c3]]',
+		);
 	});
 
 	it('<wikilink-block> falls back to the file link with no block', () => {
-		expect(applyTemplate('<wikilink-block>', noBlock).text).toBe('[[My file]]');
+		expect(applyTemplate('<wikilink-block>', noBlock).text).toBe(
+			'[[My file]]',
+		);
 	});
 });
 
@@ -454,8 +530,14 @@ describe('templateSupportsFolders', () => {
 
 	it('returns true for folder-safe path/name tokens', () => {
 		expect(templateSupportsFolders('<relative-path>')).toBe(true);
-		expect(templateSupportsFolders('<filename> <filename-ext> <absolute-path> <file-url>')).toBe(true);
-		expect(templateSupportsFolders('<vault-name> <date> <time>')).toBe(true);
+		expect(
+			templateSupportsFolders(
+				'<filename> <filename-ext> <absolute-path> <file-url>',
+			),
+		).toBe(true);
+		expect(templateSupportsFolders('<vault-name> <date> <time>')).toBe(
+			true,
+		);
 	});
 
 	it('returns false for link tokens that do not resolve for folders', () => {
@@ -477,8 +559,12 @@ describe('templateSupportsFolders', () => {
 	});
 
 	it('returns false when any single token in a mix is file-only', () => {
-		expect(templateSupportsFolders('<filename> Line <line-number>')).toBe(false);
-		expect(templateSupportsFolders('<relative-path> -> <obsidian-url>')).toBe(false);
+		expect(templateSupportsFolders('<filename> Line <line-number>')).toBe(
+			false,
+		);
+		expect(
+			templateSupportsFolders('<relative-path> -> <obsidian-url>'),
+		).toBe(false);
 	});
 
 	it('ignores unknown tokens (they do not constrain folder support)', () => {

@@ -1,18 +1,26 @@
-export type PathWrapping = 'none' | 'double-quotes' | 'single-quotes' | 'backticks';
+export type PathWrapping =
+	'none' | 'double-quotes' | 'single-quotes' | 'backticks';
 export type PathFormat = 'unix' | 'windows';
 export type MarkdownLinkFormat = 'wiki-style' | 'standard-markdown';
 
 export function wrapPath(filePath: string, wrapping: PathWrapping): string {
 	switch (wrapping) {
-		case 'double-quotes': return `"${filePath}"`;
-		case 'single-quotes': return `'${filePath}'`;
-		case 'backticks':     return `\`${filePath}\``;
+		case 'double-quotes':
+			return `"${filePath}"`;
+		case 'single-quotes':
+			return `'${filePath}'`;
+		case 'backticks':
+			return `\`${filePath}\``;
 		case 'none':
-		default:              return filePath;
+		default:
+			return filePath;
 	}
 }
 
-export function formatRelativePath(filePath: string, format: PathFormat): string {
+export function formatRelativePath(
+	filePath: string,
+	format: PathFormat,
+): string {
 	if (!filePath) {
 		return format === 'windows' ? '.\\' : './';
 	}
@@ -31,18 +39,28 @@ export function buildFileUrl(absolutePath: string): string {
 		// letter ("C:") is kept intact and only the remaining segments are encoded.
 		const forwardSlashed = absolutePath.replace(/\\/g, '/');
 		const [drive, ...segments] = forwardSlashed.split('/');
-		const encodedSegments = segments.map(seg => seg === '' ? '' : encodeURIComponent(seg));
+		const encodedSegments = segments.map((seg) =>
+			seg === '' ? '' : encodeURIComponent(seg),
+		);
 		return `file:///${drive}/${encodedSegments.join('/')}`;
 	} else {
 		// Unix/Mac absolute path (e.g. /home/user/file.md)
 		const segments = absolutePath.split('/');
-		const encodedSegments = segments.map(seg => seg === '' ? '' : encodeURIComponent(seg));
+		const encodedSegments = segments.map((seg) =>
+			seg === '' ? '' : encodeURIComponent(seg),
+		);
 		return `file://${encodedSegments.join('/')}`;
 	}
 }
 
-export function buildObsidianUrl(vaultName: string, filePath: string, anchor?: string): string {
-	const normalizedPath = filePath.endsWith('.md') ? filePath.slice(0, -3) : filePath;
+export function buildObsidianUrl(
+	vaultName: string,
+	filePath: string,
+	anchor?: string,
+): string {
+	const normalizedPath = filePath.endsWith('.md')
+		? filePath.slice(0, -3)
+		: filePath;
 	// Obsidian's open URI has no separate heading or block parameter. The anchor
 	// is appended to the file value after "#": a heading name, or "^id" for a
 	// block. encodeURIComponent turns "#" into "%23" and "^" into "%5E".
@@ -50,7 +68,10 @@ export function buildObsidianUrl(vaultName: string, filePath: string, anchor?: s
 	return `obsidian://open?vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(fileParam)}`;
 }
 
-export function extractFilename(fileName: string, includeExtension: boolean): string {
+export function extractFilename(
+	fileName: string,
+	includeExtension: boolean,
+): string {
 	if (!includeExtension) {
 		const lastDot = fileName.lastIndexOf('.');
 		if (lastDot > 0) {
@@ -61,7 +82,10 @@ export function extractFilename(fileName: string, includeExtension: boolean): st
 }
 
 export function extractParentPath(absolutePath: string): string {
-	const lastSep = Math.max(absolutePath.lastIndexOf('/'), absolutePath.lastIndexOf('\\'));
+	const lastSep = Math.max(
+		absolutePath.lastIndexOf('/'),
+		absolutePath.lastIndexOf('\\'),
+	);
 	if (lastSep < 0) {
 		return absolutePath;
 	}
@@ -78,7 +102,11 @@ export function extractParentPath(absolutePath: string): string {
 	return parent;
 }
 
-export function buildMarkdownLink(fileName: string, filePath: string, format: MarkdownLinkFormat): string {
+export function buildMarkdownLink(
+	fileName: string,
+	filePath: string,
+	format: MarkdownLinkFormat,
+): string {
 	const fileNameWithoutExt = extractFilename(fileName, false);
 
 	if (format === 'wiki-style') {

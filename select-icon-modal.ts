@@ -47,7 +47,9 @@ export class SelectIconModal extends Modal {
 		search.inputEl.addClass('shell-path-copy-icon-search');
 		search.onChange((value) => this.renderList(value));
 
-		this.countEl = contentEl.createDiv({ cls: 'shell-path-copy-icon-count' });
+		this.countEl = contentEl.createDiv({
+			cls: 'shell-path-copy-icon-count',
+		});
 		this.listEl = contentEl.createDiv({ cls: 'shell-path-copy-icon-grid' });
 
 		this.vlist = createVirtualList({
@@ -113,7 +115,9 @@ export class SelectIconModal extends Modal {
 			if (id === this.current) {
 				cell.addClass('is-selected');
 			}
-			const preview = cell.createDiv({ cls: 'shell-path-copy-icon-preview' });
+			const preview = cell.createDiv({
+				cls: 'shell-path-copy-icon-preview',
+			});
 			setIcon(preview, id);
 			cell.createSpan({ cls: 'shell-path-copy-icon-label', text: id });
 			cell.addEventListener('click', () => {
