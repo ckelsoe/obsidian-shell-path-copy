@@ -1,7 +1,13 @@
 import { filterIcons, sortIcons } from '../icon-collect';
 
 describe('filterIcons', () => {
-	const ids = ['lucide-activity', 'lucide-arrow-up', 'lucide-camera', 'info', 'search'];
+	const ids = [
+		'lucide-activity',
+		'lucide-arrow-up',
+		'lucide-camera',
+		'info',
+		'search',
+	];
 
 	test('returns the list unchanged for an empty query', () => {
 		expect(filterIcons(ids, '')).toEqual(ids);

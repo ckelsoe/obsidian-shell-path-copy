@@ -51,7 +51,7 @@ export interface TokenContext {
  * - desktop:   needs an absolute path; blank on mobile.
  * - editor:    needs the copied file open in the editor; blank otherwise.
  */
-export type TokenTier = 'universal' | 'desktop' | 'editor';
+type TokenTier = 'universal' | 'desktop' | 'editor';
 
 export interface TokenDef {
 	/** Token name without the angle brackets, e.g. "filename". */
@@ -81,7 +81,8 @@ export interface ApplyResult {
 }
 
 export interface ValidationIssue {
-	kind: 'unknown-token' | 'empty' | 'desktop-only-token' | 'editor-only-token';
+	kind:
+		'unknown-token' | 'empty' | 'desktop-only-token' | 'editor-only-token';
 	detail: string;
 }
 
@@ -104,7 +105,7 @@ function getExtension(fileName: string): string {
 }
 
 /** The full token vocabulary, in the order shown in the settings hint list. */
-export const TOKENS: readonly TokenDef[] = [
+const TOKENS: readonly TokenDef[] = [
 	{
 		name: 'filename',
 		tier: 'universal',
@@ -131,7 +132,11 @@ export const TOKENS: readonly TokenDef[] = [
 		tier: 'universal',
 		folderSafe: true,
 		description: 'Vault-relative path in the host OS style',
-		resolve: (ctx) => formatRelativePath(ctx.filePath, ctx.isWindows ? 'windows' : 'unix'),
+		resolve: (ctx) =>
+			formatRelativePath(
+				ctx.filePath,
+				ctx.isWindows ? 'windows' : 'unix',
+			),
 	},
 	{
 		name: 'relative-path-unix',
@@ -159,14 +164,16 @@ export const TOKENS: readonly TokenDef[] = [
 		tier: 'desktop',
 		folderSafe: true,
 		description: 'Containing folder, full filesystem path (desktop only)',
-		resolve: (ctx) => (ctx.absolutePath ? extractParentPath(ctx.absolutePath) : ''),
+		resolve: (ctx) =>
+			ctx.absolutePath ? extractParentPath(ctx.absolutePath) : '',
 	},
 	{
 		name: 'file-url',
 		tier: 'desktop',
 		folderSafe: true,
 		description: 'file:// URL, URL-encoded (desktop only)',
-		resolve: (ctx) => (ctx.absolutePath ? buildFileUrl(ctx.absolutePath) : ''),
+		resolve: (ctx) =>
+			ctx.absolutePath ? buildFileUrl(ctx.absolutePath) : '',
 	},
 	{
 		name: 'obsidian-url',
@@ -194,7 +201,12 @@ export const TOKENS: readonly TokenDef[] = [
 		tier: 'universal',
 		folderSafe: false,
 		description: 'Markdown link in the format chosen in settings',
-		resolve: (ctx) => buildMarkdownLink(ctx.fileName, ctx.filePath, ctx.markdownLinkFormat),
+		resolve: (ctx) =>
+			buildMarkdownLink(
+				ctx.fileName,
+				ctx.filePath,
+				ctx.markdownLinkFormat,
+			),
 	},
 	{
 		name: 'wikilink',
@@ -207,32 +219,47 @@ export const TOKENS: readonly TokenDef[] = [
 		name: 'obsidian-url-heading',
 		tier: 'universal',
 		folderSafe: false,
-		description: 'Obsidian URL to the cursor heading, or the file when there is none',
-		resolve: (ctx) => buildObsidianUrl(ctx.vaultName, ctx.filePath, ctx.currentHeading ?? undefined),
+		description:
+			'Obsidian URL to the cursor heading, or the file when there is none',
+		resolve: (ctx) =>
+			buildObsidianUrl(
+				ctx.vaultName,
+				ctx.filePath,
+				ctx.currentHeading ?? undefined,
+			),
 	},
 	{
 		name: 'wikilink-heading',
 		tier: 'universal',
 		folderSafe: false,
-		description: 'Wiki link to the cursor heading, or the file when there is none',
+		description:
+			'Wiki link to the cursor heading, or the file when there is none',
 		resolve: (ctx) => {
 			const base = extractFilename(ctx.fileName, false);
-			return ctx.currentHeading ? `[[${base}#${ctx.currentHeading}]]` : `[[${base}]]`;
+			return ctx.currentHeading
+				? `[[${base}#${ctx.currentHeading}]]`
+				: `[[${base}]]`;
 		},
 	},
 	{
 		name: 'obsidian-url-block',
 		tier: 'universal',
 		folderSafe: false,
-		description: 'Obsidian URL to the cursor block, or the file when there is none',
+		description:
+			'Obsidian URL to the cursor block, or the file when there is none',
 		resolve: (ctx) =>
-			buildObsidianUrl(ctx.vaultName, ctx.filePath, ctx.blockId ? `^${ctx.blockId}` : undefined),
+			buildObsidianUrl(
+				ctx.vaultName,
+				ctx.filePath,
+				ctx.blockId ? `^${ctx.blockId}` : undefined,
+			),
 	},
 	{
 		name: 'wikilink-block',
 		tier: 'universal',
 		folderSafe: false,
-		description: 'Wiki link to the cursor block, or the file when there is none',
+		description:
+			'Wiki link to the cursor block, or the file when there is none',
 		resolve: (ctx) => {
 			const base = extractFilename(ctx.fileName, false);
 			return ctx.blockId ? `[[${base}#^${ctx.blockId}]]` : `[[${base}]]`;
@@ -257,29 +284,39 @@ export const TOKENS: readonly TokenDef[] = [
 		tier: 'editor',
 		folderSafe: false,
 		description: 'Active editor cursor line, 1-based (editor only)',
-		resolve: (ctx) => (ctx.lineNumber !== null ? String(ctx.lineNumber) : ''),
+		resolve: (ctx) =>
+			ctx.lineNumber !== null ? String(ctx.lineNumber) : '',
 	},
 	{
 		name: 'line-start',
 		tier: 'editor',
 		folderSafe: false,
-		description: 'First line of the editor selection, 1-based (editor only)',
-		resolve: (ctx) => (ctx.selectionStartLine !== null ? String(ctx.selectionStartLine) : ''),
+		description:
+			'First line of the editor selection, 1-based (editor only)',
+		resolve: (ctx) =>
+			ctx.selectionStartLine !== null
+				? String(ctx.selectionStartLine)
+				: '',
 	},
 	{
 		name: 'line-end',
 		tier: 'editor',
 		folderSafe: false,
 		description: 'Last line of the editor selection, 1-based (editor only)',
-		resolve: (ctx) => (ctx.selectionEndLine !== null ? String(ctx.selectionEndLine) : ''),
+		resolve: (ctx) =>
+			ctx.selectionEndLine !== null ? String(ctx.selectionEndLine) : '',
 	},
 	{
 		name: 'line-range',
 		tier: 'editor',
 		folderSafe: false,
-		description: 'Selected line range, e.g. 43-56; a single line when nothing is selected (editor only)',
+		description:
+			'Selected line range, e.g. 43-56; a single line when nothing is selected (editor only)',
 		resolve: (ctx) => {
-			if (ctx.selectionStartLine === null || ctx.selectionEndLine === null) {
+			if (
+				ctx.selectionStartLine === null ||
+				ctx.selectionEndLine === null
+			) {
 				return '';
 			}
 			return ctx.selectionStartLine === ctx.selectionEndLine
@@ -310,7 +347,9 @@ export const TOKENS: readonly TokenDef[] = [
 	},
 ];
 
-const TOKEN_MAP: Map<string, TokenDef> = new Map(TOKENS.map((t) => [t.name, t]));
+const TOKEN_MAP: Map<string, TokenDef> = new Map(
+	TOKENS.map((t) => [t.name, t]),
+);
 
 // Matches either an escape sequence (\< \> \\) or a <token-name> span.
 // A token name is lowercase letters, digits, and dashes.
@@ -321,7 +360,10 @@ const TEMPLATE_PATTERN = /\\([<>\\])|<([a-z0-9-]+)>/g;
  * verbatim. Token output is never re-scanned, so a filename that literally
  * contains "<obsidian-url>" cannot trigger further substitution.
  */
-export function applyTemplate(template: string, ctx: TokenContext): ApplyResult {
+export function applyTemplate(
+	template: string,
+	ctx: TokenContext,
+): ApplyResult {
 	const result: ApplyResult = {
 		text: '',
 		usedDesktopTokenOnMobile: false,
@@ -346,6 +388,12 @@ export function applyTemplate(template: string, ctx: TokenContext): ApplyResult 
 		}
 
 		const name = match[2];
+		if (name === undefined) {
+			// Neither capture group matched (not reachable with the current
+			// pattern); emit the raw match verbatim rather than crash.
+			out += match[0];
+			continue;
+		}
 		const def = TOKEN_MAP.get(name);
 		if (!def) {
 			// Unknown token: leave verbatim so typos are visible.
@@ -397,9 +445,15 @@ export function validateTemplate(template: string): ValidationIssue[] {
 
 		const def = TOKEN_MAP.get(name);
 		if (!def) {
-			issues.push({ kind: 'unknown-token', detail: `<${name}> is not a recognized token.` });
+			issues.push({
+				kind: 'unknown-token',
+				detail: `<${name}> is not a recognized token.`,
+			});
 		} else if (def.tier === 'desktop') {
-			issues.push({ kind: 'desktop-only-token', detail: `<${name}> is blank on mobile.` });
+			issues.push({
+				kind: 'desktop-only-token',
+				detail: `<${name}> is blank on mobile.`,
+			});
 		} else if (def.tier === 'editor') {
 			issues.push({
 				kind: 'editor-only-token',

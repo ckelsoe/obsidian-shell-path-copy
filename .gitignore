@@ -8,6 +8,10 @@
 # npm
 node_modules
 
+# Stryker mutation-testing sandbox + reports
+.stryker-tmp
+reports/mutation
+
 # Build output
 main.js
 

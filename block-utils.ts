@@ -28,14 +28,18 @@ export interface BlockListItem {
 export function resolveBlockTargetLine(
 	sections: readonly BlockSection[],
 	listItems: readonly BlockListItem[],
-	cursorLine: number
+	cursorLine: number,
 ): number | null {
 	// Innermost list item containing the cursor (the id attaches to the item).
 	let item: BlockListItem | null = null;
 	for (const candidate of listItems) {
 		const within =
-			candidate.position.start.line <= cursorLine && cursorLine <= candidate.position.end.line;
-		if (within && (!item || candidate.position.start.line > item.position.start.line)) {
+			candidate.position.start.line <= cursorLine &&
+			cursorLine <= candidate.position.end.line;
+		if (
+			within &&
+			(!item || candidate.position.start.line > item.position.start.line)
+		) {
 			item = candidate;
 		}
 	}
@@ -44,7 +48,9 @@ export function resolveBlockTargetLine(
 	}
 
 	const section = sections.find(
-		(s) => s.position.start.line <= cursorLine && cursorLine <= s.position.end.line
+		(s) =>
+			s.position.start.line <= cursorLine &&
+			cursorLine <= s.position.end.line,
 	);
 	if (section && section.type === 'paragraph') {
 		return section.position.end.line;
@@ -57,8 +63,8 @@ export function resolveBlockTargetLine(
  * plus dash, preceded by whitespace, at the end of the line.
  */
 export function findExistingBlockId(lineText: string): string | null {
-	const match = lineText.match(/[ \t]\^([a-zA-Z0-9-]+)\s*$/);
-	return match ? match[1] : null;
+	const match = /[ \t]\^([a-zA-Z0-9-]+)\s*$/.exec(lineText);
+	return match?.[1] ?? null;
 }
 
 /** Generates a short block id (6 alphanumeric chars) not present in `used`. */
