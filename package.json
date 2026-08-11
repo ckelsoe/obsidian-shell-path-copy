@@ -6,8 +6,9 @@
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-		"lint": "eslint . --max-warnings 0 && prettier --check \"**/*.ts\" && node scripts/check-submission.mjs",
+		"lint": "eslint . --max-warnings 0 && prettier --check \"**/*.ts\" && node scripts/check-submission.mjs && npm run typecheck:marketplace",
 		"test": "jest",
+		"typecheck:marketplace": "tsc --noEmit -p tsconfig.scan.json",
 		"knip": "knip",
 		"type-coverage": "type-coverage",
 		"test:mutation": "stryker run",
