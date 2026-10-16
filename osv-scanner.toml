@@ -2,11 +2,15 @@
 # accepted and what would let us drop it. Revisit whenever the dependency tree
 # changes (a new lockfile may remove the transitive path entirely).
 #
-# No active suppressions. The dev-only transitive advisories that previously
-# needed one (brace-expansion GHSA-mh99-v99m-4gvg and its bypass
-# GHSA-rgw5-rvv9-x895, js-yaml GHSA-5p4m-2wfm-xmqj) are FIXED rather than
-# ignored: the package.json `overrides` pin each dependency to a patched
-# version, and osv-scanner now reports no issues with no suppressions at all.
+# One active suppression, below: braces has no fixed release at all.
+# Every other dev-only transitive advisory is FIXED rather than ignored: the
+# package.json `overrides` block pins brace-expansion, js-yaml, fast-uri,
+# handlebars, moment and smol-toml to patched versions.
 #
 # Add an [[IgnoredVulns]] entry here only for an advisory with no non-breaking
 # fix, and document why and what would let us drop it.
+
+[[IgnoredVulns]]
+id = "GHSA-vfj7-8cjw-p6xm"
+ignoreUntil = 2026-12-31
+reason = "braces: stack exhaustion on deeply nested patterns. No fixed release exists (every version through 3.0.3, the latest, is affected; published 2026-09-18, widened 2026-10-02). Dev-only: reached through jest > @jest/core > micromatch, which globs this repo's own files at lint or test time and never ships in main.js. Drop this entry, and add a package.json override, as soon as braces publishes a fixed version."
