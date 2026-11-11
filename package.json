@@ -60,6 +60,9 @@
 		"test-exclude": "^8.0.0",
 		"minimatch@9": "^11.0.8",
 		"minimatch@10": "^11.0.8",
+		"type-coverage-core": {
+			"minimatch": "^11.0.8"
+		},
 		"zod": "^4.6.6"
 	}
 }
