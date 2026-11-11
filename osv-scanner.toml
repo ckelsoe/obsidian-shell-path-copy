@@ -2,24 +2,16 @@
 # accepted and what would let us drop it. Revisit whenever the dependency tree
 # changes (a new lockfile may remove the transitive path entirely).
 #
-# Two active suppressions, below: deepmerge has no fixed release at all, and
-# minimatch has no fix the dev tools can use yet (11 is the only fixed line
-# and none of them has moved to it). The glob advisory is fixed through
-# `overrides` (2026-11-04). The braces entry was dropped 2026-11-04: GitHub
-# withdrew GHSA-vfj7-8cjw-p6xm on 2026-10-23. Every other dev-only transitive
-# advisory is FIXED rather than ignored: the package.json `overrides` block
-# pins brace-expansion, js-yaml, fast-uri, handlebars, moment and smol-toml to
-# patched versions.
+# No active suppressions. The deepmerge advisory left with Jest (2026-11-11):
+# Vitest does not use deepmerge. The minimatch advisory is fixed through
+# `overrides` (2026-11-11): version-keyed `minimatch@9` and `minimatch@10`
+# move to 11, which leaves eslint's own 3.x copies alone, and a nested
+# `type-coverage-core` override covers the one range (`6 || 7 || 8 || 9 ||
+# 10`) that npm 10 does not apply the version-keyed ones to. The glob
+# advisory is fixed through `overrides` (2026-11-04). The braces entry was
+# dropped 2026-11-04 (GitHub withdrew GHSA-vfj7-8cjw-p6xm on 2026-10-23). The
+# other dev-only transitive advisories are FIXED rather than ignored: the
+# package.json `overrides` block pins each dependency to a patched version.
 #
 # Add an [[IgnoredVulns]] entry here only for an advisory with no non-breaking
 # fix, and document why and what would let us drop it.
-
-[[IgnoredVulns]]
-id = "GHSA-gcqx-w48m-w2h4"
-ignoreUntil = 2026-12-31
-reason = "deepmerge: prototype poisoning of objects returned by mergeObject(). No fixed release exists (4.3.1 is the latest and is affected). Dev-only: reached through jest > @jest/core > jest-config, which merges this repo's own test config and never ships in main.js. Drop this entry, and add a package.json override, as soon as deepmerge publishes a fixed version."
-
-[[IgnoredVulns]]
-id = "GHSA-g3hv-75wg-m249"
-ignoreUntil = 2026-12-31
-reason = "minimatch: denial of service when a crafted glob pattern is compiled with optimizationLevel 2 or higher. Affects 7.0.0 up to 11.0.1; the 3.x copies used by eslint itself are not affected. No fix is available to these dev tools yet: 11 shipped 2026-10-27, and eslint-plugin-n, typescript-eslint, eslint-plugin-sonarjs, @stryker-mutator/core, test-exclude, type-coverage-core and eslint-plugin-json-schema-validator (through eslint-plugin-obsidianmd) all still require 8.x, 9.x or 10.x. Forcing 11 with nested overrides was tried and rejected: npm applied them to packages beyond the ones named, and 11 has no default export, so @eslint/config-array and @eslint/eslintrc failed to load as ES modules. Dev-only: these tools match this repo's own config patterns against its own source; nothing ships in main.js. This entry is by advisory id, so the short expiry forces a re-check. Drop it when the tools above move to minimatch 11."

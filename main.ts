@@ -35,7 +35,7 @@ function getNodePath(): NodePathLike {
 	if (!Platform.isDesktop) {
 		throw new Error('Node path module is not available on this platform.');
 	}
-	// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-return -- Obsidian docs require a Platform.isDesktop-guarded require() for Node built-ins so mobile builds don't pull them in; the require and the any return are unavoidable consequences of that guidance.
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-return -- Obsidian docs require a Platform.isDesktop-guarded require() for Node built-ins so mobile builds don't pull them in; the any return is the unavoidable consequence of that guidance.
 	return require('path');
 }
 

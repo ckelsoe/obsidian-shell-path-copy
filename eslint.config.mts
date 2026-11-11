@@ -63,7 +63,7 @@ export default tseslint.config(
 		files: ["__tests__/**/*.ts"],
 		languageOptions: {
 			globals: {
-				...globals.jest,
+				...globals.vitest,
 			},
 		},
 		rules: {
@@ -92,7 +92,7 @@ export default tseslint.config(
 		"tsconfig.json",
 		"tsconfig.scan.json",
 		"scan-node-shim.d.ts",
-		"jest.config.js",
+		"vitest.config.mts",
 		"eslint.config.mts",
 	]),
 	// Last, so it wins: disables every stylistic rule Prettier owns.
