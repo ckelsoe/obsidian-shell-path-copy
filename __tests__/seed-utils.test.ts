@@ -6,6 +6,7 @@ import {
 	CustomFormat,
 } from '../seed-utils';
 import { matchesTarget } from '../menu-utils';
+import { at } from './helpers/checked';
 
 function byName(formats: CustomFormat[], name: string): CustomFormat {
 	const found = formats.find((f) => f.name === name);
@@ -127,8 +128,10 @@ describe('seedFormatsForVersion', () => {
 		expect(formats.map((f) => f.name)).toEqual([
 			'Example: name and line number',
 		]);
-		expect(formats[0]!.template).toBe('<filename-ext> Line <line-number>');
-		expect(formats[0]!.enabled).toBe(false);
+		expect(at(formats, 0).template).toBe(
+			'<filename-ext> Line <line-number>',
+		);
+		expect(at(formats, 0).enabled).toBe(false);
 	});
 
 	it('current version is 6', () => {
@@ -154,17 +157,17 @@ describe('normalizeCustomFormats', () => {
 
 	it('fills missing fields with defaults', () => {
 		const result = normalizeCustomFormats([{ name: 'X' }]);
-		expect(result[0]!.name).toBe('X');
-		expect(result[0]!.template).toBe('');
-		expect(result[0]!.wrapping).toBe('none');
-		expect(result[0]!.icon).toBe('clipboard-copy');
-		expect(result[0]!.enabled).toBe(true);
-		expect(typeof result[0]!.id).toBe('string');
+		expect(at(result, 0).name).toBe('X');
+		expect(at(result, 0).template).toBe('');
+		expect(at(result, 0).wrapping).toBe('none');
+		expect(at(result, 0).icon).toBe('clipboard-copy');
+		expect(at(result, 0).enabled).toBe(true);
+		expect(typeof at(result, 0).id).toBe('string');
 	});
 
 	it('coerces an invalid wrapping to none', () => {
 		const result = normalizeCustomFormats([{ wrapping: 'bogus' }]);
-		expect(result[0]!.wrapping).toBe('none');
+		expect(at(result, 0).wrapping).toBe('none');
 	});
 
 	it('reassigns duplicate ids', () => {
@@ -172,7 +175,7 @@ describe('normalizeCustomFormats', () => {
 			{ id: 'dup', name: 'A' },
 			{ id: 'dup', name: 'B' },
 		]);
-		expect(result[0]!.id).not.toBe(result[1]!.id);
+		expect(at(result, 0).id).not.toBe(at(result, 1).id);
 	});
 
 	it('preserves a valid format', () => {
@@ -208,40 +211,40 @@ describe('normalizeCustomFormats', () => {
 
 	it('defaults pinToRoot to false when absent', () => {
 		const result = normalizeCustomFormats([{ name: 'X' }]);
-		expect(result[0]!.pinToRoot).toBe(false);
+		expect(at(result, 0).pinToRoot).toBe(false);
 	});
 
 	it('defaults pinToRoot to false for non-boolean values', () => {
 		const result = normalizeCustomFormats([
 			{ name: 'X', pinToRoot: 'yes' as unknown as boolean },
 		]);
-		expect(result[0]!.pinToRoot).toBe(false);
+		expect(at(result, 0).pinToRoot).toBe(false);
 	});
 
 	it('preserves pinToRoot=true', () => {
 		const result = normalizeCustomFormats([{ name: 'X', pinToRoot: true }]);
-		expect(result[0]!.pinToRoot).toBe(true);
+		expect(at(result, 0).pinToRoot).toBe(true);
 	});
 
 	it('defaults appliesTo to both when absent', () => {
 		const result = normalizeCustomFormats([{ name: 'X' }]);
-		expect(result[0]!.appliesTo).toBe('both');
+		expect(at(result, 0).appliesTo).toBe('both');
 	});
 
 	it('defaults appliesTo to both for an invalid value', () => {
 		const result = normalizeCustomFormats([
 			{ name: 'X', appliesTo: 'everywhere' as unknown as 'both' },
 		]);
-		expect(result[0]!.appliesTo).toBe('both');
+		expect(at(result, 0).appliesTo).toBe('both');
 	});
 
 	it('preserves a valid appliesTo', () => {
 		expect(
-			normalizeCustomFormats([{ name: 'X', appliesTo: 'files' }])[0]!
+			at(normalizeCustomFormats([{ name: 'X', appliesTo: 'files' }]), 0)
 				.appliesTo,
 		).toBe('files');
 		expect(
-			normalizeCustomFormats([{ name: 'Y', appliesTo: 'folders' }])[0]!
+			at(normalizeCustomFormats([{ name: 'Y', appliesTo: 'folders' }]), 0)
 				.appliesTo,
 		).toBe('folders');
 	});

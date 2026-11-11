@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Search settings** now finds the note under **Menu behavior** that explains top-level menu placement, by words such as "root menu" and "top level". It was hidden from search before.
+
+### Fixed
+- In a narrow settings pane the footer could wrap with a stray `|` at the end or start of a line. Each separator now wraps together with the link after it.
+
 ## [2.9.0] - 2026-07-31
 
 ### Added

@@ -31,6 +31,9 @@ const RELOAD_NOTICE =
 // invite expires after 7 days and would rot in a shipped release.
 const DISCORD_URL = 'https://discord.gg/gd6tKJDPj4';
 
+const MENU_PLACEMENT_NOTE =
+	'With both off, every format sits at the top level of the right-click menu. Individual formats can also be pinned to the root from their own page, whichever grouping is on.';
+
 // Curated set of menu-relevant icons offered in the per-format icon picker.
 const ICON_CHOICES: string[] = [
 	'clipboard-copy',
@@ -116,15 +119,18 @@ export class ShellPathCopySettingTab extends PluginSettingTab {
 						// Rendered, not a bare name/desc pair: Obsidian drops a
 						// definition that has no control, action, or render, so a
 						// description-only row never reaches the DOM.
-						name: '',
-						searchable: false,
+						// The name, desc and aliases are for settings search only;
+						// the row draws just the note.
+						name: 'Top-level menu placement',
+						desc: MENU_PLACEMENT_NOTE,
+						aliases: ['root menu', 'pin to root', 'top level'],
 						render: (setting: Setting) => {
 							const el = setting.settingEl;
 							el.empty();
 							el.addClass('shell-path-copy-note-row');
 							el.createDiv({
 								cls: 'shell-path-copy-info-note',
-								text: 'With both off, every format sits at the top level of the right-click menu. Individual formats can also be pinned to the root from their own page, whichever grouping is on.',
+								text: MENU_PLACEMENT_NOTE,
 							});
 						},
 					},
@@ -207,12 +213,17 @@ export class ShellPathCopySettingTab extends PluginSettingTab {
 		const manifestVersion = this.plugin.manifest.version || '1.0.0';
 		inner.createSpan({ text: `Version ${manifestVersion}` });
 
+		// Each separator and its link are one nowrap item, so a narrow pane wraps
+		// between whole "| Link" units and never leaves a stray "|".
 		const createExternalLink = (text: string, url: string) => {
-			inner.createSpan({
+			const item = inner.createSpan({
+				cls: 'shell-path-copy-footer-link',
+			});
+			item.createSpan({
 				cls: 'shell-path-copy-footer-separator',
 				text: '|',
 			});
-			return inner.createEl('a', {
+			return item.createEl('a', {
 				text: text,
 				href: url,
 				attr: { target: '_blank', rel: 'noopener' },
@@ -287,16 +298,16 @@ export class ShellPathCopySettingTab extends PluginSettingTab {
 				new Notice(RELOAD_NOTICE);
 				this.update();
 			},
-			items: this.formatIndexes(enabled).map((index) => {
-				// index comes from formatIndexes() over this same array, so it is valid.
-				const fmt = formats[index]!;
-				return {
-					type: 'page' as const,
-					name: fmt.name || 'Untitled format',
-					desc: fmt.template || '(empty template)',
-					page: () => new FormatEditorPage(this, fmt),
-				};
-			}),
+			items: formats
+				.filter((fmt) => Boolean(fmt.enabled) === enabled)
+				.map((fmt) => {
+					return {
+						type: 'page' as const,
+						name: fmt.name || 'Untitled format',
+						desc: fmt.template || '(empty template)',
+						page: () => new FormatEditorPage(this, fmt),
+					};
+				}),
 		};
 
 		if (enabled) {
@@ -342,14 +353,14 @@ export class ShellPathCopySettingTab extends PluginSettingTab {
 				'No enabled formats to order. Enable one under "manage formats" first.',
 			onReorder: (oldIndex: number, newIndex: number) =>
 				this.reorderFormats(true, oldIndex, newIndex),
-			items: this.formatIndexes(true).map((index) => {
-				// index comes from formatIndexes() over this same array, so it is valid.
-				const fmt = formats[index]!;
-				return {
-					name: fmt.name || 'Untitled format',
-					desc: fmt.template || '(empty template)',
-				};
-			}),
+			items: formats
+				.filter((fmt) => Boolean(fmt.enabled))
+				.map((fmt) => {
+					return {
+						name: fmt.name || 'Untitled format',
+						desc: fmt.template || '(empty template)',
+					};
+				}),
 		};
 	}
 

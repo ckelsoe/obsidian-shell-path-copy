@@ -13,7 +13,7 @@
 		"type-coverage": "type-coverage",
 		"test:mutation": "stryker run",
 		"version": "node version-bump.mjs && git add manifest.json versions.json",
-		"prepare": "husky"
+		"prepare": "node .husky/install.mjs"
 	},
 	"typeCoverage": {
 		"atLeast": 99

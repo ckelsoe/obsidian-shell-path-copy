@@ -15,6 +15,13 @@ Shell Path Copy Plugin Styles
 	gap: var(--size-4-2);
 }
 
+.shell-path-copy-footer-link {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--size-4-2);
+	white-space: nowrap;
+}
+
 .shell-path-copy-footer-separator {
 	color: var(--text-faint);
 }
