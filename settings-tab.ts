@@ -298,16 +298,16 @@ export class ShellPathCopySettingTab extends PluginSettingTab {
 				new Notice(RELOAD_NOTICE);
 				this.update();
 			},
-			items: this.formatIndexes(enabled).map((index) => {
-				// index comes from formatIndexes() over this same array, so it is valid.
-				const fmt = formats[index]!;
-				return {
-					type: 'page' as const,
-					name: fmt.name || 'Untitled format',
-					desc: fmt.template || '(empty template)',
-					page: () => new FormatEditorPage(this, fmt),
-				};
-			}),
+			items: formats
+				.filter((fmt) => Boolean(fmt.enabled) === enabled)
+				.map((fmt) => {
+					return {
+						type: 'page' as const,
+						name: fmt.name || 'Untitled format',
+						desc: fmt.template || '(empty template)',
+						page: () => new FormatEditorPage(this, fmt),
+					};
+				}),
 		};
 
 		if (enabled) {
@@ -353,14 +353,14 @@ export class ShellPathCopySettingTab extends PluginSettingTab {
 				'No enabled formats to order. Enable one under "manage formats" first.',
 			onReorder: (oldIndex: number, newIndex: number) =>
 				this.reorderFormats(true, oldIndex, newIndex),
-			items: this.formatIndexes(true).map((index) => {
-				// index comes from formatIndexes() over this same array, so it is valid.
-				const fmt = formats[index]!;
-				return {
-					name: fmt.name || 'Untitled format',
-					desc: fmt.template || '(empty template)',
-				};
-			}),
+			items: formats
+				.filter((fmt) => Boolean(fmt.enabled))
+				.map((fmt) => {
+					return {
+						name: fmt.name || 'Untitled format',
+						desc: fmt.template || '(empty template)',
+					};
+				}),
 		};
 	}
 
