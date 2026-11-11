@@ -104,7 +104,7 @@ describe('generateBlockId', () => {
 		const seedB = 0.987654321;
 		expect(idFor(seedA)).toHaveLength(6);
 		expect(idFor(seedB)).toHaveLength(6);
-		const spy = jest
+		const spy = vi
 			.spyOn(Math, 'random')
 			.mockReturnValueOnce(seedA)
 			.mockReturnValueOnce(seedB);

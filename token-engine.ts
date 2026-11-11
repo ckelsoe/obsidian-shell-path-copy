@@ -12,7 +12,7 @@ import {
 //
 // This module is intentionally free of any Obsidian API dependency. The plugin
 // (main.ts) gathers everything a template could need into a plain TokenContext
-// and passes it in, which keeps the engine fully unit-testable under Jest with
+// and passes it in, which keeps the engine fully unit-testable under Vitest with
 // no mocking. See token-usage.md for the user-facing token reference.
 
 /** Everything a template can resolve against, assembled by main.ts per copy. */
