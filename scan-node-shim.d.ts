@@ -3,7 +3,7 @@
 //
 // The scan reproduction strips @types/node (via `types: []`) so a lib-version
 // gap is exposed instead of masked. That also removes the Node `require` this
-// plugin uses behind a Platform.isDesktop guard to load the desktop-only `path`
+// plugin uses behind a Platform.isDesktopApp guard to load the desktop-only `path`
 // module. The hosted developer-dashboard scan resolves `require` from its
 // Node/Electron runtime, so it is NOT what the guard exists to catch; this
 // minimal shim reproduces that so the guard does not false-fail on it while

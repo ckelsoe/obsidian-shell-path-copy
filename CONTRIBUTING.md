@@ -38,7 +38,7 @@ All three must pass. Pull requests that break CI will not be reviewed until gree
 - TypeScript strict mode is on. Never use `as any` casting. If types are missing, add declarations to `types.d.ts`.
 - Follow [Obsidian's plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
 - Prefer `containerEl.createDiv()` / `createSpan()` over generic `createEl('div'|'span')`.
-- Do not import Node built-ins (`path`, `fs`, etc.) at the top of `main.ts`. Use a `Platform.isDesktop`-guarded `require()` instead.
+- Do not import Node built-ins (`path`, `fs`, etc.) at the top of `main.ts`. Use a `Platform.isDesktopApp`-guarded `require()` instead.
 - Keep the settings UI compatible with mobile.
 
 ## Submitting a pull request
@@ -51,7 +51,7 @@ All three must pass. Pull requests that break CI will not be reviewed until gree
 
 ## Releases
 
-Releases are cut by the maintainer following the process in `CLAUDE.md`. Contributors do not need to bump versions or create release artifacts.
+Releases are cut by the maintainer. Contributors do not need to bump versions or create release artifacts.
 
 ## License
 
