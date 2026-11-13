@@ -6,6 +6,6 @@
 		"skipLibCheck": true,
 		"types": []
 	},
-	"include": ["**/*.ts", "**/*.d.ts", "scan-node-shim.d.ts"],
+	"include": ["**/*.ts", "**/*.d.ts"],
 	"exclude": ["node_modules", "__tests__", "__mocks__"]
 }

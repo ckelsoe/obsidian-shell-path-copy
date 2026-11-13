@@ -95,7 +95,6 @@ export default tseslint.config(
 		"package-lock.json",
 		"tsconfig.json",
 		"tsconfig.scan.json",
-		"scan-node-shim.d.ts",
 		"vitest.config.mts",
 		"eslint.config.mts",
 	]),
