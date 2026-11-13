@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.9.2] - 2026-11-13
+
 ### Fixed
 
 - The full file path now comes from Obsidian's own API instead of the Node path module, so the marketplace scan no longer warns about it. Nothing changes in use.
