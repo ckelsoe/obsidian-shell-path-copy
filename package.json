@@ -16,7 +16,12 @@
 		"prepare": "node .husky/install.mjs"
 	},
 	"typeCoverage": {
-		"atLeast": 99
+		"atLeast": 100,
+		"ignoreFiles": [
+			"**/__tests__/**",
+			"**/__mocks__/**",
+			"**/*.test.ts"
+		]
 	},
 	"keywords": [],
 	"author": "Charles Kelsoe (ckelsoe)",
