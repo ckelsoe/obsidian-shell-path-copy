@@ -25,22 +25,6 @@ import {
 import { pickRootFormats, matchesTarget } from './menu-utils';
 import { ShellPathCopySettingTab } from './settings-tab';
 
-// Node 'path' is only available on desktop. Load lazily behind a Platform.isDesktopApp
-// guard so mobile builds do not pull in unavailable Node built-ins. The narrow
-// return type avoids importing the @types/node `Path` namespace at the top level.
-interface NodePathLike {
-	join(...paths: string[]): string;
-}
-function getNodePath(): NodePathLike {
-	// isDesktop is the guard the marketplace scan recognises; isDesktopApp makes
-	// sure Node is really there (a desktop-sized tablet is isDesktop too).
-	if (Platform.isDesktop && Platform.isDesktopApp) {
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-return -- Obsidian docs require a Platform.isDesktop-guarded require() for Node built-ins so mobile builds don't pull them in; the any return is the unavoidable consequence of that guidance.
-		return require('path');
-	}
-	throw new Error('Node path module is not available on this platform.');
-}
-
 interface PathCopySettings {
 	showNotifications: boolean;
 	markdownLinkFormat: MarkdownLinkFormat;
@@ -352,10 +336,7 @@ export default class ShellPathCopyPlugin extends Plugin {
 		if (!Platform.isMobile) {
 			const adapter = this.app.vault.adapter;
 			if (adapter instanceof FileSystemAdapter) {
-				absolutePath = getNodePath().join(
-					adapter.getBasePath(),
-					file.path,
-				);
+				absolutePath = adapter.getFullPath(file.path);
 			}
 		}
 

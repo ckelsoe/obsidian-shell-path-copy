@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- The Node path module now loads behind the desktop check the marketplace scan recognises, as well as the existing desktop-app check. Nothing changes in use.
+- The full file path now comes from Obsidian's own API instead of the Node path module, so the marketplace scan no longer warns about it. Nothing changes in use.
 
 ## [2.9.1] - 2026-11-13
 
