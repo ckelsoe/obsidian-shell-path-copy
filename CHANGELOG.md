@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.9.1] - 2026-11-13
+
 ### Changed
 - **Search settings** now finds the note under **Menu behavior** that explains top-level menu placement, by words such as "root menu" and "top level". It was hidden from search before.
 
